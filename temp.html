@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>About Us</title>
+    <title>BSERC | MoU Request</title>
     <meta name="description"
         content="BSERC - Learn about Space, ISRO missions, and the universe. An educational portal for space enthusiasts.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -17,7 +17,92 @@
     <!-- Vendor CSS (Local) -->
     <link rel="stylesheet" href="https://bserc.org/assets/vendor/swiper/swiper-bundle.min.css">
     <link rel="stylesheet" href="https://bserc.org/assets/css/style.css">
-    </head>
+        <style>
+        .contact-wrapper {
+            padding: 4rem 0;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .contact-card {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 3rem;
+            box-shadow: var(--shadow);
+        }
+
+        .form-label {
+            color: var(--text);
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-control,
+        .form-select {
+            background-color: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border);
+            color: #fff;
+            padding: 0.8rem 1rem;
+            border-radius: var(--radius);
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            background-color: rgba(0, 0, 0, 0.3);
+            border-color: var(--accent);
+            color: #fff;
+            box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.1);
+        }
+
+        .form-control::placeholder {
+            color: var(--muted);
+        }
+
+        .form-text {
+            color: var(--muted);
+        }
+
+        .btn-submit {
+            background: var(--accent);
+            color: #000;
+            font-weight: 600;
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            border: none;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 1rem;
+        }
+
+        .btn-submit:hover {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(56, 189, 248, 0.3);
+        }
+
+        .alert-custom {
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid transparent;
+        }
+
+        .alert-success-custom {
+            background: rgba(34, 197, 94, 0.1);
+            border-color: rgba(34, 197, 94, 0.2);
+            color: var(--success);
+            text-align: center;
+        }
+
+        .alert-error-custom {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.2);
+            color: var(--danger);
+        }
+    </style>
+</head>
 
 <body>
     <header class="site-header">
@@ -126,131 +211,65 @@
 </header>
     <main class="">
         
-    <div class="container-fluid page-header py-5 mb-5 wow fadeIn" data-wow-delay="0.1s"
-        style="background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('https://bserc.org/assets/img/about-hero-v2.png') center center no-repeat; background-size: cover; margin-top: 0;">
-        <div class="container text-center py-5">
-            <h1 class="display-3 text-white mb-4 animated slideInDown">About Us</h1>
-            <nav aria-label="breadcrumb animated slideInDown">
-                <ol class="breadcrumb justify-content-center mb-0">
-                    <li class="breadcrumb-item"><a href="https://bserc.org" class="text-white">Home</a></li>
-                    <li class="breadcrumb-item active text-primary" aria-current="page">About</li>
-                </ol>
-            </nav>
-        </div>
-    </div>
+    <div class="container">
+        <div class="contact-wrapper">
+            <div class="text-center mb-5">
+                <h1 class="section-title d-inline-block border-0 p-0 mb-3">Request for MoU</h1>
+                <p style="color: var(--muted); font-size: 1.1rem;">Submit your proposal for a Memorandum of Understanding
+                    with BSERC.</p>
+            </div>
 
-    <div class="container-xxl py-5">
-        <div class="container">
-            <div class="row g-5 align-items-center">
-                <div class="col-lg-6 wow fadeInUp" data-wow-delay="0.1s">
-                    <img class="img-fluid rounded shadow" src="https://bserc.org/assets/img/about-hero.png" alt="BSERC Logo">
+            
+                
+                <div class="contact-card">
+                    <form action="https://bserc.org/institutions/mou-form" method="POST" enctype="multipart/form-data">
+                        <input type="hidden" name="_token" value="uCqvgppH30S11rOuVNblMni5jCSSKC1gqyzDM6OV" autocomplete="off">                        <div class="row">
+                            <div class="col-md-6 mb-4">
+                                <label for="organization_name" class="form-label">Organization Name <span
+                                        class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="organization_name" name="organization_name"
+                                    placeholder="Organization Name" required>
+                            </div>
+                            <div class="col-md-6 mb-4">
+                                <label for="authorized_person_name" class="form-label">Authorized Person <span
+                                        class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="authorized_person_name"
+                                    name="authorized_person_name" placeholder="Person Name" required>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-4">
+                                <label for="email" class="form-label">Email Address <span class="text-danger">*</span></label>
+                                <input type="email" class="form-control" id="email" name="email" placeholder="name@example.com"
+                                    required>
+                            </div>
+                            <div class="col-md-6 mb-4">
+                                <label for="phone" class="form-label">Phone Number</label>
+                                <input type="tel" class="form-control" id="phone" name="phone" placeholder="+91 9876543210">
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="purpose" class="form-label">Purpose of MoU / Proposal <span
+                                    class="text-danger">*</span></label>
+                            <textarea class="form-control" id="purpose" name="purpose" rows="5"
+                                placeholder="Describe the purpose of this MoU..." required></textarea>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="document" class="form-label">Upload Document (Optional)</label>
+                            <input class="form-control" type="file" id="document" name="document" accept=".pdf,.doc,.docx">
+                            <div class="form-text mt-2">Accepted formats: PDF, DOC, DOCX. Max size: 10MB.</div>
+                        </div>
+
+                        <button type="submit" class="btn-submit">
+                            Submit Request
+                        </button>
+                    </form>
                 </div>
-                <div class="col-lg-6 wow fadeInUp" data-wow-delay="0.5s">
-                    <div class="h-100">
-                        <h1 class="display-6 mb-4 text-white">Bharat Space Education Research Centre</h1>
-                        <p class="fs-5 mb-4 text-light">Space Science, Computing and Technology for all</p>
-                        <p class="mb-4 text-light">The Bharat Space Education Research Centre is a leading organization
-                            committed to advancing scientific understanding of Earth and the Universe, promoting Space
-                            science, Computing and technology literacy for all, and inspiring the next generation of
-                            scientists and engineers.</p>
 
-                        <div class="d-flex align-items-center mb-4">
-                            <div class="d-flex align-items-center justify-content-center flex-shrink-0 bg-primary"
-                                style="width: 50px; height: 50px; border-radius: 50px;">
-                                <i class="fa fa-atom text-white"></i>
-                            </div>
-                            <div class="ms-3">
-                                <h5 class="text-primary">Scientific Understanding</h5>
-                            </div>
-                        </div>
-                        <div class="d-flex align-items-center mb-4">
-                            <div class="d-flex align-items-center justify-content-center flex-shrink-0 bg-primary"
-                                style="width: 50px; height: 50px; border-radius: 50px;">
-                                <i class="fa fa-rocket text-white"></i>
-                            </div>
-                            <div class="ms-3">
-                                <h5 class="text-primary">Space Technology</h5>
-                            </div>
-                        </div>
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="container-xxl py-5">
-        <div class="container">
-            <div class="row g-5">
-                <div class="col-lg-6 wow fadeInUp" data-wow-delay="0.1s">
-                    <h1 class="display-6 mb-4 text-white">Research & Exploration</h1>
-                    <p class="mb-4 text-light">The Research Branch of Bharat Space Education Research Centre (BSERC)
-                        actively participates in a wide range of space science endeavors, encompassing Earth science, space
-                        physics, planetary science, and astrophysics.</p>
-                    <p class="mb-4 text-light">The research team's expertise has expanded to include investigations of
-                        terrestrial and geospace phenomena, contributing to a deeper understanding of our planet and its
-                        place in the cosmos.</p>
-                </div>
-                <div class="col-lg-6 wow fadeInUp" data-wow-delay="0.5s">
-                    <img class="img-fluid rounded shadow" src="https://bserc.org/assets/img/research.png"
-                        alt="Research at BSERC">
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="container-xxl py-5 bg-dark">
-        <div class="container">
-            <div class="row g-5 align-items-center">
-                <div class="col-lg-6 wow fadeInUp" data-wow-delay="0.5s">
-                    <img class="img-fluid rounded shadow" src="https://bserc.org/assets/img/education.png"
-                        alt="Education at BSERC">
-                </div>
-                <div class="col-lg-6 wow fadeInUp" data-wow-delay="0.1s">
-                    <h1 class="display-6 mb-4 text-white">Education & Initiatives</h1>
-                    <p class="mb-4 text-light">These initiatives cater to diverse audiences, from primary school students
-                        engaging with portable planetarium demonstrations to faculty and advanced students participating in
-                        workshops on topics such as:</p>
-                    <div class="row g-3 mb-4">
-                        <div class="col-sm-6">
-                            <ul class="list-unstyled text-light">
-                                <li><i class="fa fa-check text-primary me-2"></i>Astronomy</li>
-                                <li><i class="fa fa-check text-primary me-2"></i>Rocketry</li>
-                                <li><i class="fa fa-check text-primary me-2"></i>Satellite Technology</li>
-                            </ul>
-                        </div>
-                        <div class="col-sm-6">
-                            <ul class="list-unstyled text-light">
-                                <li><i class="fa fa-check text-primary me-2"></i>Drone Technology</li>
-                                <li><i class="fa fa-check text-primary me-2"></i>Remote Sensing</li>
-                                <li><i class="fa fa-check text-primary me-2"></i>Space Entrepreneurship</li>
-                            </ul>
-                        </div>
-                    </div>
-                    <p class="text-light">BSERC further fosters learning through student and faculty development programs,
-                        specialized laboratories for drone and space science, and internship opportunities.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="container-xxl py-5">
-        <div class="container">
-            <div class="row g-5">
-                <div class="col-lg-6 wow fadeInUp" data-wow-delay="0.1s">
-                    <h1 class="display-6 mb-4 text-white">Community Engagement</h1>
-                    <p class="mb-4 text-light">Recognizing the importance of community engagement, BSERC also implements
-                        programs focused on tribal development. These initiatives aim to bridge the gap and bring scientific
-                        awareness to all sections of society.</p>
-                    <p class="mb-4 text-light">Our programs focus on cultural preservation, economic empowerment, and
-                        capacity building, ensuring that the benefits of space science and technology reach every corner of
-                        the community.</p>
-                </div>
-                <div class="col-lg-6 wow fadeInUp" data-wow-delay="0.5s">
-                    <img class="img-fluid rounded shadow" src="https://bserc.org/assets/img/community.png"
-                        alt="Community Engagement">
-                </div>
-            </div>
-        </div>
     </div>
 
     </main>

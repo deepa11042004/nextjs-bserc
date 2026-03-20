@@ -13,7 +13,6 @@ interface SlideData {
   showContent?: boolean;
 }
 
- 
 
 
 const slides: SlideData[] = [
