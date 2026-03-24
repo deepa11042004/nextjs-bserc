@@ -1,3 +1,4 @@
+// components/forms/SecurityNotice.tsx
 "use client";
 
 export default function SecurityNotice() {
