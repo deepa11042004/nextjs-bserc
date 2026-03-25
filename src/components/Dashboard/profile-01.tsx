@@ -44,6 +44,20 @@ export default function Profile01({
     },
   ]
 
+
+  const handleLogout = async () => {
+  try {
+    await fetch("/api/admin-logout", {
+      method: "POST",
+    });
+
+    // Redirect to login page
+    window.location.href = "/auth/login";
+  } catch (error) {
+    console.error("Logout failed:", error);
+  }
+};
+
   return (
     <div className="w-full max-w-sm mx-auto">
       <div className="relative overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800">
@@ -93,8 +107,8 @@ export default function Profile01({
                                 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 
                                 rounded-lg transition-colors duration-200"
             >
-              <div className="flex items-center gap-2">
-                <LogOut className="w-4 h-4 text-white" />
+              <div onClick={handleLogout} className="flex items-center gap-2 ">
+                <LogOut  className="w-4 h-4 text-white" />
                 <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">Logout</span>
               </div>
             </button>

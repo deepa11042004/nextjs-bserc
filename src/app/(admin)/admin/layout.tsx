@@ -1,12 +1,22 @@
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+// app/admin/layout.tsx
+"use client"
+
+import type { ReactNode } from "react"
+import Sidebar from "@/components/Dashboard/sidebar"
+import TopNav from "@/components/Dashboard/top-nav"
+
+export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="admin-container">
-      {/* No Navbar or Footer here */}
-      {children}
+    <div className="flex h-screen dark">
+      <Sidebar />
+      <div className="w-full flex flex-1 flex-col">
+        <header className="h-16 border-b border-[#1F1F23]">
+          <TopNav />
+        </header>
+        <main className="flex-1 overflow-auto p-6 bg-[#0F0F12]">
+          {children}
+        </main>
+      </div>
     </div>
-  );
+  )
 }

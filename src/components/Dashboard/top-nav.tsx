@@ -46,7 +46,7 @@ function formatLabel(segment: string): string {
 
 function buildBreadcrumbs(pathname: string): BreadcrumbItem[] {
   const segments = pathname.split("/").filter(Boolean)
-  const breadcrumbs: BreadcrumbItem[] = [{ label: "Admin", href: "/" }]
+  const breadcrumbs: BreadcrumbItem[] = [{ label: "", href: "/admin" }]
   
   let accumulatedPath = ""
   for (const segment of segments) {
@@ -72,7 +72,7 @@ export default function TopNav() {
   return (
     <nav className="px-3 sm:px-6 flex items-center justify-between bg-[#0F0F12] border-b border-[#1F1F23] h-full">
       
-      <div className="font-medium text-sm hidden sm:flex items-center space-x-1 truncate max-w-[300px]">
+      <div className="font-medium text-sm hidden sm:flex items-center space-x-1 truncate max-w-[600px]">
         {breadcrumbs.map((item, index) => (
           <div key={`${item.label}-${index}`} className="flex items-center">
             {index > 0 && <ChevronRight className="h-4 w-4 text-gray-400 mx-1" />}

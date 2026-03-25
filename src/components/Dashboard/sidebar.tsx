@@ -1,11 +1,11 @@
-"use client";
+"use client"
 
 import {
   Users2,
   Shield,
   MessagesSquare,
   Video,
-  Settings,
+  ExternalLink,
   HelpCircle,
   Menu,
   Tags,
@@ -14,19 +14,21 @@ import {
   UserRoundSearch,
   Images,
   Home,
-} from "lucide-react";
+} from "lucide-react"
 
-import Link from "next/link";
-import { useState } from "react";
-import Image from "next/image";
+import Link from "next/link"
+import { useState } from "react"
+import Image from "next/image"
+import { usePathname } from "next/navigation"
 
 type NavItemProps = {
-  href: string;
-  icon: React.ComponentType<{ className?: string }>;
-  children: React.ReactNode;
-  onClick?: () => void;
-  isActive?: boolean;
-};
+  href: string
+  icon: React.ComponentType<{ className?: string }>
+  children: React.ReactNode
+  onClick?: () => void
+  isActive?: boolean
+  isExternal?: boolean
+}
 
 function NavItem({
   href,
@@ -34,34 +36,46 @@ function NavItem({
   children,
   onClick,
   isActive = false,
+  isExternal = false,
 }: NavItemProps) {
+  const baseClasses = `
+    flex items-center px-3 py-2 text-sm rounded-md transition-colors
+    ${
+      isActive
+        ? "bg-[#1F1F23] text-white font-medium"
+        : "text-gray-300 hover:text-white hover:bg-[#1F1F23]"
+    }
+  `
+
+  if (isExternal) {
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={onClick}
+        className={baseClasses}
+      >
+        <Icon className="h-4 w-4 mr-3 flex-shrink-0" />
+        {children}
+      </a>
+    )
+  }
+
   return (
-    <Link
-      href={href}
-      onClick={onClick}
-      className={`
-        flex items-center px-3 py-2 text-sm rounded-md transition-colors
-        ${
-          isActive
-            ? "bg-[#1F1F23] text-white font-medium"
-            : "text-gray-300 hover:text-white hover:bg-[#1F1F23]"
-        }
-      `}
-    >
+    <Link href={href} onClick={onClick} className={baseClasses}>
       <Icon className="h-4 w-4 mr-3 flex-shrink-0" />
       {children}
     </Link>
-  );
+  )
 }
 
 export default function Sidebar() {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [activeHref, setActiveHref] = useState<string>("#");
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const pathname = usePathname()
 
-  function handleNavigation(href: string) {
-    setActiveHref(href);
-    setIsMobileMenuOpen(false);
-  }
+  // Normalize pathname for comparison (remove trailing slashes, handle root)
+  const normalizedPath = pathname === "/" ? "/admin" : pathname
 
   return (
     <>
@@ -82,9 +96,7 @@ export default function Sidebar() {
       >
         <div className="h-full flex flex-col">
           <Link
-            href="#"
-            target="_blank"
-            rel="noopener noreferrer"
+            href="/admin"
             className="h-16 px-6 flex items-center border-b border-[#1F1F23]"
           >
             <div className="flex items-center gap-3">
@@ -108,10 +120,10 @@ export default function Sidebar() {
                   Overview
                 </div>
                 <NavItem
-                  href="#dashboard"
+                  href="/admin"
                   icon={Home}
-                  onClick={() => handleNavigation("#dashboard")}
-                  isActive={activeHref === "#dashboard"}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  isActive={normalizedPath === "/admin"}
                 >
                   Dashboard
                 </NavItem>
@@ -123,42 +135,42 @@ export default function Sidebar() {
                 </div>
                 <div className="space-y-1">
                   <NavItem
-                    href="#program-categories"
+                    href="/admin/program-categories"
                     icon={Tags}
-                    onClick={() => handleNavigation("#program-categories")}
-                    isActive={activeHref === "#program-categories"}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    isActive={normalizedPath === "/admin/program-categories"}
                   >
                     Program Categories
                   </NavItem>
                   <NavItem
-                    href="#programs"
+                    href="/admin/programs"
                     icon={LayoutPanelLeft}
-                    onClick={() => handleNavigation("#programs")}
-                    isActive={activeHref === "#programs"}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    isActive={normalizedPath === "/admin/programs"}
                   >
                     Programs
                   </NavItem>
                   <NavItem
-                    href="#advisory-board"
+                    href="/admin/advisory-board"
                     icon={Contact}
-                    onClick={() => handleNavigation("#advisory-board")}
-                    isActive={activeHref === "#advisory-board"}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    isActive={normalizedPath === "/admin/advisory-board"}
                   >
                     Advisory Board
                   </NavItem>
                   <NavItem
-                    href="#advisory-board-request"
+                    href="/admin/advisory-board/request"
                     icon={UserRoundSearch}
-                    onClick={() => handleNavigation("#advisory-board-request")}
-                    isActive={activeHref === "#advisory-board-request"}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    isActive={normalizedPath === "/admin/advisory-board/request"}
                   >
                     Advisory Board Request
                   </NavItem>
                   <NavItem
-                    href="#hero-sliders"
+                    href="/admin/sliders"
                     icon={Images}
-                    onClick={() => handleNavigation("#hero-sliders")}
-                    isActive={activeHref === "#hero-sliders"}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    isActive={normalizedPath === "/admin/sliders"}
                   >
                     Hero Sliders
                   </NavItem>
@@ -169,52 +181,52 @@ export default function Sidebar() {
                 <div className="px-3 mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">
                   Team Management
                 </div>
-                <div className="space-y-1">
+                <div className="space-y-1">                  
                   <NavItem
-                    href="#faculty-requests"
-                    icon={Users2}
-                    onClick={() => handleNavigation("#faculty-requests")}
-                    isActive={activeHref === "#faculty-requests"}
-                  >
-                    Faculty Requests
-                  </NavItem>
-                  <NavItem
-                    href="#faculty-list"
+                    href="/admin/faculty"
                     icon={Shield}
-                    onClick={() => handleNavigation("#faculty-list")}
-                    isActive={activeHref === "#faculty-list"}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    isActive={normalizedPath === "/admin/faculty"}
                   >
                     Faculty List
                   </NavItem>
                   <NavItem
-                    href="#staff-requests"
+                    href="/admin/faculty/faculty-requests"
+                    icon={Users2}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    isActive={normalizedPath === "/admin/faculty/faculty-requests"}
+                  >
+                    Faculty Requests
+                  </NavItem>
+                  <NavItem
+                    href="/admin/faculty/staff-requests"
                     icon={MessagesSquare}
-                    onClick={() => handleNavigation("#staff-requests")}
-                    isActive={activeHref === "#staff-requests"}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    isActive={normalizedPath === "/admin/faculty/staff-requests"}
                   >
                     Staff Requests
                   </NavItem>
                   <NavItem
-                    href="#speaker-requests"
+                    href="/admin/faculty/speaker-requests"
                     icon={MessagesSquare}
-                    onClick={() => handleNavigation("#speaker-requests")}
-                    isActive={activeHref === "#speaker-requests"}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    isActive={normalizedPath === "/admin/faculty/speaker-requests"}
                   >
                     Speaker Requests
                   </NavItem>
                   <NavItem
-                    href="#fdp-requests"
+                    href="/admin/faculty/fdp-requests"
                     icon={Video}
-                    onClick={() => handleNavigation("#fdp-requests")}
-                    isActive={activeHref === "#fdp-requests"}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    isActive={normalizedPath === "/admin/faculty/fdp-requests"}
                   >
                     FDP Requests
                   </NavItem>
                   <NavItem
-                    href="#internship-applications"
+                    href="/admin/faculty/internship-applications"
                     icon={Video}
-                    onClick={() => handleNavigation("#internship-applications")}
-                    isActive={activeHref === "#internship-applications"}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    isActive={normalizedPath === "/admin/faculty/internship-applications"}
                   >
                     Internship Applications
                   </NavItem>
@@ -227,60 +239,60 @@ export default function Sidebar() {
                 </div>
                 <div className="space-y-1">
                   <NavItem
-                    href="#admin-users"
+                    href="/admin/all-admins"
                     icon={Users2}
-                    onClick={() => handleNavigation("#admin-users")}
-                    isActive={activeHref === "#admin-users"}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    isActive={normalizedPath === "/admin/all-admins"}
                   >
                     Admin Users
                   </NavItem>
                   <NavItem
-                    href="#website-users"
+                    href="/admin/website-users"
                     icon={Shield}
-                    onClick={() => handleNavigation("#website-users")}
-                    isActive={activeHref === "#website-users"}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    isActive={normalizedPath === "/admin/website-users"}
                   >
                     Website Users
                   </NavItem>
                   <NavItem
-                    href="#contact-queries"
+                    href="/admin/contact-queries"
                     icon={MessagesSquare}
-                    onClick={() => handleNavigation("#contact-queries")}
-                    isActive={activeHref === "#contact-queries"}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    isActive={normalizedPath === "/admin/contact-queries"}
                   >
                     Contact Queries
                   </NavItem>
                   <NavItem
-                    href="#mou-requests"
+                    href="/admin/mou-requests"
                     icon={MessagesSquare}
-                    onClick={() => handleNavigation("#mou-requests")}
-                    isActive={activeHref === "#mou-requests"}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    isActive={normalizedPath === "/admin/mou-requests"}
                   >
                     MoU Requests
                   </NavItem>
                   <NavItem
-                    href="#collaboration-requests"
+                    href="/admin/collaboration-requests"
                     icon={Video}
-                    onClick={() => handleNavigation("#collaboration-requests")}
-                    isActive={activeHref === "#collaboration-requests"}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    isActive={normalizedPath === "/admin/collaboration-requests"}
                   >
                     Collaboration Requests
                   </NavItem>
                   <NavItem
-                    href="#faqs"
+                    href="/admin/faqs"
                     icon={Video}
-                    onClick={() => handleNavigation("#faqs")}
-                    isActive={activeHref === "#faqs"}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    isActive={normalizedPath === "/admin/faqs"}
                   >
                     FAQs
                   </NavItem>
                   <NavItem
-                    href="#quiz-question"
+                    href="/admin/quiz-questions"
                     icon={Video}
-                    onClick={() => handleNavigation("#quiz-question")}
-                    isActive={activeHref === "#quiz-question"}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    isActive={normalizedPath === "/admin/quiz-questions"}
                   >
-                    Quiz Question
+                    Quiz Questions
                   </NavItem>
                 </div>
               </div>
@@ -290,18 +302,19 @@ export default function Sidebar() {
           <div className="px-4 py-4 border-t border-[#1F1F23]">
             <div className="space-y-1">
               <NavItem
-                href="#settings"
-                icon={Settings}
-                onClick={() => handleNavigation("#settings")}
-                isActive={activeHref === "#settings"}
+                href="https://bserc-frontend.vercel.app/"
+                icon={ExternalLink}
+                onClick={() => setIsMobileMenuOpen(false)}
+                isActive={false}
+                isExternal={true}
               >
-                Settings
+                LMS Dashboard
               </NavItem>
               <NavItem
-                href="#help"
+                href="/help"
                 icon={HelpCircle}
-                onClick={() => handleNavigation("#help")}
-                isActive={activeHref === "#help"}
+                onClick={() => setIsMobileMenuOpen(false)}
+                isActive={normalizedPath === "/help"}
               >
                 Help
               </NavItem>
@@ -317,5 +330,5 @@ export default function Sidebar() {
         />
       )}
     </>
-  );
+  )
 }

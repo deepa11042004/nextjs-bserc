@@ -1,17 +1,6 @@
-"use client"
-import Content from "@/components/Dashboard/content"
-import Layout from "@/components/Dashboard/layout"
+// app/admin/page.tsx (Dashboard)
+import Content from "@/components/Dashboard/Main"
 
- 
-const page = () => {
-  return (
-    <Layout>
-      <Content />
-    </Layout>
-  )
+export default function DashboardPage() {
+  return <Content />
 }
-
-export default page
-
-
-
