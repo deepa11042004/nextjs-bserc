@@ -1,17 +1,36 @@
-// app/admin/dashboard/page.tsx
 'use client';
-
 import Link from 'next/link';
-import { 
-  
-  Users, 
-  Mail, 
-  Shield, 
-  Clock, 
-  ChevronRight, 
+import {
+   // Added for Programs
+  Users,
+  Mail,
+  Shield,
+  Clock,
+  ChevronRight,
   MessageCircle,
-  ExternalLink
+  Loader2,
 } from 'lucide-react';
+
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/button';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Separator } from '@/components/ui/separator';
 
 // Types
 interface StatCard {
@@ -23,7 +42,6 @@ interface StatCard {
   link: string;
   linkText: string;
   highlight?: string;
-  iconBgOpacity?: string;
 }
 
 interface Participant {
@@ -43,14 +61,14 @@ interface Query {
   status: 'new' | 'read';
 }
 
-// Mock data (replace with API calls)
+// Mock data
 const statsData: StatCard[] = [
   {
     title: 'Total Programs',
     value: 8,
     subtitle: '8 Active',
-    icon: <Mail className="w-6 h-6" />,
-    gradient: 'from-blue-700 to-blue-500',
+    icon: <Mail className="h-5 w-5" />, // Fixed icon
+    gradient: 'from-blue-600 to-blue-400',
     link: '/admin/programs',
     linkText: 'View Programs',
   },
@@ -58,8 +76,8 @@ const statsData: StatCard[] = [
     title: 'Total Participants',
     value: 498,
     subtitle: 'Website Users',
-    icon: <Users className="w-6 h-6" />,
-    gradient: 'from-green-800 to-green-500',
+    icon: <Users className="h-5 w-5" />,
+    gradient: 'from-green-700 to-green-500',
     link: '/admin/participants',
     linkText: 'View Participants',
   },
@@ -68,18 +86,17 @@ const statsData: StatCard[] = [
     value: 20,
     subtitle: '13 Unread',
     highlight: '13 Unread',
-    icon: <Mail className="w-6 h-6" />,
-    gradient: 'from-amber-700 to-amber-500',
+    icon: <Mail className="h-5 w-5" />,
+    gradient: 'from-amber-600 to-amber-400',
     link: '/admin/contact-queries',
     linkText: 'View Queries',
-    iconBgOpacity: 'bg-white/50',
   },
   {
     title: 'Admin Users',
     value: 2,
     subtitle: 'System Administrators',
-    icon: <Shield className="w-6 h-6" />,
-    gradient: 'from-gray-700 to-gray-400',
+    icon: <Shield className="h-5 w-5" />,
+    gradient: 'from-zinc-600 to-zinc-400',
     link: '/admin/users',
     linkText: 'Manage Admins',
   },
@@ -168,182 +185,220 @@ const recentQueries: Query[] = [
 
 // Stat Card Component
 const StatCard: React.FC<{ card: StatCard }> = ({ card }) => (
-  <div className="col-span-12 md:col-span-6 xl:col-span-3">
-    <div className={`h-full rounded-xl shadow-sm border-0 bg-gradient-to-br ${card.gradient} overflow-hidden`}>
-      <div className="p-5">
-        <div className="flex justify-between items-center">
-          <div>
-            <div className="text-xs text-white/80 uppercase font-bold tracking-wide">
-              {card.title}
-            </div>
-            <div className="text-3xl font-bold text-white mt-1">{card.value}</div>
-            <div className={`text-xs mt-1 ${card.highlight ? 'text-white font-bold' : 'text-white/80'}`}>
-              {card.subtitle}
-            </div>
-          </div>
-          <div className={`${card.iconBgOpacity || 'bg-white/25'} rounded-full p-3`}>
-            <span className="text-white">{card.icon}</span>
-          </div>
+  <Card className={`h-full overflow-hidden border-0 bg-gradient-to-br ${card.gradient} text-white shadow-lg`}>
+    <CardHeader className="pb-2">
+      <div className="flex justify-between items-start">
+        <div>
+          <CardDescription className="text-white/80 uppercase text-xs font-bold tracking-wider">
+            {card.title}
+          </CardDescription>
+          <CardTitle className="text-3xl font-bold mt-1 text-white">{card.value}</CardTitle>
+        </div>
+        <div className="bg-white/20 rounded-full p-2.5 backdrop-blur-sm">
+          {card.icon}
         </div>
       </div>
-      <div className="bg-white/10 px-5 py-3 flex items-center justify-between text-xs">
-        <Link 
-          href={card.link}
-          className="text-white hover:text-white/90 transition-colors flex items-center gap-1"
-        >
-          {card.linkText}
-          <ChevronRight className="w-3 h-3" />
-        </Link>
-      </div>
-    </div>
-  </div>
+    </CardHeader>
+    <CardContent className="pb-2">
+      <p className={`text-xs ${card.highlight ? 'text-white font-bold' : 'text-white/80'}`}>
+        {card.subtitle}
+      </p>
+    </CardContent>
+    <CardFooter className="pt-2 border-t border-white/10">
+      <Link 
+        href={card.link}
+        className="text-white/90 hover:text-white text-xs font-medium flex items-center gap-1 transition-colors group"
+      >
+        {card.linkText}
+        <ChevronRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
+      </Link>
+    </CardFooter>
+  </Card>
 );
 
 // Participants Table Component
-const ParticipantsTable: React.FC<{ participants: Participant[] }> = ({ participants }) => (
-  <div className="overflow-x-auto">
-    <table className="w-full">
-      <thead className="bg-gray-50 border-b border-gray-200">
-        <tr>
-          <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">
-            Name
-          </th>
-          <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">
-            Program
-          </th>
-          <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">
-            Date
-          </th>
-        </tr>
-      </thead>
-      <tbody className="divide-y divide-gray-100">
+const ParticipantsTable: React.FC<{ participants: Participant[]; isLoading?: boolean }> = ({ 
+  participants, 
+  isLoading = false 
+}) => {
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-40">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow className="border-zinc-800">
+          <TableHead className="w-[200px] text-zinc-400">Name</TableHead>
+          <TableHead className="text-zinc-400">Program</TableHead>
+          <TableHead className="text-right text-zinc-400">Date</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
         {participants.map((participant) => (
-          <tr key={participant.id} className="hover:bg-gray-50 transition-colors">
-            <td className="py-3 px-4">
+          <TableRow key={participant.id} className="border-zinc-800 hover:bg-zinc-900/50">
+            <TableCell>
               <div className="flex items-center gap-3">
-                <img 
-                  src={participant.avatar} 
-                  alt={participant.name}
-                  className="w-8 h-8 rounded-full"
-                />
-                <div>
-                  <div className="font-medium text-gray-900">{participant.name}</div>
-                  <div className="text-xs text-gray-500">{participant.email}</div>
+                <Avatar className="h-8 w-8 border border-zinc-700">
+                  <AvatarImage src={participant.avatar} alt={participant.name} />
+                  <AvatarFallback className="bg-zinc-800 text-zinc-400">{participant.name.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col">
+                  <span className="font-medium text-sm text-zinc-100">{participant.name}</span>
+                  <span className="text-xs text-zinc-500">{participant.email}</span>
                 </div>
               </div>
-            </td>
-            <td className="py-3 px-4">
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border border-gray-300 text-gray-700 bg-white">
+            </TableCell>
+            <TableCell>
+              <Badge variant="outline" className="border-zinc-700 text-zinc-300 font-normal bg-transparent">
                 {participant.program}
-              </span>
-            </td>
-            <td className="py-3 px-4 text-sm text-gray-500">{participant.date}</td>
-          </tr>
+              </Badge>
+            </TableCell>
+            <TableCell className="text-right text-sm text-zinc-500">
+              {participant.date}
+            </TableCell>
+          </TableRow>
         ))}
-      </tbody>
-    </table>
-  </div>
-);
+      </TableBody>
+    </Table>
+  );
+};
 
 // Queries Table Component
-const QueriesTable: React.FC<{ queries: Query[] }> = ({ queries }) => (
-  <div className="overflow-x-auto">
-    <table className="w-full">
-      <thead className="bg-gray-50 border-b border-gray-200">
-        <tr>
-          <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">
-            From
-          </th>
-          <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">
-            Subject
-          </th>
-          <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">
-            Status
-          </th>
-        </tr>
-      </thead>
-      <tbody className="divide-y divide-gray-100">
+const QueriesTable: React.FC<{ queries: Query[]; isLoading?: boolean }> = ({ 
+  queries, 
+  isLoading = false 
+}) => {
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-40">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow className="border-zinc-800">
+          <TableHead className="w-[180px] text-zinc-400">From</TableHead>
+          <TableHead className="text-zinc-400">Subject</TableHead>
+          <TableHead className="text-right text-zinc-400">Status</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
         {queries.map((query) => (
-          <tr key={query.id} className="hover:bg-gray-50 transition-colors">
-            <td className="py-3 px-4">
-              <div className="font-medium text-gray-900">{query.from}</div>
-              <div className="text-xs text-gray-500">{query.email}</div>
-            </td>
-            <td className="py-3 px-4 text-sm text-gray-700">{query.subject}</td>
-            <td className="py-3 px-4">
-              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                query.status === 'new' 
-                  ? 'bg-red-100 text-red-800' 
-                  : 'bg-blue-100 text-blue-800'
-              }`}>
+          <TableRow key={query.id} className="border-zinc-800 hover:bg-zinc-900/50">
+            <TableCell>
+              <div className="flex flex-col">
+                <span className="font-medium text-sm text-zinc-100">{query.from}</span>
+                <span className="text-xs text-zinc-500">{query.email}</span>
+              </div>
+            </TableCell>
+            <TableCell className="text-sm text-zinc-300">{query.subject}</TableCell>
+            <TableCell className="text-right">
+              <Badge 
+                variant={query.status === 'new' ? 'destructive' : 'secondary'}
+                className={
+                  query.status === 'read' 
+                    ? 'bg-blue-950 text-blue-200 border border-blue-900 hover:bg-blue-950' 
+                    : 'bg-red-950 text-red-200 border border-red-900 hover:bg-red-950'
+                }
+              >
                 {query.status === 'new' ? 'New' : 'Read'}
-              </span>
-            </td>
-          </tr>
+              </Badge>
+            </TableCell>
+          </TableRow>
         ))}
-      </tbody>
-    </table>
-  </div>
-);
+      </TableBody>
+    </Table>
+  );
+};
 
 // Main Dashboard Component
-export default function Main() {
+export default function AdminDashboard() {
+  const isLoading = false;
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    // Force dark background explicitly
+ 
+      <div className="min-h-screen  text-zinc-100 container mx-auto px-4 sm:px-6 lg:px-8 py-6 max-w-7xl">
+        
         {/* Header */}
-        <div className="flex justify-between items-center pt-3 pb-4 mb-6 border-b border-gray-200">
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pt-3 pb-5 mb-6 border-b border-zinc-800">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-white">Dashboard</h1>
+            <p className="text-sm text-zinc-400 mt-1">
+              Welcome back! Here&apos;s what&apos;s happening today.
+            </p>
+          </div>
+          {/* Theme Toggle Removed */}
         </div>
 
         {/* Stats Cards Grid */}
-        <div className="grid grid-cols-12 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           {statsData.map((card, index) => (
             <StatCard key={index} card={card} />
           ))}
         </div>
 
+        <Separator className="my-6 bg-zinc-800" />
+
         {/* Tables Row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          
           {/* Recent Participants */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 h-full flex flex-col">
-            <div className="px-5 py-4 border-b border-gray-200 flex justify-between items-center">
-              <h5 className="text-base font-semibold text-gray-900 flex items-center gap-2">
-                <Clock className="w-4 h-4 text-blue-600" />
-                Recent Participants
-              </h5>
-              <Link 
-                href="/admin/participants"
-                className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-lg border border-blue-600 text-blue-600 hover:bg-blue-50 transition-colors"
-              >
-                View All
-              </Link>
-            </div>
-            <div className="flex-1 p-0">
-              <ParticipantsTable participants={recentParticipants} />
-            </div>
-          </div>
+          <Card className="h-full flex flex-col bg-zinc-900 border-zinc-800">
+            <CardHeader className="pb-3">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-blue-400" />
+                  <CardTitle className="text-lg text-zinc-100">Recent Participants</CardTitle>
+                </div>
+                <Button variant="outline" size="sm" asChild className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white">
+                  <Link href="/admin/participants">View All</Link>
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="flex-1 pb-0 overflow-hidden">
+              <div className="overflow-x-auto -mx-6 px-6">
+                <ParticipantsTable 
+                  participants={recentParticipants} 
+                  isLoading={isLoading} 
+                />
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Recent Queries */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 h-full flex flex-col">
-            <div className="px-5 py-4 border-b border-gray-200 flex justify-between items-center">
-              <h5 className="text-base font-semibold text-gray-900 flex items-center gap-2">
-                <MessageCircle className="w-4 h-4 text-amber-500" />
-                Recent Queries
-              </h5>
-              <Link 
-                href="/admin/contact-queries"
-                className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-lg border border-blue-600 text-blue-600 hover:bg-blue-50 transition-colors"
-              >
-                View All
-              </Link>
-            </div>
-            <div className="flex-1 p-0">
-              <QueriesTable queries={recentQueries} />
-            </div>
-          </div>
+          <Card className="h-full flex flex-col bg-zinc-900 border-zinc-800">
+            <CardHeader className="pb-3">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <MessageCircle className="h-4 w-4 text-amber-400" />
+                  <CardTitle className="text-lg text-zinc-100">Recent Queries</CardTitle>
+                </div>
+                <Button variant="outline" size="sm" asChild className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white">
+                  <Link href="/admin/contact-queries">View All</Link>
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="flex-1 pb-0 overflow-hidden">
+              <div className="overflow-x-auto -mx-6 px-6">
+                <QueriesTable 
+                  queries={recentQueries} 
+                  isLoading={isLoading} 
+                />
+              </div>
+            </CardContent>
+          </Card>
+
         </div>
       </div>
-    </div>
+     
   );
 }

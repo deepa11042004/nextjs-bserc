@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect } from 'react'
-import Button from '@/components/ui/Button'
+
+import {Button} from "@/components/ui/button"
 import "./globals.css";
 export default function Error({
   error,
@@ -20,7 +21,7 @@ export default function Error({
         <div className="font-mono text-primary text-xs tracking-[0.3em] uppercase mb-4">Error</div>
         <h1 className="font-display text-4xl font-black text-white mb-4">Something went wrong</h1>
         <p className="text-white/50 text-sm mb-8">{error.message || 'An unexpected error occurred.'}</p>
-        <Button variant="primary" onClick={reset}>Try Again</Button>
+        <Button variant="default" onClick={reset}>Try Again</Button>
       </div>
     </div>
   )
