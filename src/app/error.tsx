@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import Button from '@/components/ui/Button'
-
+import "./globals.css";
 export default function Error({
   error,
   reset,

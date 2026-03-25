@@ -1,6 +1,7 @@
+"use client"
 import Link from 'next/link'
 import Button from '@/components/ui/Button'
-
+ 
 export default function NotFound() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-space-black px-4">

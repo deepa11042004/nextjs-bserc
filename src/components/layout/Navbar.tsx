@@ -2,155 +2,367 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
-import { Menu ,X } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { Menu, X, ChevronDown, ChevronRight } from "lucide-react";
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type DropdownItem =
+  | { type: "link"; label: string; href: string }
+  | { type: "nested"; label: string; children: { label: string; href: string }[] }
+  | { type: "divider" };
+
+// ─── Nav Data ─────────────────────────────────────────────────────────────────
+
+const NAV_ITEMS: { label: string; href?: string; dropdown?: DropdownItem[] }[] = [
+  { label: "Home", href: "/" },
+  { label: "About Us", href: "/about" },
+  {
+    label: "Institutions",
+    dropdown: [
+      { type: "link", label: "MoU", href: "/institutions/mou-form" },
+      { type: "link", label: "Collaboration", href: "/institutions/collaboration" },
+    ],
+  },
+  {
+    label: "Programme",
+    dropdown: [
+      { type: "link", label: "One Day Workshop", href: "/programs/category/one-day-workshop" },
+      { type: "link", label: "All Programs", href: "/programs" },
+    ],
+  },
+  {
+    label: "Administration",
+    dropdown: [
+      { type: "link", label: "Chairman", href: "/" },
+      { type: "link", label: "Secretary", href: "/" },
+      { type: "link", label: "Director General", href: "/" },
+      { type: "link", label: "Director", href: "/" },
+      { type: "link", label: "Staff", href: "/" },
+      { type: "link", label: "Coordinator", href: "/" },
+      { type: "link", label: "Committee", href: "/" },
+    ],
+  },
+  {
+    label: "Career",
+    dropdown: [
+      { type: "link", label: "Summer Internship", href: "/careers/summer-internship" },
+      { type: "link", label: "Winter Internship", href: "/careers/winter-internship" },
+      { type: "link", label: "Internship Results", href: "/careers/winter-internship-results" },
+      { type: "link", label: "Apprenticeship", href: "/careers/apprenticeship" },
+      { type: "link", label: "Job Vacancy", href: "/careers/job-vacancy" },
+    ],
+  },
+  {
+    label: "More",
+    dropdown: [
+      { type: "link", label: "Advisory Body", href: "/advisory-board" },
+      {
+        type: "nested",
+        label: "People",
+        children: [
+          { label: "Faculty/Guest faculty", href: "/people/faculty" },
+          { label: "Research Scholar", href: "/people/research-scholar" },
+          { label: "Staff", href: "/people/staff" },
+          { label: "Speaker", href: "/people/speaker" },
+          { label: "FDP Members", href: "/people/fdp-members" },
+        ],
+      },
+      {
+        type: "nested",
+        label: "Technology Partner",
+        children: [
+          { label: "ISRO", href: "/tech-partner#isro" },
+          { label: "ESA", href: "/tech-partner#esa" },
+          { label: "KAT", href: "/tech-partner#kat" },
+          { label: "JAXA", href: "/tech-partner#jaxa" },
+          { label: "NASA", href: "/tech-partner#nasa" },
+          { label: "UN-GGIM", href: "/tech-partner#un-ggim" },
+        ],
+      },
+      { type: "divider" },
+      { type: "link", label: "Membership", href: "/membership" },
+      { type: "link", label: "Knowledge Hub (Learn)", href: "/knowledge-hub" },
+      { type: "link", label: "Missions", href: "/missions" },
+      { type: "link", label: "Space Quiz", href: "/space-quiz" },
+      { type: "link", label: "Glossary", href: "/glossary" },
+      { type: "link", label: "FAQ", href: "/faq" },
+    ],
+  },
+  { label: "Contact Us", href: "/contact" },
+];
+
+// ─── Navbar ───────────────────────────────────────────────────────────────────
 
 export default function Navbar() {
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [openNested, setOpenNested] = useState<string | null>(null);
+
+  // Lock body scroll when drawer is open
+  useEffect(() => {
+    document.body.style.overflow = mobileOpen ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileOpen]);
+
+  const closeAll = () => {
+    setMobileOpen(false);
+    setOpenDropdown(null);
+    setOpenNested(null);
+  };
+
+  const toggleDropdown = (label: string) => {
+    setOpenDropdown((p) => (p === label ? null : label));
+    setOpenNested(null);
+  };
 
   return (
-    <header className="w-full bg-[#0a0c16] border-b border-white/5 sticky top-0 z-20 backdrop-blur-md">
+    <>
+      {/* ── Header bar ── */}
+      <header className="w-full bg-[#0a0c16] border-b border-white/5 sticky top-0 z-[60] backdrop-blur-md">
+        <nav className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 h-[70px]">
 
-      <nav className="max-w-7xl mx-auto flex items-center justify-between  gap-10 px-6 h-[75px]">
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-2 shrink-0" onClick={closeAll}>
+            <div className="relative w-9 h-9">
+              <Image src="/img/logo.png" alt="logo" fill className="object-contain" />
+            </div>
+            <span className="text-xl sm:text-2xl font-bold text-white tracking-wide">BSERC</span>
+          </Link>
 
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-3  ">
-          <Image src="/img/logo.png" alt="logo" width="40" height="40" className="h-full w-full"/>
-          <span className="text-2xl font-bold text-white">BSERC</span>
-        </Link>
+          {/* Desktop links — hidden below lg */}
+          <ul className="hidden lg:flex items-center gap-1 text-[13.5px] font-medium text-gray-300">
+            {NAV_ITEMS.map((item) =>
+              item.href ? (
+                <li key={item.label}>
+                  <Link
+                    href={item.href}
+                    className="px-2 py-2 hover:text-white transition-colors block whitespace-nowrap"
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              ) : (
+                <DesktopDropdown key={item.label} title={item.label} items={item.dropdown!} />
+              )
+            )}
+          </ul>
 
-        {/* Mobile Toggle */}
-        <button className="md:hidden text-gray-300" onClick={() => setIsMobileOpen(!isMobileOpen)}>
-          <span className="text-2xl">{isMobileOpen ? <X/> : <Menu/> }</span>
-        </button>
+          {/* Hamburger — visible below lg */}
+          <button
+            className="lg:hidden p-2 -mr-1 text-gray-300 hover:text-white transition-colors"
+            onClick={() => setMobileOpen((v) => !v)}
+            aria-label={mobileOpen ? "Close menu" : "Open menu"}
+          >
+            {mobileOpen ? <X size={22} /> : <Menu size={22} />}
+          </button>
+        </nav>
+      </header>
 
-        {/* Navigation Links */}
-        <ul className={`
-          fixed md:static inset-x-0 top-[64px] bg-[#0a0c16] md:bg-transparent
-          flex flex-col md:flex-row items-start md:items-center gap-1 md:gap-6 
-          p-6 md:p-0 text-[14px] font-medium text-gray-300 transition-all
-          ${isMobileOpen ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0 md:opacity-100 md:translate-y-0 pointer-events-none md:pointer-events-auto"}
-        `}>
-          <li><NavLink href="/">Home</NavLink></li>
-          <li><NavLink href="/about">About Us</NavLink></li>
+      {/* ── Mobile drawer (portaled outside header to avoid overflow:hidden clipping) ── */}
+      {mobileOpen && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="lg:hidden fixed inset-0 z-[58] bg-black/60"
+            onClick={closeAll}
+          />
 
-          
-          {/* Institutions Dropdown */}
-          <NavDropdown title="Institutions">
-            <SubLink href="/institutions/mou-form">MoU</SubLink>
-            <SubLink href="/institutions/collaboration">Collaboration</SubLink>
-          </NavDropdown>
-
-          {/* program */}
-          <NavDropdown title="Programme">
-            <SubLink  href="/programs/category/one-day-workshop">One Day Workshop</SubLink>
-            <SubLink  href="/programs">All Programs</SubLink>
-          </NavDropdown>
-
-          {/* administration */}
-          <NavDropdown title="Administration">
-            <SubLink  href="/">Chairman</SubLink>
-           <SubLink  href="/">Secretary</SubLink>
-           <SubLink  href="/">Director General</SubLink>
-           <SubLink  href="/">Director</SubLink>
-           <SubLink  href="/">Staff</SubLink>
-           <SubLink  href="/">Coordinator</SubLink>
-           <SubLink  href="/">Committee</SubLink>
-          </NavDropdown>
-
-          {/* Career Dropdown */}
-          <NavDropdown title="Career">
-            <SubLink href="/careers/summer-internship">Summer Internship</SubLink>
-            <SubLink href="/careers/winter-internship">Winter Internship</SubLink>
-            <SubLink href="/careers/winter-internship-results">Internship Results</SubLink>
-            <SubLink href="/careers/apprenticeship">Apprenticeship</SubLink>
-            <SubLink href="/careers/job-vacancy">Job Vacancy</SubLink>
-           
-          </NavDropdown>
-
-          {/* More Dropdown with Nested Submenus */}
-          <NavDropdown title="More">
-            <SubLink href="/advisory-board">Advisory Body</SubLink>
-            
-            {/* NESTED HOVER: People */}
-            <li className="relative group/nested">
-              <div className="flex items-center justify-between px-4 py-2 hover:bg-white/5 hover:text-white cursor-pointer transition-colors">
-                People <span className="text-[10px] ml-2">▶</span>
-              </div>
-              {/* Nested Menu Container */}
-              <ul className="invisible opacity-0 group-hover/nested:visible group-hover/nested:opacity-100 absolute left-full top-0 ml-[1px] min-w-[200px] bg-[#0b1220] border border-white/10 rounded-xl py-2 shadow-2xl transition-all duration-200">
-                <SubLink href="/people/faculty">Faculty/Guest faculty</SubLink>
-                <SubLink href="/people/research-scholar">Research Scholar</SubLink>
-                <SubLink href="/people/staff">Staff</SubLink>
-                <SubLink href="/people/staff">Speaker</SubLink>
-                <SubLink href="/people/staff">FDP Members</SubLink>
-              </ul>
-            </li>
-
-            {/* NESTED HOVER: Technology Partner */}
-            <li className="relative group/nested">
-              <div className="flex items-center justify-between px-4 py-2 hover:bg-white/5 hover:text-white cursor-pointer transition-colors">
-                Technology Partner <span className="text-[10px] ml-2">▶</span>
-              </div>
-              <ul className="invisible opacity-0 group-hover/nested:visible group-hover/nested:opacity-100 absolute left-full top-0 ml-[1px] min-w-[180px] bg-[#0b1220] border border-white/10 rounded-xl py-2 shadow-2xl transition-all duration-200">
-                <SubLink href="/tech-partner#isro">ISRO</SubLink>
-                <SubLink href="/tech-partner#nasa">ESA</SubLink>
-                <SubLink href="/tech-partner#esa">KAT</SubLink>
-                <SubLink href="/tech-partner#esa">JAXA</SubLink>
-                <SubLink href="/tech-partner#esa">NASA</SubLink>
-                 <SubLink href="/tech-partner#esa">UN-GGIM</SubLink>
-              </ul>
-            </li>
-
-            <hr className="border-white/5 my-1" />
-            <SubLink href="/membership">Membership</SubLink>
-            <SubLink href="/faq">Knowledge Hub (Learn)</SubLink>
-            <SubLink href="/faq">Missions</SubLink>
-            <SubLink href="/faq">Space Quiz</SubLink>
-            <SubLink href="/faq">Glossary</SubLink>
-            <SubLink href="/faq">FAQ</SubLink>
-          </NavDropdown>
-
-          <li><NavLink href="/contact">Contact Us</NavLink></li>
-        </ul>
-      </nav>
-    </header>
+          {/* Drawer panel — sits below the 70px header */}
+          <div className="lg:hidden fixed top-[70px] left-0 right-0 bottom-0 z-[59] bg-[#0a0c16] overflow-y-auto">
+            <ul className="flex flex-col text-[14px] font-medium text-gray-300 pb-10">
+              {NAV_ITEMS.map((item) =>
+                item.href ? (
+                  <li key={item.label} className="border-b border-white/5">
+                    <Link
+                      href={item.href}
+                      className="block px-5 py-4 hover:text-white hover:bg-white/5 transition-colors"
+                      onClick={closeAll}
+                    >
+                      {item.label}
+                    </Link>
+                  </li>
+                ) : (
+                  <MobileDropdown
+                    key={item.label}
+                    title={item.label}
+                    items={item.dropdown!}
+                    isOpen={openDropdown === item.label}
+                    onToggle={() => toggleDropdown(item.label)}
+                    openNested={openNested}
+                    onNestedToggle={(label) =>
+                      setOpenNested((p) => (p === label ? null : label))
+                    }
+                    onClose={closeAll}
+                  />
+                )
+              )}
+            </ul>
+          </div>
+        </>
+      )}
+    </>
   );
 }
 
-// --- Helper Components ---
+// ─── Desktop Dropdown ─────────────────────────────────────────────────────────
 
-function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
+function DesktopDropdown({ title, items }: { title: string; items: DropdownItem[] }) {
   return (
-    <Link href={href} className="px-2 py-4 hover:text-white transition-colors block">
-      {children}
-    </Link>
-  );
-}
-
-function NavDropdown({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <li className="relative group py-4">
-      <button className="flex items-center gap-1 hover:text-white transition-colors outline-none">
-        {title} <span className="text-[10px] opacity-50 group-hover:rotate-180 transition-transform">▼</span>
+    <li className="relative group py-[22px]">
+      <button className="flex items-center gap-1 px-2 hover:text-white transition-colors outline-none whitespace-nowrap">
+        {title}
+        <ChevronDown
+          size={13}
+          className="opacity-50 group-hover:opacity-100 group-hover:rotate-180 transition-all duration-200"
+        />
       </button>
-      
-      {/* Dropdown Menu Container */}
-      <ul className="invisible opacity-0 group-hover:visible group-hover:opacity-100 absolute left-0 top-[100%] z-10
-      mt-0 min-w-[220px] bg-[#0b1220] border border-white/10 rounded-xl py-2 shadow-2xl transition-all duration-200 translate-y-2 group-hover:translate-y-0">
-        {children}
+
+      <ul
+        className="invisible opacity-0 group-hover:visible group-hover:opacity-100
+          absolute left-0 top-full z-50 mt-0 min-w-[210px]
+          bg-[#0b1220] border border-white/10 rounded-xl py-2 shadow-2xl
+          transition-all duration-200 translate-y-2 group-hover:translate-y-0"
+      >
+        {items.map((item, i) => {
+          if (item.type === "divider") return <hr key={i} className="border-white/5 my-1" />;
+
+          if (item.type === "link")
+            return (
+              <li key={item.label}>
+                <Link
+                  href={item.href}
+                  className="block px-4 py-2 hover:bg-white/5 hover:text-white transition-colors whitespace-nowrap"
+                >
+                  {item.label}
+                </Link>
+              </li>
+            );
+
+          // nested fly-out — opens LEFT
+          return (
+            <li key={item.label} className="relative group/nested">
+              <div className="flex items-center justify-between px-4 py-2 hover:bg-white/5 hover:text-white cursor-pointer transition-colors">
+                <span className="whitespace-nowrap">{item.label}</span>
+                <ChevronRight size={13} className="ml-2 opacity-60 rotate-180" />
+              </div>
+              <ul
+                className="invisible opacity-0 group-hover/nested:visible group-hover/nested:opacity-100
+                  absolute right-full top-0 mr-[1px] min-w-[200px]
+                  bg-[#0b1220] border border-white/10 rounded-xl py-2 shadow-2xl
+                  transition-all duration-200"
+              >
+                {item.children.map((child) => (
+                  <li key={child.label}>
+                    <Link
+                      href={child.href}
+                      className="block px-4 py-2 hover:bg-white/5 hover:text-white transition-colors whitespace-nowrap"
+                    >
+                      {child.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </li>
+          );
+        })}
       </ul>
     </li>
   );
 }
 
-function SubLink({ href, children }: { href: string; children: React.ReactNode }) {
+// ─── Mobile Dropdown (accordion) ─────────────────────────────────────────────
+
+function MobileDropdown({
+  title,
+  items,
+  isOpen,
+  onToggle,
+  openNested,
+  onNestedToggle,
+  onClose,
+}: {
+  title: string;
+  items: DropdownItem[];
+  isOpen: boolean;
+  onToggle: () => void;
+  openNested: string | null;
+  onNestedToggle: (label: string) => void;
+  onClose: () => void;
+}) {
   return (
-    <li>
-      <Link href={href} className="block px-4 py-2 hover:bg-white/5 hover:text-white transition-colors">
-        {children}
-      </Link>
+    <li className="border-b border-white/5">
+      <button
+        className="w-full flex items-center justify-between px-5 py-4 hover:text-white transition-colors"
+        onClick={onToggle}
+      >
+        <span>{title}</span>
+        <ChevronDown
+          size={15}
+          className={`opacity-50 transition-transform duration-200 ${
+            isOpen ? "rotate-180 opacity-100" : ""
+          }`}
+        />
+      </button>
+
+      {/* Mount/unmount instead of CSS height animation — avoids max-h guessing */}
+      {isOpen && (
+        <ul className="bg-[#080a14] py-1">
+          {items.map((item, i) => {
+            if (item.type === "divider")
+              return <hr key={i} className="border-white/5 my-1 mx-4" />;
+
+            if (item.type === "link")
+              return (
+                <li key={item.label}>
+                  <Link
+                    href={item.href}
+                    className="block px-8 py-3 text-[13px] hover:text-white hover:bg-white/5 transition-colors"
+                    onClick={onClose}
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              );
+
+            // nested accordion
+            return (
+              <li key={item.label}>
+                <button
+                  className="w-full flex items-center justify-between px-8 py-3 text-[13px] hover:text-white transition-colors"
+                  onClick={() => onNestedToggle(item.label)}
+                >
+                  <span>{item.label}</span>
+                  <ChevronDown
+                    size={13}
+                    className={`opacity-50 transition-transform duration-200 ${
+                      openNested === item.label ? "rotate-180 opacity-100" : ""
+                    }`}
+                  />
+                </button>
+
+                {openNested === item.label && (
+                  <ul className="bg-[#060810]">
+                    {item.children.map((child) => (
+                      <li key={child.label}>
+                        <Link
+                          href={child.href}
+                          className="block px-12 py-2.5 text-[12.5px] text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+                          onClick={onClose}
+                        >
+                          {child.label}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </li>
   );
 }
