@@ -18,7 +18,7 @@ interface SlideData {
 const slides: SlideData[] = [
   {
     id: 1,
-    backgroundVideo: "https://bserc.org/assets/video/space-video.mp4",
+    backgroundVideo: "/video/space-video.mp4",
     showContent: false,
   },
   {
@@ -26,7 +26,7 @@ const slides: SlideData[] = [
     title: "Innovating Future",
     description: "Explore the next generation of scientists and engineers.",
     buttonText: "Our Programs",
-    backgroundImage: "https://bserc.org/assets/img/hero/banner_rocket.svg",
+    backgroundImage: "/img/banner_rocket.jpg",
     showContent: true,
   },
 ];

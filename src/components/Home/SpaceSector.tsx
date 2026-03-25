@@ -42,7 +42,7 @@ export default function SpaceSector() {
           
 
           <video autoPlay muted loop playsInline className="absolute inset-0 h-full w-full object-cover" style={{ zIndex: 0 }}>
-            <source src="https://bserc.org/assets/video/pm.mp4" type="video/mp4" />
+            <source src="/video/pm.mp4" type="video/mp4" />
           </video>
         </div>
       </div>
