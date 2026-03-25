@@ -20,7 +20,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/button';
+import { Button } from "@/components/ui/button"
 import {
   Table,
   TableBody,

@@ -2,7 +2,9 @@
 
 import { useEffect } from 'react'
 
-import {Button} from "@/components/ui/button"
+ 
+import { Button } from "@/components/ui/button"  // ✅ lowercase matches file name
+
 import "./globals.css";
 export default function Error({
   error,
