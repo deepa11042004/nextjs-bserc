@@ -21,7 +21,7 @@ const PMVision: React.FC = () => {
         </h2>
 
         {/* Description */}
-        <p className="text-gray-400 text-lg md:text-xl max-w-4xl leading-relaxed">
+        <p className="text-gray-400 text-base md:text-xl max-w-4xl leading-relaxed">
           Leading India's space transformation through visionary leadership and strategic initiatives for
           enhanced space education and research excellence.
         </p>
