@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
@@ -158,6 +159,8 @@ export default function AdminLoginPage() {
     {},
   );
 
+  const router = useRouter();
+
   const validate = () => {
     const e: typeof errors = {};
     if (!email) e.email = "Email is required.";
@@ -170,48 +173,56 @@ export default function AdminLoginPage() {
     return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    // Validate inputs first
-    if (!validate()) return;
+  if (isSubmitting) return;
+  if (!validate()) return;
 
-    setIsSubmitting(true);
-    setSubmitStatus("idle");
-    setStatusMsg("");
+  setIsSubmitting(true);
+  setSubmitStatus("idle");
+  setStatusMsg("");
+
+  try {
+    const res = await fetch("/api/admin-login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email, password }),
+      credentials: "include",
+    });
+
+    let data = null;
 
     try {
-      const res = await fetch("/api/admin-login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await res.json();
-
-      if (res.ok && data.success) {
-        setSubmitStatus("success");
-        setStatusMsg("Welcome back! Redirecting to dashboard…");
-
-        // Optional: redirect after short delay
-        setTimeout(() => {
-          window.location.href = "/admin";
-          // OR use router.push("/admin/dashboard")
-        }, 1000);
-      } else {
-        setSubmitStatus("error");
-        setStatusMsg(data.message || "Invalid credentials. Please try again.");
-      }
-    } catch (error) {
-      console.error("Login error:", error);
-      setSubmitStatus("error");
-      setStatusMsg("Something went wrong. Please try again later.");
-    } finally {
-      setIsSubmitting(false);
+      data = await res.json();
+    } catch {
+      throw new Error("Invalid server response");
     }
-  };
+
+    if (!res.ok || !data?.success) {
+      throw new Error(data?.message || "Invalid credentials");
+    }
+
+    setSubmitStatus("success");
+    setStatusMsg("Welcome back! Redirecting...");
+
+    setTimeout(() => {
+      router.push("/admin");
+      router.refresh();
+    }, 1000);
+
+  } catch (error: any) {
+    console.error("Login error:", error);
+
+    setSubmitStatus("error");
+    setStatusMsg(error.message || "Something went wrong");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
 
   // Derived button state
   const buttonLabel = isSubmitting

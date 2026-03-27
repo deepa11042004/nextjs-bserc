@@ -93,97 +93,96 @@ const figures: Figure[] = [
 ];
 const KeyFigures = () => {
   return (
-    <section className="w-full px-4 py-16 bg-black">
+    <section className="w-full   bg-black px-4 py-16">
+      <div className=" max-w-7xl mx-auto py-16 bg-gradient-to-br from-[#1E90FF]/5 to-[#FF6B35]/5 rounded-3xl ">
+        {/* Heading */}
+        <div className="text-center mb-12">
+          <h2 className="text-3xl sm:text-4xl font-bold text-white font-serif">
+            Key Defence & Space Figures
+          </h2>
+          <p className="text-gray-400 mt-3 text-sm sm:text-base max-w-2xl mx-auto">
+            Visionary leaders who shaped India's space and defence sectors
+          </p>
+        </div>
 
-      <div className="bg-gradient-to-br from-[#1E90FF]/5 to-[#FF6B35]/5">
-            
-      {/* Heading */}
-      <div className="text-center mb-12">
-        <h2 className="text-3xl sm:text-4xl font-bold text-white font-serif">
-          Key Defence & Space Figures
-        </h2>
-        <p className="text-gray-400 mt-3 text-sm sm:text-base max-w-2xl mx-auto">
-          Visionary leaders who shaped India's space and defence sectors
-        </p>
-      </div>
+        {/* Grid */}
+        <div className="max-w-6xl mx-auto grid gap-6 sm:gap-8 md:grid-cols-2 lg:grid-cols-3 ">
+          {figures.map((fig, i) => {
+            const Icon = fig.icon;
+            const isBlue = fig.accent === "blue";
 
-      {/* Grid */}
-      <div className="max-w-6xl mx-auto grid gap-6 sm:gap-8 md:grid-cols-2 lg:grid-cols-3">
-        {figures.map((fig, i) => {
-          const Icon = fig.icon;
-          const isBlue = fig.accent === "blue";
-
-          return (
-            <div
-              key={i}
-              className="relative rounded-2xl p-6 sm:p-8 border border-white/10 
+            return (
+              <div
+                key={i}
+                className="relative rounded-2xl p-6 sm:p-8 border border-white/10  space-y-5
               bg-gradient-to-br from-[#1E90FF]/10 to-[#FF6B35]/10 
               overflow-hidden hover:scale-[1.02] transition"
-            >
-              {/* Glow */}
-              <div
-                className={`absolute -top-6 -right-6 w-28 h-28 rounded-full blur-2xl
+              >
+                {/* Glow */}
+                <div
+                  className={`absolute -top-6 -right-6 w-28 h-28 rounded-full blur-2xl
                 ${isBlue ? "bg-blue-500/20" : "bg-orange-500/20"}`}
-              />
+                />
 
-              <div className="space-y-4">
-  {/* ICON + NAME */}
-  <div className="flex items-center gap-3">
-    <div
-      className={`p-2 rounded-lg ${
-        isBlue ? "bg-blue-500/20" : "bg-orange-500/20"
-      }`}
-    >
-      <Icon
-        className={`w-6 h-6 ${
-          isBlue ? "text-blue-400" : "text-orange-400"
-        }`}
-      />
-    </div>
+                <div className="space-y-5">
+                  {/* ICON + NAME */}
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`p-2 rounded-lg ${
+                        isBlue ? "bg-blue-500/20" : "bg-orange-500/20"
+                      }`}
+                    >
+                      <Icon
+                        className={`w-6 h-6 ${
+                          isBlue ? "text-blue-400" : "text-orange-400"
+                        }`}
+                      />
+                    </div>
 
-    <h3 className="text-lg font-bold text-white">{fig.name}</h3>
-  </div>
+                    <h3 className="text-lg font-bold text-white">{fig.name}</h3>
+                  </div>
 
-  {/* Role */}
-  <p className="text-sm text-orange-400 font-medium">{fig.role}</p>
+                  {/* Role */}
+                  <p className="text-sm text-orange-400 font-medium">
+                    {fig.role}
+                  </p>
 
-  {/* Dynamic Details (Timeline, Presidency, etc.) */}
-  <div
-    className={`p-3 rounded-lg border-l-4 ${
-      isBlue
-        ? "bg-blue-500/10 border-blue-400"
-        : "bg-orange-500/10 border-orange-400"
-    }`}
-  >
-    {fig.details.map((item, idx) => (
-      <p key={idx} className="text-sm text-gray-300">
-        <strong>{item.label}:</strong> {item.value}
-      </p>
-    ))}
-  </div>
+                  {/* Dynamic Details (Timeline, Presidency, etc.) */}
+                  <div
+                    className={`p-3 rounded-lg border-l-4 ${
+                      isBlue
+                        ? "bg-blue-500/10 border-blue-400"
+                        : "bg-orange-500/10 border-orange-400"
+                    }`}
+                  >
+                    {fig.details.map((item, idx) => (
+                      <p key={idx} className="text-sm text-gray-300 mb-2">
+                        <strong>{item.label}:</strong> {item.value}
+                      </p>
+                    ))}
+                  </div>
 
-  {/* Achievements */}
-  <div className="bg-white/5 rounded-lg p-4">
-    <p className="text-sm font-semibold text-white mb-2">
-      {fig.achievementsTitle}:
-    </p>
-    <ul className="text-sm text-gray-400 space-y-1">
-      {fig.achievements.map((a, idx) => (
-        <li key={idx}>✓ {a}</li>
-      ))}
-    </ul>
-  </div>
+                  {/* Achievements */}
+                  <div className="bg-white/5 rounded-lg p-4 space-y-5">
+                    <p className="text-sm font-semibold text-white mb-2">
+                      {fig.achievementsTitle}:
+                    </p>
+                    <ul className="text-sm text-gray-400 space-y-1 ">
+                      {fig.achievements.map((a, idx) => (
+                        <li className="mb-2" key={idx}>✓ {a}</li>
+                      ))}
+                    </ul>
+                  </div>
 
-  {/* Description */}
-  <p className="text-sm text-gray-400 leading-relaxed">
-    {fig.description}
-  </p>
-</div>
-            </div>
-          );
-        })}
-      </div>
-      
+                  {/* Description */}
+                  <p className="text-sm text-gray-400 leading-relaxed ">
+                    {fig.description}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </section>
   );

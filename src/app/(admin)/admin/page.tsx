@@ -2,5 +2,7 @@
 import Content from "@/components/Dashboard/Main"
 
 export default function DashboardPage() {
+  
+
   return <Content />
 }
