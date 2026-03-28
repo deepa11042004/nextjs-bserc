@@ -48,13 +48,13 @@ export default function Profile01({
 
   const handleLogout = async () => {
     try {
-      await fetch("/api/admin-logout", {
+      await fetch("/auth/admin-logout", {
         method: "POST",
         credentials: "include",
       });
 
       // Redirect to login page
-      router.push("/");
+      router.push("/auth/admin-login");
     } catch (error) {
       console.error("Logout failed:", error);
     }

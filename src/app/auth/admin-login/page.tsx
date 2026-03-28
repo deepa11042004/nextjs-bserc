@@ -184,7 +184,7 @@ const handleSubmit = async (e: React.FormEvent) => {
   setStatusMsg("");
 
   try {
-    const res = await fetch("/api/admin-login", {
+    const res = await fetch("/auth/admin-login", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
