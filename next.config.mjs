@@ -10,11 +10,7 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'via.placeholder.com',
       },
-      // If you also need to support http (not recommended for production):
-      // {
-      //   protocol: 'http',
-      //   hostname: 'bserc.org',
-      // },
+      
     ],
   },
 }

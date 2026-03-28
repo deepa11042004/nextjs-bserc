@@ -173,57 +173,75 @@ export default function AdminLoginPage() {
     return Object.keys(e).length === 0;
   };
 
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-  if (isSubmitting) return;
-  if (!validate()) return;
+    if (isSubmitting || !validate()) return;
 
-  setIsSubmitting(true);
-  setSubmitStatus("idle");
-  setStatusMsg("");
-
-  try {
-    const res = await fetch("/auth/admin-login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ email, password }),
-      credentials: "include",
-    });
-
-    let data = null;
+    setIsSubmitting(true);
+    setSubmitStatus("idle");
+    setStatusMsg("");
 
     try {
-      data = await res.json();
-    } catch {
-      throw new Error("Invalid server response");
-    }
+      const AUTH_API = process.env.NEXT_PUBLIC_AUTH_API_URL;
+      if (!AUTH_API) throw new Error("API URL not configured");
 
-    if (!res.ok || !data?.success) {
-      throw new Error(data?.message || "Invalid credentials");
-    }
+      const base = AUTH_API.replace(/\/$/, "");
 
-    setSubmitStatus("success");
-    setStatusMsg("Welcome back! Redirecting...");
+      const res = await fetch(`${base}/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
 
-    setTimeout(() => {
+      const text = await res.text();
+
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        console.error("Raw response:", text);
+        throw new Error("Server returned invalid response");
+      }
+
+      if (!res.ok) {
+        throw new Error(data?.message || "Login failed");
+      }
+
+      // ✅ Ensure user exists
+      if (!data?.user) {
+        throw new Error("User data missing");
+      }
+
+      // 🔥 Role-based access check
+      if (data.user.role !== "super_admin") {
+        throw new Error("Access denied: Admins only");
+      }
+
+      // ✅ Store token
+      if (data?.token) {
+        localStorage.setItem("token", data.token);
+      }
+
+      // ✅ Store user info (important for later checks)
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+      setSubmitStatus("success");
+      setStatusMsg("Welcome back! Redirecting...");
+
+      await new Promise((r) => setTimeout(r, 1000));
       router.push("/admin");
-      router.refresh();
-    }, 1000);
+    } catch (error: any) {
+      console.error("Login error:", error);
 
-  } catch (error: any) {
-    console.error("Login error:", error);
-
-    setSubmitStatus("error");
-    setStatusMsg(error.message || "Something went wrong");
-  } finally {
-    setIsSubmitting(false);
-  }
-};
-
-
+      setSubmitStatus("error");
+      setStatusMsg(error.message || "Something went wrong");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
   // Derived button state
   const buttonLabel = isSubmitting
     ? "Authenticating…"

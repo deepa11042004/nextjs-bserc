@@ -194,7 +194,12 @@ export default function RegisterPage() {
     setStatusMsg("");
 
     try {
-      const res = await fetch(`#`, {
+      const AUTH_API = process.env.NEXT_PUBLIC_AUTH_API_URL;
+      if (!AUTH_API) throw new Error("API URL not configured");
+
+      const base = AUTH_API.replace(/\/$/, "");
+
+      const res = await fetch(`${base}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -210,7 +215,7 @@ export default function RegisterPage() {
 
       setSubmitStatus("success");
       setStatusMsg("Account created! Redirecting to login…");
-      setTimeout(() => router.push("/auth/login"), 1500);
+      setTimeout(() => router.push("/"), 1500);
     } catch (err: unknown) {
       setSubmitStatus("error");
       setStatusMsg(err instanceof Error ? err.message : "Something went wrong");

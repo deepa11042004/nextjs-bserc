@@ -1,19 +1,20 @@
 "use client";
 
-import { FC  } from "react";
+import { FC } from "react";
 import { Plane } from "lucide-react";
- 
 
 type Workshop = {
   title: string;
   duration: string;
   description: string;
   image: string;
+  id?: number;
   icon: React.ReactNode;
 };
 
 const workshops: Workshop[] = [
   {
+    id: 1,
     title: "ADVANCED DRONE (AIR TAXI) WORKSHOP",
     duration: "1 Day - 3 Hrs",
     description:
@@ -22,66 +23,63 @@ const workshops: Workshop[] = [
     icon: <Plane size={24} />,
   },
   {
+    id: 2,
     title: "Aircraft Design Technology",
     duration: "1 Day - 3 Hrs",
     description:
       "Explore principles of aerodynamics and aircraft design methodologies.",
-    image:
-      "/img/aircraft_design.png",
+    image: "/img/aircraft_design.png",
     icon: <Plane size={24} />,
   },
   {
+    id: 3,
     title: "2-DAY ROCKETRY WORKSHOP",
     duration: "2 Days - 90-120 mins( Each Day)",
     description:
       "Master rocket science, propulsion systems, and space vehicle design.",
-    image:"/img/twoday_rocketry.png",
+    image: "/img/twoday_rocketry.png",
     icon: <Plane size={24} />,
   },
   {
+    id:4,
     title: "2-DAY DEFENCE DRONE TECHNOLOGY & INTEGRATION WORKSHOP",
-     duration: "2 Days - 90-120 mins( Each Day)",
+    duration: "2 Days - 90-120 mins( Each Day)",
     description:
       "Next-gen autonomous aerial vehicles and urban air mobility solutions.",
-    image:
-      "/img/two_advance.png",
+    image: "/img/two_advance.png",
     icon: <Plane size={24} />,
   },
   {
+    id:5,
     title: "3-DAY ADVANCED ROBOTICS WORKSHOP",
-     duration: "3 Days - 90-120 mins( Each Day)",
+    duration: "3 Days - 90-120 mins( Each Day)",
     description:
       "Next-gen autonomous aerial vehicles and urban air mobility solutions.",
-    image:"/img/three_day_advanced.png",
+    image: "/img/three_day_advanced.png",
     icon: <Plane size={24} />,
   },
-    
-   {
+
+  {
+    id:6,
     title: "3- DAY AIRCRAFT DESIGN TECHNOLOGY",
-     duration: "3 Days - 180 min ( 3 Hrs )",
+    duration: "3 Days - 180 min ( 3 Hrs )",
     description:
       "Next-gen autonomous aerial vehicles and urban air mobility solutions.",
-    image:
-      "/img/three_day_aircraft.png",
+    image: "/img/three_day_aircraft.png",
     icon: <Plane size={24} />,
   },
   {
+    id:7,
     title: "3-Day Advanced Drone Technology ( Air Taxi )",
-     duration: "3 Days - 150 min ( 2hrs: 30 Min)",
+    duration: "3 Days - 150 min ( 2hrs: 30 Min)",
     description:
       "Next-gen autonomous aerial vehicles and urban air mobility solutions.",
-    image:
-      "/img/three_day_taxi.png",
+    image: "/img/three_day_taxi.png",
     icon: <Plane size={24} />,
   },
 ];
 
 const FeaturedWorkshops: FC = () => {
-  const handleRegister = () => {
-    // Replace with router.push('/workshops') in Next.js
-    console.log("Navigate to workshops page");
-  };
-
    
 
   return (
@@ -114,8 +112,6 @@ const FeaturedWorkshops: FC = () => {
               {/* Image */}
               <div className="h-[120px] rounded-lg overflow-hidden mb-4 bg-gray-100">
                 <img
-                 
-                
                   src={workshop.image}
                   alt={workshop.title}
                   className="w-full h-full object-fill"
@@ -138,12 +134,12 @@ const FeaturedWorkshops: FC = () => {
               </p>
 
               {/* Button */}
-              <button
-                onClick={handleRegister}
-                className="mt-4 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition"
+              <a
+                href={`/all-programs/page-${workshop.id}`}
+                className="mt-4 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition inline-block text-center"
               >
                 Register Now
-              </button>
+              </a>
             </div>
           ))}
         </div>

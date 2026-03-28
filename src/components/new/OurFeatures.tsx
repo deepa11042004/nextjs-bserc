@@ -71,7 +71,7 @@ const OurFeatures: React.FC = () => {
       <div className="max-w-6xl mx-auto">
 
         {/* Heading */}
-        <h2 className="text-4xl md:text-4xl text-center font-bold font-serif text-white mb-6 leading-tight lg:text-4xl pb-10">
+        <h2 className="text-4xl md:text-4xl text-center font-bold font-serif text-white mb-6 leading-tight  pb-10">
           Our Features
         </h2>
 

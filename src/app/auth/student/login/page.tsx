@@ -184,32 +184,49 @@ export default function AdminLoginPage() {
     setStatusMsg("");
 
     try {
-      const res = await fetch("#", {
+       const AUTH_API = process.env.NEXT_PUBLIC_AUTH_API_URL;
+      if (!AUTH_API) throw new Error("API URL not configured");
+
+      const base = AUTH_API.replace(/\/$/, "");
+
+      const res = await fetch(`${base}/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ email, password }),
-        credentials: "include",
       });
 
-      let data = null;
+      const text = await res.text();
 
+      let data;
       try {
-        data = await res.json();
+        data = JSON.parse(text);
       } catch {
-        throw new Error("Invalid server response");
+        console.error("Raw response:", text);
+        throw new Error("Server returned invalid response");
       }
 
-      if (!res.ok || !data?.success) {
-        throw new Error(data?.message || "Invalid credentials");
+      if (!res.ok) {
+        if (res.status === 401) throw new Error("Invalid credentials");
+        if (res.status === 404) throw new Error("User not found");
+        throw new Error(data?.message || "Login failed");
       }
+
+      const token = data.token;
+
+      if (!token) {
+        throw new Error("Token not received");
+      }
+
+      // Store token
+      localStorage.setItem("token", token);
 
       setSubmitStatus("success");
       setStatusMsg("Welcome back! Redirecting...");
 
       setTimeout(() => {
-        router.push("/student");
+        router.push("/about");
         router.refresh();
       }, 1000);
     } catch (error: any) {
