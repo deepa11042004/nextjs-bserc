@@ -2,6 +2,8 @@ import { LogOut, MoveUpRight, Settings, FileText } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
+
 
 interface MenuItem {
   label: string;
@@ -45,20 +47,25 @@ export default function Profile01({
   ];
 
   const router = useRouter();
+  const { logout } = useAuth();
+
 
   const handleLogout = async () => {
     try {
+        logout(); // 🔥 global logout
       await fetch("/auth/admin-logout", {
         method: "POST",
         credentials: "include",
       });
 
       // Redirect to login page
-      router.push("/auth/admin-login");
+      router.push("/");
     } catch (error) {
       console.error("Logout failed:", error);
     }
   };
+
+
 
   return (
     <div className="w-full max-w-sm mx-auto">

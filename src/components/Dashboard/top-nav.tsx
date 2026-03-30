@@ -3,10 +3,10 @@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import Image from "next/image"
 import { Bell, ChevronRight } from "lucide-react"
-import Profile01 from "./profile-01"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-
+import AdminProfile from "@/components/Dashboard/AdminProfile"
+ 
 interface BreadcrumbItem {
   label: string
   href?: string
@@ -115,7 +115,7 @@ export default function TopNav() {
             sideOffset={8}
             className="w-[280px] sm:w-80 bg-[#0F0F12] border border-[#1F1F23] rounded-lg shadow-lg"
           >
-            <Profile01 avatar="/img/pfp.jpg" />
+            <AdminProfile avatar="/img/pfp.jpg" />
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

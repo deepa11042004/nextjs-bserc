@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-
+import { useAuth } from "@/context/AuthContext";
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
 function FormFieldInput({
@@ -159,6 +159,8 @@ export default function AdminLoginPage() {
     {},
   );
 
+  const { login } = useAuth(); // ✅ top level (outside handleSubmit)
+
   const router = useRouter();
 
   const validate = () => {
@@ -210,29 +212,45 @@ export default function AdminLoginPage() {
         throw new Error(data?.message || "Login failed");
       }
 
-      // ✅ Ensure user exists
-      if (!data?.user) {
-        throw new Error("User data missing");
+      // ✅ Extract data
+      const token = data?.token;
+      const user = data?.user;
+
+      if (!token || !user) {
+        throw new Error("Invalid response from server");
       }
 
-      // 🔥 Role-based access check
-      if (data.user.role !== "super_admin") {
-        throw new Error("Access denied: Admins only");
+      // ✅ BULLETPROOF ROLE HANDLING
+      const rawRole = user.role || "";
+
+      const normalizedRole = rawRole.toLowerCase().replace(/[\s_-]/g, ""); // removes space, _ and -
+
+      const isAdmin =
+        normalizedRole === "admin" || normalizedRole === "superadmin" || normalizedRole === "instructor";
+
+      if (!isAdmin) {
+        console.error("ROLE ERROR:", rawRole);
+        throw new Error(`Access denied: role = ${rawRole}`);
       }
 
-      // ✅ Store token
-      if (data?.token) {
-        localStorage.setItem("token", data.token);
-      }
+      // ✅ Format user for context
+      const formattedUser = {
+        name: user.full_name || "Admin",
+        email: user.email,
+      };
 
-      // ✅ Store user info (important for later checks)
-      localStorage.setItem("user", JSON.stringify(data.user));
+      // ✅ LOGIN (correct)
+      login(token, "admin", formattedUser);
 
       setSubmitStatus("success");
       setStatusMsg("Welcome back! Redirecting...");
 
       await new Promise((r) => setTimeout(r, 1000));
-      router.push("/admin");
+      document.cookie = `authToken=${token}; path=/`;
+
+router.push("/admin");
+
+       
     } catch (error: any) {
       console.error("Login error:", error);
 
@@ -242,6 +260,7 @@ export default function AdminLoginPage() {
       setIsSubmitting(false);
     }
   };
+
   // Derived button state
   const buttonLabel = isSubmitting
     ? "Authenticating…"

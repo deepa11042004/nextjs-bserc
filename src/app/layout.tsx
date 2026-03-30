@@ -3,8 +3,9 @@ import "@/app/globals.css";
 
 import { Poppins, Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
+import { AuthProvider } from "@/context/AuthContext";
 
-const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -38,8 +39,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={cn("font-sans", geist.variable)}>
-      <body className={poppins.className}>       
-        {children}      
+      <body className={poppins.className}>
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );

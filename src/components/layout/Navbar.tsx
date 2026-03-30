@@ -4,6 +4,10 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import { Menu, X, ChevronDown, ChevronRight } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import Profile01 from "@/components/layout/studentProfile";
+import StudentLoginButton from "./StudentLoginButton";
+import StudentProfile from "@/components/layout/studentProfile";
 
 type DropdownItem =
   | { type: "link"; label: string; href: string }
@@ -144,6 +148,8 @@ export default function Navbar() {
     setOpenNested(null);
   };
 
+  const { isLoggedIn, role } = useAuth();
+
   return (
     <>
       <header className="w-full bg-[#0a0c16] border-b border-white/5 sticky top-0 z-[60] backdrop-blur-md">
@@ -189,20 +195,12 @@ export default function Navbar() {
             )}
           </ul>
 
-          {/* Login Button Right */}
-          <div className="hidden lg:flex">
-            <Link
-              href="/auth/student/login"
-              className="relative px-6 py-2 font-semibold text-white rounded-lg overflow-hidden group"
-            >
-              {/* Background gradient and hover glow */}
-              <span className="absolute inset-0 bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 opacity-80 group-hover:opacity-100 transition-opacity duration-300 rounded-lg"></span>
-              <span className="relative z-10 group-hover:text-white">
-                Log In
-              </span>
-              {/* Glow effect on hover */}
-              <span className="absolute inset-0 rounded-lg shadow-[0_0_15px_#3b82f6] opacity-0 group-hover:opacity-100 transition-all duration-300"></span>
-            </Link>
+          <div className="hidden lg:flex items-center">
+            {!isLoggedIn ? (
+              <StudentLoginButton />
+            ) : role === "student" ? (
+              <StudentProfile />
+            ) : null}
           </div>
 
           {/* Hamburger */}
