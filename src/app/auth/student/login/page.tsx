@@ -1,4 +1,6 @@
 "use client";
+import React from "react";
+
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -216,7 +218,7 @@ export default function AdminLoginPage() {
     const role = user?.role?.toLowerCase();
 
     // ❌ BLOCK ADMINS
-    if (role === "admin" || role === "super_admin") {
+    if (role === "admin" || role === "super_admin" ) {
       throw new Error("Access denied: Students only");
     }
 

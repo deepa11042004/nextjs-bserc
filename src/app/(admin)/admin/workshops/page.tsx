@@ -277,10 +277,13 @@ export default function ProgramsManagement() {
             Manage and monitor all your educational programs
           </p>
         </div>
-        <Button className="bg-blue-500 hover:bg-blue-700 text-white font-bold border border-blue-700">
-          <Plus className="mr-2 h-4 w-4" />
-          Add New Program
-        </Button>
+
+        <Link href="/admin/workshops/create">
+          <Button className="bg-blue-500 hover:bg-blue-700 text-white font-bold border border-blue-700">
+            <Plus className="mr-2 h-4 w-4" />
+            Add New Workshop
+          </Button>
+        </Link>
       </div>
 
       <Separator className="my-6 bg-zinc-800" />
