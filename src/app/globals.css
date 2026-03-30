@@ -9,6 +9,13 @@
   --background: 0 0% 100%;
   --foreground: 222 47% 11%;
 }
+.font-poppins {
+  font-family: "Poppins", sans-serif;
+}
+
+.font-sans {
+  font-family: "Geist", sans-serif; /* if Geist is your fallback */
+}
 
 * {
   box-sizing: border-box;
@@ -17,11 +24,11 @@
   @apply border-gray-200; /* safe */
 }
 
-body { 
+body {
   line-height: 1.6;
   min-height: 100vh;
   display: flex;
-  flex-direction: column;    
+  flex-direction: column;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
   background-color: #0a0c16;
@@ -33,7 +40,16 @@ html {
   scrollbar-width: thin;
   scrollbar-color: rgba(0, 180, 255, 0.3) transparent;
 }
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background:  #38bdf8; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background:  #0ea5e9; }
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #38bdf8;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #0ea5e9;
+}

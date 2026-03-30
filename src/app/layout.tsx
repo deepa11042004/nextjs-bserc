@@ -1,19 +1,14 @@
 import type { Metadata } from "next";
 import "@/app/globals.css";
-
-import { Poppins, Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
 import { AuthProvider } from "@/context/AuthContext";
 
-const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
+// Import local fonts
+ 
 
-const poppins = Poppins({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-});
-
+ 
 export const metadata: Metadata = {
-  title: "BSERC  ",
+  title: "BSERC",
   description:
     "Empowering the next generation of scientists, engineers, and innovators through cutting-edge space education programs.",
   keywords: [
@@ -38,8 +33,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={cn("font-sans", geist.variable)}>
-      <body className={poppins.className}>
+    <html lang="en" className={cn("font-sans")}>
+      <body className={cn("font-poppins")}>
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

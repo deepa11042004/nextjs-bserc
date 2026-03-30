@@ -91,7 +91,7 @@ const about = () => {
           </div>
           <div className="w-full lg:w-1/2 order-1 lg:order-2 mb-8 lg:mb-0">
             <Image
-              src="https://bserc.org/assets/img/research.png"
+              src="/img/research.png"
               alt="Research at BSERC"
               width={600}
               height={400}
@@ -106,7 +106,7 @@ const about = () => {
           <div className="flex flex-col lg:flex-row lg:gap-10 items-center">
             <div className="w-full lg:w-1/2 mb-8 lg:mb-0">
               <Image
-                src="https://bserc.org/assets/img/education.png"
+                src="/img/research.png"
                 alt="Education at BSERC"
                 width={600}
                 height={400}

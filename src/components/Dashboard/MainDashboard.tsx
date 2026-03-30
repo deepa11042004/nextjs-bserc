@@ -348,17 +348,17 @@ const QueriesTable: React.FC<{ queries: Query[]; isLoading?: boolean }> = ({
 };
 
 // Main Dashboard Component
-export default function AdminDashboard() {
+export default function MainDashboard() {
   const isLoading = false;
 
   return (
     // Force dark background explicitly
 
-    <div className="min-h-screen  text-zinc-100 container mx-auto px-4 sm:px-6 lg:px-8 py-6 max-w-7xl">
+    <div className="min-h-screen  text-zinc-100 container mx-auto max-w-8xl">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pt-3 pb-5 mb-6 border-b border-zinc-800">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white">
+          <h1 className="text-4xl font-bold tracking-tight text-white">
             Dashboard
           </h1>
           <p className="text-sm text-zinc-400 mt-1">

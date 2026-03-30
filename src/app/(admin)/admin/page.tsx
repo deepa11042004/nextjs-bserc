@@ -1,9 +1,6 @@
 // app/admin/page.tsx (Dashboard)
-import Content from "@/components/Dashboard/Main"
+import MainDashboard from "@/components/Dashboard/MainDashboard";
 
 export default function DashboardPage() {
-  
-
-  return <Content />
+  return <MainDashboard />;
 }
-

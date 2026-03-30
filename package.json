@@ -10,8 +10,10 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@fontsource/poppins": "^5.2.7",
     "@hookform/resolvers": "^5.2.2",
     "@reduxjs/toolkit": "^2.2.7",
+    "badge": "^1.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dompurify": "^3.3.3",

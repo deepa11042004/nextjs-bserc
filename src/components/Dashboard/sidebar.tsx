@@ -151,6 +151,14 @@ export default function Sidebar() {
                     Programs
                   </NavItem>
                   <NavItem
+                    href="/admin/workshops"
+                    icon={LayoutPanelLeft}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    isActive={normalizedPath === "/admin/workshops"}
+                  >
+                    Workshops
+                  </NavItem>
+                  <NavItem
                     href="/admin/advisory-board"
                     icon={Contact}
                     onClick={() => setIsMobileMenuOpen(false)}
