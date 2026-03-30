@@ -284,7 +284,7 @@ export default function RegisterPage() {
 
       // ✅ Only login if success
       login(data.token || "dummy-token", "student", {
-        name: data.user?.name || fields.fullName,
+        name: data.user?.full_name || fields.fullName,
         email: data.user?.email || fields.email,
       });
       setSubmitStatus("success");

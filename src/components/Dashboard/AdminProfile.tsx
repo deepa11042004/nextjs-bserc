@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 
-
 interface MenuItem {
   label: string;
   value?: string;
@@ -49,23 +48,20 @@ export default function Profile01({
   const router = useRouter();
   const { logout } = useAuth();
 
-
-  const handleLogout = async () => {
+  const handleLogout = () => {
     try {
-        logout(); // 🔥 global logout
-      await fetch("/auth/admin-logout", {
-        method: "POST",
-        credentials: "include",
-      });
+      // ✅ clear context + localStorage
+      logout();
 
-      // Redirect to login page
+      // ✅ clear cookie (IMPORTANT)
+      document.cookie = "authToken=; path=/; max-age=0";
+
+      // ✅ redirect
       router.push("/");
     } catch (error) {
       console.error("Logout failed:", error);
     }
   };
-
-
 
   return (
     <div className="w-full max-w-sm mx-auto">

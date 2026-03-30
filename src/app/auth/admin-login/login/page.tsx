@@ -226,7 +226,9 @@ export default function AdminLoginPage() {
       const normalizedRole = rawRole.toLowerCase().replace(/[\s_-]/g, ""); // removes space, _ and -
 
       const isAdmin =
-        normalizedRole === "admin" || normalizedRole === "superadmin" || normalizedRole === "instructor";
+        normalizedRole === "admin" ||
+        normalizedRole === "superadmin" ||
+        normalizedRole === "instructor";
 
       if (!isAdmin) {
         console.error("ROLE ERROR:", rawRole);
@@ -239,18 +241,18 @@ export default function AdminLoginPage() {
         email: user.email,
       };
 
-      // ✅ LOGIN (correct)
+      // ✅ LOGIN (context)
       login(token, "admin", formattedUser);
+
+      // ✅ set cookie for middleware
+      document.cookie = `authToken=${token}; path=/; max-age=86400`;
 
       setSubmitStatus("success");
       setStatusMsg("Welcome back! Redirecting...");
 
       await new Promise((r) => setTimeout(r, 1000));
-      document.cookie = `authToken=${token}; path=/`;
 
-router.push("/admin");
-
-       
+      router.push("/admin");
     } catch (error: any) {
       console.error("Login error:", error);
 

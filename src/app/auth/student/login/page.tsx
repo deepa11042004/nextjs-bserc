@@ -174,73 +174,81 @@ export default function AdminLoginPage() {
     return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+ const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    if (isSubmitting) return;
-    if (!validate()) return;
+  if (isSubmitting) return;
+  if (!validate()) return;
 
-    setIsSubmitting(true);
-    setSubmitStatus("idle");
-    setStatusMsg("");
+  setIsSubmitting(true);
+  setSubmitStatus("idle");
+  setStatusMsg("");
 
-    try {
-      const AUTH_API = process.env.NEXT_PUBLIC_AUTH_API_URL;
-      if (!AUTH_API) throw new Error("API URL not configured");
+  try {
+    const AUTH_API = process.env.NEXT_PUBLIC_AUTH_API_URL;
+    if (!AUTH_API) throw new Error("API URL not configured");
 
-      const base = AUTH_API.replace(/\/$/, "");
+    const base = AUTH_API.replace(/\/$/, "");
 
-      const res = await fetch(`${base}/auth/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      });
+    const res = await fetch(`${base}/auth/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email, password }),
+    });
 
-      const text = await res.text();
+    const data = await res.json().catch(() => {
+      throw new Error("Invalid server response");
+    });
 
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch {
-        console.error("Raw response:", text);
-        throw new Error("Server returned invalid response");
-      }
-
-      if (!res.ok) {
-        if (res.status === 401) throw new Error("Invalid credentials");
-        throw new Error(data?.message || "Login failed");
-      }
-
-      const token = data.token;
-      const user = data.user;
-
-      if (!token) throw new Error("Token not received");
-      if (!user) throw new Error("User data not received");
-
-      // ✅ Save via context
-      login(token, "student", {
-        name: user.full_name, // ✅ map correctly
-        email: user.email,
-      });
-
-      setSubmitStatus("success");
-      setStatusMsg("Welcome back! Redirecting...");
-
-      setTimeout(() => {
-        router.push("/programs");
-        router.refresh();
-      }, 1000);
-    } catch (error: any) {
-      console.error("Login error:", error);
-
-      setSubmitStatus("error");
-      setStatusMsg(error.message || "Something went wrong");
-    } finally {
-      setIsSubmitting(false);
+    if (!res.ok) {
+      if (res.status === 401) throw new Error("Invalid credentials");
+      throw new Error(data?.message || "Login failed");
     }
-  };
+
+    const token = data?.token;
+    const user = data?.user;
+
+    if (!token) throw new Error("Token not received");
+
+    // 🔥 ROLE CHECK (CRITICAL)
+    const role = user?.role?.toLowerCase();
+
+    // ❌ BLOCK ADMINS
+    if (role === "admin" || role === "super_admin") {
+      throw new Error("Access denied: Students only");
+    }
+
+    // ✅ Allow if:
+    // - role === "student"
+    // - OR role is missing (your backend case)
+    
+    const formattedUser = {
+      name: user?.full_name || "Student",
+      email: user?.email || email,
+    };
+
+    // ✅ LOGIN AS STUDENT
+    login(token, "student", formattedUser);
+
+    setSubmitStatus("success");
+    setStatusMsg("Welcome back! Redirecting...");
+
+    setTimeout(() => {
+      router.push("/programs");
+      router.refresh();
+    }, 1000);
+
+  } catch (error: any) {
+    console.error("Login error:", error);
+
+    setSubmitStatus("error");
+    setStatusMsg(error.message || "Something went wrong");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   // Derived button state
   const buttonLabel = isSubmitting

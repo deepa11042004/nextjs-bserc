@@ -33,11 +33,8 @@ export default function StudentProfile() {
       {/* Avatar */}
       <button onClick={() => setOpen(!open)}>
         <div
-          className="w-9 h-9 flex items-center justify-center rounded-full 
-  bg-gradient-to-br from-indigo-500 to-purple-600 
-  text-white font-semibold text-sm uppercase 
-  border border-white/10 hover:scale-105 transition"
-        >
+          className="w-9 h-9 flex items-center justify-center rounded-full bg-[#10a5c4] text-white font-semibold text-sm uppercase 
+           border border-white/10 hover:scale-105 transition"  >
           {user?.name?.charAt(0) || "G"}
         </div>
       </button>
@@ -51,7 +48,7 @@ export default function StudentProfile() {
         >
           {/* User Info */}
           <div className="px-4 py-3 border-b border-white/10">
-            <p className="text-sm font-semibold text-white truncate">
+            <p className="text-sm font-semibold text-white truncate pb-2">
               {user?.name || "Guest"}
             </p>
             <p className="text-xs text-zinc-400 truncate">
