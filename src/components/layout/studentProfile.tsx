@@ -4,18 +4,15 @@ import { LogOut, MoveUpRight, Settings, FileText } from "lucide-react";
 
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function StudentProfile() {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const router = useRouter();
   const { logout, user } = useAuth();
 
   const handleLogout = () => {
-    logout();
-    router.push("/contact");
+    logout("/login", { scope: "user" });
   };
 
   useEffect(() => {

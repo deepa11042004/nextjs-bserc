@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { ChangeEvent, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft, Plus, ImagePlus, FileText, ChevronDown,
@@ -248,6 +248,13 @@ const DURATION_OPTIONS = [
   { value: "1 week",    label: "1 Week"    },
 ];
 
+const ELIGIBILITY_OPTIONS = [
+  { value: "all", label: "All Students and Professionals" },
+  { value: "students", label: "Only Students" },
+  { value: "professionals", label: "Only Professionals" },
+  { value: "custom", label: "Other (enter custom eligibility)" },
+];
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AddNewWorkshopPage() {
@@ -270,6 +277,8 @@ export default function AddNewWorkshopPage() {
   const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle");
   const [apiError, setApiError] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [selectedEligibilityOption, setSelectedEligibilityOption] = useState<string>("");
+  const [customEligibility, setCustomEligibility] = useState("");
 
   const setField = (field: keyof typeof form) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -277,6 +286,29 @@ export default function AddNewWorkshopPage() {
       setForm((f) => ({ ...f, [field]: val }));
       setErrors((er) => ({ ...er, [field]: "" }));
     };
+
+  const handleEligibilitySelect = (e: ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    setSelectedEligibilityOption(value);
+    setErrors((er) => ({ ...er, eligibility: "" }));
+
+    if (value === "custom") {
+      setForm((f) => ({ ...f, eligibility: customEligibility }));
+      return;
+    }
+
+    const option = ELIGIBILITY_OPTIONS.find((o) => o.value === value);
+    setCustomEligibility("");
+    setForm((f) => ({ ...f, eligibility: option?.label ?? "" }));
+  };
+
+  const handleCustomEligibilityChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setCustomEligibility(value);
+    setSelectedEligibilityOption("custom");
+    setForm((f) => ({ ...f, eligibility: value }));
+    setErrors((er) => ({ ...er, eligibility: "" }));
+  };
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -306,6 +338,9 @@ export default function AddNewWorkshopPage() {
       reader.readAsDataURL(file);
     });
 
+  const normalizeTimeForApi = (value: string) =>
+    /^\d{2}:\d{2}$/.test(value) ? `${value}:00` : value;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
@@ -314,17 +349,12 @@ export default function AddNewWorkshopPage() {
     setApiError("");
 
     try {
-      const AUTH_API = process.env.NEXT_PUBLIC_AUTH_API_URL;
-      const base = AUTH_API ? AUTH_API.replace(/\/$/, "") : "";
-      const candidateEndpoints = [
-        "/api/workshop-list/create",
-        ...(base
-          ? [
-              `${base}/api/workshop-list/create`,
-           
-            ]
-          : []),
-      ];
+      const candidateEndpoints = ["/api/workshop-list/create"];
+      const formForApi = {
+        ...form,
+        start_time: normalizeTimeForApi(form.start_time),
+        end_time: normalizeTimeForApi(form.end_time),
+      };
 
       const thumbnailBase64 = await fileToBase64(thumbnailFile!);
       const certificateBase64 = certificateFile
@@ -332,14 +362,15 @@ export default function AddNewWorkshopPage() {
         : null;
 
       const payload: WorkshopPayload = {
-        ...form,
+        ...formForApi,
         thumbnail: thumbnailBase64,
         certificate_template: certificateBase64,
       };
 
-      const token = typeof window !== "undefined"
-        ? localStorage.getItem("token")
-        : null;
+      const token =
+        typeof window !== "undefined"
+          ? localStorage.getItem("adminToken") || localStorage.getItem("token")
+          : null;
 
       const jsonHeaders: Record<string, string> = {
         "Content-Type": "application/json",
@@ -358,11 +389,13 @@ export default function AddNewWorkshopPage() {
       for (const endpoint of candidateEndpoints) {
         // Most file upload APIs expect multipart form data, so try this first.
         const formData = new FormData();
-        Object.entries(form).forEach(([key, val]) => {
+        Object.entries(formForApi).forEach(([key, val]) => {
           formData.append(key, String(val));
         });
         formData.append("thumbnail", thumbnailFile!);
-        if (certificateFile) formData.append("certificate_template", certificateFile);
+        if (certificateFile) {
+          formData.append("certificate", certificateFile);
+        }
 
         const multipartRes = await fetch(endpoint, {
           method: "POST",
@@ -463,6 +496,8 @@ export default function AddNewWorkshopPage() {
     setThumbnailFile(null);
     setCertificateFile(null);
     setErrors({});
+    setSelectedEligibilityOption("");
+    setCustomEligibility("");
     setApiError("");
     setSubmitStatus("idle");
   };
@@ -528,16 +563,6 @@ export default function AddNewWorkshopPage() {
                   value={form.description}
                   onChange={setField("description")}
                   error={errors.description}
-                />
-                <FormTextarea
-                  name="eligibility"
-                  label="Eligibility"
-                  placeholder="e.g. Students and professionals"
-                  rows={2}
-                  required
-                  value={form.eligibility}
-                  onChange={setField("eligibility")}
-                  error={errors.eligibility}
                 />
               </CardContent>
             </Card>
@@ -621,8 +646,8 @@ export default function AddNewWorkshopPage() {
                 <FormFileUpload
                   name="certificate_template"
                   label="Certificate Template"
-                  accept="application/pdf,image/png"
-                  hint="PDF or PNG · Used to generate participant certificates"
+                  accept="image/png,image/jpeg,image/webp"
+                  hint="PNG, JPG, WEBP · Used to generate participant certificates"
                   icon={<FileText className="w-8 h-8" />}
                   fileName={certificateFile?.name}
                   onFileSelect={setCertificateFile}
@@ -640,6 +665,29 @@ export default function AddNewWorkshopPage() {
                 <CardTitle className="text-base text-zinc-100">Settings</CardTitle>
               </CardHeader>
               <CardContent className="space-y-5">
+                <div className="space-y-3">
+                  <FormSelect
+                    name="eligibility"
+                    label="Eligibility"
+                    options={ELIGIBILITY_OPTIONS}
+                    placeholder="Choose eligibility"
+                    required
+                    value={selectedEligibilityOption}
+                    onChange={handleEligibilitySelect}
+                    error={selectedEligibilityOption === "custom" ? undefined : errors.eligibility}
+                  />
+                  {selectedEligibilityOption === "custom" && (
+                    <FormInput
+                      name="eligibility_custom"
+                      label="Custom Eligibility"
+                      placeholder="Describe who can access this workshop"
+                      required
+                      value={customEligibility}
+                      onChange={handleCustomEligibilityChange}
+                      error={errors.eligibility}
+                    />
+                  )}
+                </div>
                 <FormSelect
                   name="mode"
                   label="Mode"

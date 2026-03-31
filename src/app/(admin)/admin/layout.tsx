@@ -2,10 +2,16 @@
 "use client"
  
 import type { ReactNode } from "react"
+import { usePathname } from "next/navigation"
 import Sidebar from "@/components/Dashboard/sidebar"
 import TopNav from "@/components/Dashboard/top-nav"
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+
+  if (pathname === "/admin/login") {
+    return <>{children}</>;
+  }
   return (
     <div className="flex h-screen dark">
       <Sidebar />

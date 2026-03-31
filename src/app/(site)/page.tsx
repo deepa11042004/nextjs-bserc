@@ -1,4 +1,3 @@
-import React from "react";
 import Home from "@/components/new/Home";
 import PMVision from "@/components/new/Pmvision";
 import SpaceSectorIndia from "@/components/new/SpaceSectorIndia";
@@ -19,7 +18,7 @@ import ISROMissionsSection from "@/components/new/ISROMissionsSection";
 import StatePartnership from "@/components/new/StatePartnership";
 import FeaturedWorkshops from "@/components/new/FeaturedWorkshops";
 
-const page = () => {
+export default function HomePage() {
   return (
     <>
       <Home />
@@ -43,6 +42,4 @@ const page = () => {
       <StatePartnership />
     </>
   );
-};
-
-export default page;
+}

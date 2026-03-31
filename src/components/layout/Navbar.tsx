@@ -4,8 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import { Menu, X, ChevronDown, ChevronRight } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
-import Profile01 from "@/components/layout/studentProfile";
+import { useAuth } from "@/hooks/useAuth";
 import StudentLoginButton from "./StudentLoginButton";
 import StudentProfile from "@/components/layout/studentProfile";
 
@@ -149,6 +148,7 @@ export default function Navbar() {
   };
 
   const { isLoggedIn, role } = useAuth();
+  const isStudentSession = isLoggedIn && role === "user";
 
   return (
     <>
@@ -165,6 +165,7 @@ export default function Navbar() {
                 src="/img/logo.png"
                 alt="logo"
                 fill
+                sizes="36px"
                 className="object-contain"
               />
             </div>
@@ -196,11 +197,11 @@ export default function Navbar() {
           </ul>
 
           <div className="hidden lg:flex items-center">
-            {!isLoggedIn ? (
+            {!isStudentSession ? (
               <StudentLoginButton />
-            ) : role === "student" ? (
+            ) : (
               <StudentProfile />
-            ) : null}
+            )}
           </div>
 
           {/* Hamburger */}
@@ -252,7 +253,7 @@ export default function Navbar() {
 
               <li className="border-t border-white/5 mt-4 mx-4">
                 <Link
-                  href="/auth/student/login"
+                  href="/login"
                   className="block w-full text-center py-3 font-semibold text-white rounded-lg bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 hover:from-blue-600 hover:via-blue-700 hover:to-blue-800 transition-all duration-300 shadow-lg"
                   onClick={closeAll}
                 >

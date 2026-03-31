@@ -1,8 +1,7 @@
 import { LogOut, MoveUpRight, Settings, FileText } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
 
 interface MenuItem {
   label: string;
@@ -45,22 +44,10 @@ export default function Profile01({
     },
   ];
 
-  const router = useRouter();
   const { logout } = useAuth();
 
   const handleLogout = () => {
-    try {
-      // ✅ clear context + localStorage
-      logout();
-
-      // ✅ clear cookie (IMPORTANT)
-      document.cookie = "authToken=; path=/; max-age=0";
-
-      // ✅ redirect
-      router.push("/");
-    } catch (error) {
-      console.error("Logout failed:", error);
-    }
+    logout("/admin/login", { scope: "admin" });
   };
 
   return (
