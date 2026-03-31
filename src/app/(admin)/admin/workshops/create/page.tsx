@@ -32,8 +32,8 @@ interface WorkshopPayload {
   duration: string;
   certificate: boolean;
   fee: number;
-  thumbnail_url: string;
-  certificate_url: string | null;
+  thumbnail: string;
+  certificate_template: string | null;
 }
 
 // ─── Themed Field Primitives ──────────────────────────────────────────────────
@@ -304,11 +304,10 @@ function FormFileUpload({
       <FieldLabel required={required}>{label}</FieldLabel>
       <div
         className={`relative border-2 border-dashed rounded-md transition-colors cursor-pointer group
-        ${
-          error
+        ${error
             ? "border-rose-500 bg-rose-900/10"
             : "border-zinc-700 bg-zinc-800/40 hover:border-blue-500 hover:bg-zinc-800"
-        }
+          }
       `}
       >
         <input
@@ -369,12 +368,6 @@ const DURATION_OPTIONS = [
   { value: "1 week", label: "1 Week" },
 ];
 
-const ELIGIBILITY_OPTIONS = [
-  { value: "all", label: "All Students and Professionals" },
-  { value: "students", label: "Only Students" },
-  { value: "professionals", label: "Only Professionals" },
-  { value: "custom", label: "Other (enter custom eligibility)" },
-];
 
 const ELIGIBILITY_OPTIONS = [
   { value: "all", label: "All Students and Professionals" },
@@ -387,7 +380,7 @@ const ELIGIBILITY_OPTIONS = [
 
 export default function AddNewWorkshopPage() {
   const [form, setForm] = useState<
-    Omit<WorkshopPayload, "thumbnail_url" | "certificate_url">
+    Omit<WorkshopPayload, "thumbnail" | "certificate_template">
   >({
     title: "",
     description: "",
@@ -414,16 +407,16 @@ export default function AddNewWorkshopPage() {
 
   const setField =
     (field: keyof typeof form) =>
-    (
-      e: React.ChangeEvent<
-        HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-      >,
-    ) => {
-      const val =
-        e.target.type === "number" ? Number(e.target.value) : e.target.value;
-      setForm((f) => ({ ...f, [field]: val }));
-      setErrors((er) => ({ ...er, [field]: "" }));
-    };
+      (
+        e: React.ChangeEvent<
+          HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+        >,
+      ) => {
+        const val =
+          e.target.type === "number" ? Number(e.target.value) : e.target.value;
+        setForm((f) => ({ ...f, [field]: val }));
+        setErrors((er) => ({ ...er, [field]: "" }));
+      };
 
   const handleEligibilitySelect = (e: ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
@@ -464,20 +457,42 @@ export default function AddNewWorkshopPage() {
     return Object.keys(e).length === 0;
   };
 
-const fileToBase64 = (file: File): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = String(reader.result || "");
-      const base64 = dataUrl.split(",")[1]; // ✅ REMOVE PREFIX
-      resolve(base64);
-    };
-    reader.onerror = () => reject(new Error("File read error"));
-    reader.readAsDataURL(file);
-  });
+  const fileToBase64 = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = String(reader.result || "");
+        const base64 = dataUrl.split(",")[1]; // ✅ REMOVE PREFIX
+        resolve(base64);
+      };
+      reader.onerror = () => reject(new Error("File read error"));
+      reader.readAsDataURL(file);
+    });
 
   const normalizeTimeForApi = (value: string) =>
     /^\d{2}:\d{2}$/.test(value) ? `${value}:00` : value;
+
+  const clearForm = () => {
+    setForm({
+      title: "",
+      description: "",
+      eligibility: "",
+      mode: "",
+      workshop_date: "",
+      start_time: "",
+      end_time: "",
+      duration: "",
+      certificate: false,
+      fee: 0,
+    });
+    setThumbnailFile(null);
+    setCertificateFile(null);
+    setErrors({});
+    setSelectedEligibilityOption("");
+    setCustomEligibility("");
+    setApiError("");
+    setSubmitStatus("idle");
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -490,6 +505,7 @@ const fileToBase64 = (file: File): Promise<string> =>
 
     setIsSubmitting(true);
     setApiError("");
+    setSubmitStatus("idle");
 
     try {
       const candidateEndpoints = ["/api/workshop-list/create"];
@@ -528,6 +544,7 @@ const fileToBase64 = (file: File): Promise<string> =>
       }
 
       let success = false;
+      let lastErrorMessage = "Failed to create workshop.";
 
       for (const endpoint of candidateEndpoints) {
         // Most file upload APIs expect multipart form data, so try this first.
@@ -548,9 +565,11 @@ const fileToBase64 = (file: File): Promise<string> =>
         });
 
         const multipartRaw = await multipartRes.text();
-        let multipartData: any = {};
+        let multipartData: Record<string, unknown> = {};
         try {
-          multipartData = multipartRaw ? JSON.parse(multipartRaw) : {};
+          multipartData = multipartRaw
+            ? (JSON.parse(multipartRaw) as Record<string, unknown>)
+            : {};
         } catch {
           multipartData = {};
         }
@@ -562,8 +581,9 @@ const fileToBase64 = (file: File): Promise<string> =>
 
         if ([401, 403].includes(multipartRes.status)) {
           throw new Error(
-            multipartData?.detail ||
-            multipartData?.message ||
+            (typeof multipartData.detail === "string" ? multipartData.detail :
+              typeof multipartData.message === "string" ? multipartData.message :
+                null) ||
             "Unauthorized request. Please log in again as admin.",
           );
         }
@@ -580,407 +600,415 @@ const fileToBase64 = (file: File): Promise<string> =>
           body: JSON.stringify(payload),
         });
 
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data?.message || "Failed to create workshop");
+        const jsonRaw = await jsonRes.text();
+        let jsonData: Record<string, unknown> = {};
+        try {
+          jsonData = jsonRaw ? (JSON.parse(jsonRaw) as Record<string, unknown>) : {};
+        } catch {
+          jsonData = {};
+        }
+
+        if (jsonRes.ok) {
+          success = true;
+          break;
+        }
+
+        if ([401, 403].includes(jsonRes.status)) {
+          throw new Error(
+            (typeof jsonData.detail === "string" ? jsonData.detail :
+              typeof jsonData.message === "string" ? jsonData.message :
+                null) ||
+            "Unauthorized request. Please log in again as admin.",
+          );
+        }
+
+        if (jsonRes.status === 404) {
+          continue;
+        }
+
+        lastErrorMessage =
+          (typeof jsonData.detail === "string" ? jsonData.detail :
+            typeof jsonData.message === "string" ? jsonData.message :
+              null) || lastErrorMessage;
       }
 
-      setSubmitStatus("success");
+      if (!success) {
+        throw new Error(lastErrorMessage);
+      }
+
       clearForm();
-    } catch (err: any) {
-      setApiError(err.message || "Something went wrong");
+      setSubmitStatus("success");
+    } catch (err: unknown) {
+      setApiError(err instanceof Error ? err.message : "Something went wrong");
       setSubmitStatus("error");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const clearForm = () => {
-    setForm({
-      title: "",
-      description: "",
-      eligibility: "",
-      mode: "",
-      workshop_date: "",
-      start_time: "",
-      end_time: "",
-      duration: "",
-      certificate: false,
-      fee: 0,
-    });
-    setThumbnailFile(null);
-    setCertificateFile(null);
-    setErrors({});
-    setSelectedEligibilityOption("");
-    setCustomEligibility("");
-    setApiError("");
-    setSubmitStatus("idle");
-  };
-
-  return (
-    <div className="min-h-screen text-zinc-100 container mx-auto max-w-8xl">
-      {/* ── Header ── */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pt-3 pb-5 mb-6 border-b border-zinc-800">
-        <div>
-          <h1 className="text-4xl font-bold tracking-tight text-white">
-            Add New Workshop
-          </h1>
-          <p className="text-sm text-zinc-400 mt-1">
-            Fill in the details to publish a new workshop
-          </p>
-        </div>
-        <Link href="/admin/workshops">
-          <Button
-            variant="outline"
-            className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to List
-          </Button>
-        </Link>
-      </div>
-
-      <Separator className="my-6 bg-zinc-800" />
-
-      {/* ── API error banner ── */}
-      {apiError && (
-        <div className="mb-6 flex items-start gap-3 px-4 py-3 rounded-md bg-rose-950/50 border border-rose-800 text-rose-300 text-sm">
-          <span className="mt-0.5">⚠</span>
-          <p className="flex-1">{apiError}</p>
-          <button
-            onClick={() => setApiError("")}
-            className="hover:text-rose-100 transition-colors"
-          >
-            ✕
-          </button>
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} noValidate>
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6">
-          {/* ── Left: main details ── */}
-          <div className="space-y-6">
-            {/* Basic Info */}
-            <Card className="bg-zinc-900 border-zinc-800">
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-2">
-                  <Rocket className="h-4 w-4 text-blue-400" />
-                  <CardTitle className="text-base text-zinc-100">
-                    Basic Information
-                  </CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <FormInput
-                  name="title"
-                  label="Title"
-                  placeholder="e.g. Advanced AI Workshop"
-                  required
-                  value={form.title}
-                  onChange={setField("title")}
-                  error={errors.title}
-                />
-                <FormTextarea
-                  name="description"
-                  label="Description"
-                  placeholder="Hands-on workshop on practical AI use cases…"
-                  rows={4}
-                  required
-                  value={form.description}
-                  onChange={setField("description")}
-                  error={errors.description}
-                />
-              </CardContent>
-            </Card>
-
-            {/* Schedule */}
-            <Card className="bg-zinc-900 border-zinc-800">
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-2">
-                  <CalendarDays className="h-4 w-4 text-blue-400" />
-                  <CardTitle className="text-base text-zinc-100">
-                    Schedule
-                  </CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <FormInput
-                    name="workshop_date"
-                    label="Workshop Date"
-                    type="date"
-                    icon={<CalendarDays className="w-4 h-4" />}
-                    required
-                    value={form.workshop_date}
-                    onChange={setField("workshop_date")}
-                    error={errors.workshop_date}
-                  />
-                  <FormSelect
-                    name="duration"
-                    label="Duration"
-                    options={DURATION_OPTIONS}
-                    placeholder="Select Duration"
-                    required
-                    value={form.duration}
-                    onChange={setField("duration")}
-                    error={errors.duration}
-                  />
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <FormInput
-                    name="start_time"
-                    label="Start Time"
-                    type="time"
-                    icon={<Clock className="w-4 h-4" />}
-                    required
-                    value={form.start_time}
-                    onChange={setField("start_time")}
-                    error={errors.start_time}
-                  />
-                  <FormInput
-                    name="end_time"
-                    label="End Time"
-                    type="time"
-                    icon={<Clock className="w-4 h-4" />}
-                    required
-                    value={form.end_time}
-                    onChange={setField("end_time")}
-                    error={errors.end_time}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Assets */}
-            <Card className="bg-zinc-900 border-zinc-800">
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-2">
-                  <ImagePlus className="h-4 w-4 text-blue-400" />
-                  <CardTitle className="text-base text-zinc-100">
-                    Assets
-                  </CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <FormFileUpload
-                  name="thumbnail"
-                  label="Thumbnail Image"
-                  accept="image/png,image/jpeg,image/webp"
-                  hint="PNG, JPG, WEBP · Recommended 1200×630px · Max 5MB"
-                  icon={<ImagePlus className="w-8 h-8" />}
-                  required
-                  fileName={thumbnailFile?.name}
-                  onFileSelect={setThumbnailFile}
-                  error={errors.thumbnail}
-                />
-                <FormFileUpload
-                  name="certificate_template"
-                  label="Certificate Template"
-                  accept="image/png,image/jpeg,image/webp"
-                  hint="PNG, JPG, WEBP · Used to generate participant certificates"
-                  icon={<FileText className="w-8 h-8" />}
-                  fileName={certificateFile?.name}
-                  onFileSelect={setCertificateFile}
-                />
-              </CardContent>
-            </Card>
+    return (
+      <div className="min-h-screen text-zinc-100 container mx-auto max-w-8xl">
+        {/* ── Header ── */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pt-3 pb-5 mb-6 border-b border-zinc-800">
+          <div>
+            <h1 className="text-4xl font-bold tracking-tight text-white">
+              Add New Workshop
+            </h1>
+            <p className="text-sm text-zinc-400 mt-1">
+              Fill in the details to publish a new workshop
+            </p>
           </div>
+          <Link href="/admin/workshops">
+            <Button
+              variant="outline"
+              className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to List
+            </Button>
+          </Link>
+        </div>
 
-          {/* ── Right: settings + actions ── */}
-          <div className="space-y-6">
-            {/* Settings */}
-            <Card className="bg-zinc-900 border-zinc-800">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base text-zinc-100">
-                  Settings
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-5">
-                <div className="space-y-3">
-                  <FormSelect
-                    name="eligibility"
-                    label="Eligibility"
-                    options={ELIGIBILITY_OPTIONS}
-                    placeholder="Choose eligibility"
+        <Separator className="my-6 bg-zinc-800" />
+
+        {/* ── API error banner ── */}
+        {apiError && (
+          <div className="mb-6 flex items-start gap-3 px-4 py-3 rounded-md bg-rose-950/50 border border-rose-800 text-rose-300 text-sm">
+            <span className="mt-0.5">⚠</span>
+            <p className="flex-1">{apiError}</p>
+            <button
+              onClick={() => setApiError("")}
+              className="hover:text-rose-100 transition-colors"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} noValidate>
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6">
+            {/* ── Left: main details ── */}
+            <div className="space-y-6">
+              {/* Basic Info */}
+              <Card className="bg-zinc-900 border-zinc-800">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-2">
+                    <Rocket className="h-4 w-4 text-blue-400" />
+                    <CardTitle className="text-base text-zinc-100">
+                      Basic Information
+                    </CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <FormInput
+                    name="title"
+                    label="Title"
+                    placeholder="e.g. Advanced AI Workshop"
                     required
-                    value={selectedEligibilityOption}
-                    onChange={handleEligibilitySelect}
-                    error={selectedEligibilityOption === "custom" ? undefined : errors.eligibility}
+                    value={form.title}
+                    onChange={setField("title")}
+                    error={errors.title}
                   />
-                  {selectedEligibilityOption === "custom" && (
+                  <FormTextarea
+                    name="description"
+                    label="Description"
+                    placeholder="Hands-on workshop on practical AI use cases…"
+                    rows={4}
+                    required
+                    value={form.description}
+                    onChange={setField("description")}
+                    error={errors.description}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* Schedule */}
+              <Card className="bg-zinc-900 border-zinc-800">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-2">
+                    <CalendarDays className="h-4 w-4 text-blue-400" />
+                    <CardTitle className="text-base text-zinc-100">
+                      Schedule
+                    </CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <FormInput
-                      name="eligibility_custom"
-                      label="Custom Eligibility"
-                      placeholder="Describe who can access this workshop"
+                      name="workshop_date"
+                      label="Workshop Date"
+                      type="date"
+                      icon={<CalendarDays className="w-4 h-4" />}
                       required
-                      value={customEligibility}
-                      onChange={handleCustomEligibilityChange}
-                      error={errors.eligibility}
+                      value={form.workshop_date}
+                      onChange={setField("workshop_date")}
+                      error={errors.workshop_date}
                     />
-                  )}
-                </div>
-                <FormSelect
-                  name="mode"
-                  label="Mode"
-                  options={MODE_OPTIONS}
-                  placeholder="Select Mode"
-                  required
-                  value={form.mode}
-                  onChange={setField("mode")}
-                  error={errors.mode}
-                />
+                    <FormSelect
+                      name="duration"
+                      label="Duration"
+                      options={DURATION_OPTIONS}
+                      placeholder="Select Duration"
+                      required
+                      value={form.duration}
+                      onChange={setField("duration")}
+                      error={errors.duration}
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <FormInput
+                      name="start_time"
+                      label="Start Time"
+                      type="time"
+                      icon={<Clock className="w-4 h-4" />}
+                      required
+                      value={form.start_time}
+                      onChange={setField("start_time")}
+                      error={errors.start_time}
+                    />
+                    <FormInput
+                      name="end_time"
+                      label="End Time"
+                      type="time"
+                      icon={<Clock className="w-4 h-4" />}
+                      required
+                      value={form.end_time}
+                      onChange={setField("end_time")}
+                      error={errors.end_time}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
 
-                <FormInput
-                  name="fee"
-                  label="Registration Fee (₹)"
-                  type="number"
-                  placeholder="0"
-                  icon={<IndianRupee className="w-4 h-4" />}
-                  value={form.fee}
-                  onChange={setField("fee")}
-                  error={errors.fee}
-                />
-                <p className="text-xs text-zinc-500 -mt-3">
-                  Set 0 for a free workshop
-                </p>
+              {/* Assets */}
+              <Card className="bg-zinc-900 border-zinc-800">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-2">
+                    <ImagePlus className="h-4 w-4 text-blue-400" />
+                    <CardTitle className="text-base text-zinc-100">
+                      Assets
+                    </CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <FormFileUpload
+                    name="thumbnail"
+                    label="Thumbnail Image"
+                    accept="image/png,image/jpeg,image/webp"
+                    hint="PNG, JPG, WEBP · Recommended 1200×630px · Max 5MB"
+                    icon={<ImagePlus className="w-8 h-8" />}
+                    required
+                    fileName={thumbnailFile?.name}
+                    onFileSelect={setThumbnailFile}
+                    error={errors.thumbnail}
+                  />
+                  <FormFileUpload
+                    name="certificate_template"
+                    label="Certificate Template"
+                    accept="image/png,image/jpeg,image/webp"
+                    hint="PNG, JPG, WEBP · Used to generate participant certificates"
+                    icon={<FileText className="w-8 h-8" />}
+                    fileName={certificateFile?.name}
+                    onFileSelect={setCertificateFile}
+                  />
+                </CardContent>
+              </Card>
+            </div>
 
-                <Separator className="bg-zinc-800" />
+            {/* ── Right: settings + actions ── */}
+            <div className="space-y-6">
+              {/* Settings */}
+              <Card className="bg-zinc-900 border-zinc-800">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base text-zinc-100">
+                    Settings
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-5">
+                  <div className="space-y-3">
+                    <FormSelect
+                      name="eligibility"
+                      label="Eligibility"
+                      options={ELIGIBILITY_OPTIONS}
+                      placeholder="Choose eligibility"
+                      required
+                      value={selectedEligibilityOption}
+                      onChange={handleEligibilitySelect}
+                      error={selectedEligibilityOption === "custom" ? undefined : errors.eligibility}
+                    />
+                    {selectedEligibilityOption === "custom" && (
+                      <FormInput
+                        name="eligibility_custom"
+                        label="Custom Eligibility"
+                        placeholder="Describe who can access this workshop"
+                        required
+                        value={customEligibility}
+                        onChange={handleCustomEligibilityChange}
+                        error={errors.eligibility}
+                      />
+                    )}
+                  </div>
+                  <FormSelect
+                    name="mode"
+                    label="Mode"
+                    options={MODE_OPTIONS}
+                    placeholder="Select Mode"
+                    required
+                    value={form.mode}
+                    onChange={setField("mode")}
+                    error={errors.mode}
+                  />
 
-                <FormToggle
-                  name="certificate"
-                  label="Issue Certificate"
-                  helperText="Participants receive a certificate on completion"
-                  checked={form.certificate}
-                  onChange={(val) =>
-                    setForm((f) => ({ ...f, certificate: val }))
-                  }
-                />
+                  <FormInput
+                    name="fee"
+                    label="Registration Fee (₹)"
+                    type="number"
+                    placeholder="0"
+                    icon={<IndianRupee className="w-4 h-4" />}
+                    value={form.fee}
+                    onChange={setField("fee")}
+                    error={errors.fee}
+                  />
+                  <p className="text-xs text-zinc-500 -mt-3">
+                    Set 0 for a free workshop
+                  </p>
 
-                {/* Live preview pill */}
-                {form.mode && (
-                  <>
-                    <Separator className="bg-zinc-800" />
-                    <div className="space-y-2">
-                      <p className="text-xs text-zinc-500 uppercase tracking-widest">
-                        Preview
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs bg-zinc-800 border border-zinc-700 text-zinc-300">
-                          <Timer className="w-3 h-3 text-blue-400" />{" "}
-                          {form.duration || "—"}
-                        </span>
-                        <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs bg-zinc-800 border border-zinc-700 text-zinc-300">
-                          {form.mode}
-                        </span>
-                        {form.certificate && (
-                          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs bg-green-950 border border-green-900 text-green-300">
-                            <BadgeCheck className="w-3 h-3" /> Certificate
+                  <Separator className="bg-zinc-800" />
+
+                  <FormToggle
+                    name="certificate"
+                    label="Issue Certificate"
+                    helperText="Participants receive a certificate on completion"
+                    checked={form.certificate}
+                    onChange={(val) =>
+                      setForm((f) => ({ ...f, certificate: val }))
+                    }
+                  />
+
+                  {/* Live preview pill */}
+                  {form.mode && (
+                    <>
+                      <Separator className="bg-zinc-800" />
+                      <div className="space-y-2">
+                        <p className="text-xs text-zinc-500 uppercase tracking-widest">
+                          Preview
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs bg-zinc-800 border border-zinc-700 text-zinc-300">
+                            <Timer className="w-3 h-3 text-blue-400" />{" "}
+                            {form.duration || "—"}
                           </span>
-                        )}
-                        <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs bg-zinc-800 border border-zinc-700 text-zinc-300">
-                          <IndianRupee className="w-3 h-3 text-blue-400" />
-                          {form.fee === 0 ? "Free" : `₹${form.fee}`}
-                        </span>
+                          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs bg-zinc-800 border border-zinc-700 text-zinc-300">
+                            {form.mode}
+                          </span>
+                          {form.certificate && (
+                            <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs bg-green-950 border border-green-900 text-green-300">
+                              <BadgeCheck className="w-3 h-3" /> Certificate
+                            </span>
+                          )}
+                          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs bg-zinc-800 border border-zinc-700 text-zinc-300">
+                            <IndianRupee className="w-3 h-3 text-blue-400" />
+                            {form.fee === 0 ? "Free" : `₹${form.fee}`}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
 
-            {/* Actions */}
-            <Card className="bg-zinc-900 border-zinc-800">
-              <CardContent className="pt-4 space-y-2">
-                <Button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className={`w-full font-bold border transition-all
-                    ${
-                      submitStatus === "success"
+              {/* Actions */}
+              <Card className="bg-zinc-900 border-zinc-800">
+                <CardContent className="pt-4 space-y-2">
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className={`w-full font-bold border transition-all
+                    ${submitStatus === "success"
                         ? "bg-green-600 hover:bg-green-700 border-green-700 text-white"
                         : submitStatus === "error"
                           ? "bg-rose-600 hover:bg-rose-700 border-rose-700 text-white"
                           : "bg-blue-500 hover:bg-blue-700 border-blue-700 text-white"
-                    }`}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <svg
-                        className="animate-spin mr-2 h-4 w-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
+                      }`}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <svg
+                          className="animate-spin mr-2 h-4 w-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                          />
+                        </svg>
+                        Publishing…
+                      </>
+                    ) : submitStatus === "success" ? (
+                      <>
+                        <svg
+                          className="mr-2 h-4 w-4"
+                          fill="none"
                           stroke="currentColor"
-                          strokeWidth="4"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                        />
-                      </svg>
-                      Publishing…
-                    </>
-                  ) : submitStatus === "success" ? (
-                    <>
-                      <svg
-                        className="mr-2 h-4 w-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                      Workshop Created!
-                    </>
-                  ) : submitStatus === "error" ? (
-                    <>
-                      <svg
-                        className="mr-2 h-4 w-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M6 18L18 6M6 6l12 12"
-                        />
-                      </svg>
-                      Try Again
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="mr-2 h-4 w-4" />
-                      Create Workshop
-                    </>
-                  )}
-                </Button>
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M5 13l4 4L19 7"
+                          />
+                        </svg>
+                        Workshop Created!
+                      </>
+                    ) : submitStatus === "error" ? (
+                      <>
+                        <svg
+                          className="mr-2 h-4 w-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M6 18L18 6M6 6l12 12"
+                          />
+                        </svg>
+                        Try Again
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Create Workshop
+                      </>
+                    )}
+                  </Button>
 
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={clearForm}
-                  className="w-full border-zinc-700 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100"
-                >
-                  Clear Form
-                </Button>
-              </CardContent>
-            </Card>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={clearForm}
+                    className="w-full border-zinc-700 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100"
+                  >
+                    Clear Form
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
           </div>
-        </div>
-      </form>
-    </div>
-  );
-}
+        </form>
+      </div>
+    );
+  }
