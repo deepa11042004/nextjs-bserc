@@ -1,484 +1,242 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState } from 'react';
 
-// ─────────────────────────────────────────────────────────────
-// Reusable UI Components
-// ─────────────────────────────────────────────────────────────
+// --- Reusable Sub-components ---
 
-interface InputProps {
-  id: string;
-  name: string;
-  label: string;
-  type?: string;
-  placeholder?: string;
-  required?: boolean;
-  value?: string;
-  onChange?: (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-  ) => void;
-  disabled?: boolean;
-  isTextarea?: boolean;
-}
+const SectionCard = ({ title, children }: { title: string; children: React.ReactNode }) => (
+  <div className="bg-[#181818] rounded-xl border border-[#262626] p-6 mb-6">
+    <h3 className="text-white text-lg font-serif font-medium tracking-wide border-b border-[#2a2a2a] pb-4 mb-6 uppercase">
+      {title}
+    </h3>
+    {children}
+  </div>
+);
 
-function FormField({
-  id,
-  name,
-  label,
-  type = "text",
-  placeholder,
-  required = false,
-  value,
-  onChange,
-  disabled = false,
-  isTextarea = false,
-}: InputProps) {
-  const baseClasses =
-    "w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-500 transition-colors";
+const FormLabel = ({ label, required }: { label: string; required?: boolean }) => (
+  <label className="block text-zinc-100 text-[13px] font-semibold mb-2">
+    {label} {required && <span className="text-red-500 ml-0.5">*</span>}
+  </label>
+);
 
-  return (
-    <div className="mb-6 w-full">
-      <label
-        htmlFor={id}
-        className="block text-zinc-100 text-[13px] font-semibold mb-2"
-      >
-        {label} {required && <span className="text-red-500 ml-0.5">*</span>}
-      </label>
-      {isTextarea ? (
-        <textarea
-          id={id}
-          name={name}
-          placeholder={placeholder}
-          value={value}
-          onChange={onChange}
-          required={required}
-          disabled={disabled}
-          rows={3}
-          className={`${baseClasses} resize-none `}
-        />
-      ) : (
-        <input
-          type={type}
-          id={id}
-          name={name}
-          placeholder={placeholder}
-          value={value}
-          onChange={onChange}
-          required={required}
-          disabled={disabled}
-          className={baseClasses}
-        />
-      )}
-    </div>
-  );
-}
+const InputField = ({ label, required, placeholder, type = "text", value, onChange, name }: any) => (
+  <div className="mb-6 w-full">
+    <FormLabel label={label} required={required} />
+    <input
+      type={type}
+      name={name}
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-500 transition-colors"
+    />
+  </div>
+);
 
-function FormSelect({
-  id,
-  name,
-  label,
-  options,
-  required,
-  value,
-  onChange,
-  placeholder = "--Select--",
-}: any) {
-  return (
-    <div className="mb-6 w-full">
-      <label
-        htmlFor={id}
-        className="block text-zinc-100 text-[13px] font-semibold mb-2"
-      >
-        {label} {required && <span className="text-red-500 ml-0.5">*</span>}
-      </label>
-      <div className="relative">
-        <select
-          id={id}
-          name={name}
-          value={value}
-          onChange={onChange}
-          required={required}
-          className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-400 focus:outline-none focus:border-zinc-500 appearance-none"
-        >
-          <option value="" disabled>
-            {placeholder}
-          </option>
-          {options.map((opt: string) => (
-            <option key={opt} value={opt}>
-              {opt}
-            </option>
-          ))}
-        </select>
-        {/* Custom select dropdown arrow */}
-        <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
-          <svg
-            className="w-4 h-4 text-zinc-500"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M19 9l-7 7-7-7"
-            />
-          </svg>
-        </div>
-      </div>
-    </div>
-  );
-}
+// --- Main Component ---
 
-function CardSection({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="bg-[#181818] rounded-xl border border-[#262626] p-6 md:p-8 mb-6">
-      <div className="border-b border-[#2a2a2a] pb-4 mb-6">
-        <h3 className="text-white text-lg font-serif font-medium tracking-wide">
-          {title}
-        </h3>
-      </div>
-      {children}
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────
-// Main Application Form Component
-// ─────────────────────────────────────────────────────────────
-
-export default function InternshipApplicationForm() {
+export default function MentorRegistrationForm() {
   const [formData, setFormData] = useState({
     fullName: "",
-    guardianName: "",
-    gender: "",
-    dob: "",
-    mobile: "",
     email: "",
-    altEmail: "",
-    address: "",
-    city: "",
-    state: "",
-    pinCode: "",
-    institution: "",
-    qualification: "",
+    phone: "",
+    dob: "",
+    currentPosition: "",
+    organization: "",
+    experience: "",
+    bio: "",
+    primaryTrack: "",
     declaration: false,
   });
 
-  const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >,
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
-    if (type === "checkbox") {
-      const checked = (e.target as HTMLInputElement).checked;
-      setFormData((prev) => ({ ...prev, [name]: checked }));
-    } else {
-      setFormData((prev) => ({ ...prev, [name]: value }));
-    }
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.declaration) {
-      alert("Please accept the declaration to proceed.");
-      return;
-    }
-    console.log("Form Data Submitted:", formData);
-    alert("Proceeding to payment...");
+    const val = type === 'checkbox' ? (e.target as HTMLInputElement).checked : value;
+    setFormData(prev => ({ ...prev, [name]: val }));
   };
 
   return (
-    <div className="min-h-screen bg-[#0d0d0d] text-zinc-300 font-sans selection:bg-[#d4ff33] selection:text-black py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#0d0d0d] text-zinc-300 py-12 px-4 sm:px-6">
       <main className="max-w-4xl mx-auto">
-        {/* Header Title Section */}
+        
+        {/* Header Section */}
         <div className="mb-12">
           <div className="flex items-center gap-4 mb-4">
-            <span className="text-orange-500 text-xs font-bold tracking-widest uppercase">
-              Mentor Portal
-            </span>
+            <span className="text-[#a4cc22] text-xs font-bold tracking-widest uppercase">MENTOR PORTAL</span>
             <div className="h-px w-16 bg-[#a4cc22]/40"></div>
           </div>
-          <h1 className="text-4xl md:text-5xl font-serif font-bold text-white leading-tight mb-4">
-            Register as a Mentor/Expert
+          <h1 className="text-4xl md:text-5xl font-serif font-bold text-white mb-4">
+            Register as a <br /> Mentor/Expert
           </h1>
-
           <p className="text-zinc-400 text-sm">
-            Share your expertise and guide the next generation of space
-            innovators. Join our mentorship program.
+            Share your expertise and guide the next generation of space innovators. Join our mentorship program.
           </p>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          {/* Section 1 */}
-          <CardSection title="1. INTERNSHIP DETAILS / इंटर्नशिप विवरण">
-            <div className="space-y-2">
-              <FormField
-                id="internshipName"
-                name="internshipName"
-                label="Internship Name / इंटर्नशिप का नाम"
-                value="Def-Space Summer Internship"
-                disabled
-              />
-              <FormField
-                id="designation"
-                name="designation"
-                label="Designation of Internship / इंटर्नशिप का प्रकार"
-                value="Def-Space Tech Intern"
-                disabled
-              />
-            </div>
-          </CardSection>
-
-          {/* Section 2 */}
-          <CardSection title="2. APPLICANT'S PERSONAL DETAILS / आवेदक का व्यक्तिगत विवरण">
-            <div className="space-y-2">
-              <FormField
-                id="fullName"
-                name="fullName"
-                label="Applicant's Full Name / आवेदक का पूरा नाम"
-                required
-                value={formData.fullName}
-                onChange={handleChange}
-              />
-              <FormField
-                id="guardianName"
-                name="guardianName"
-                label="Guardian Name / अभिभावक का नाम"
-                required
-                value={formData.guardianName}
-                onChange={handleChange}
-              />
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
-                <FormSelect
-                  id="gender"
-                  name="gender"
-                  label="Gender / लिंग"
-                  placeholder="--Select Gender--"
-                  options={[
-                    "Male / पुरुष",
-                    "Female / महिला",
-                    "Other / अन्य",
-                    "Prefer not to say ",
-                  ]}
-                  required
-                  value={formData.gender}
-                  onChange={handleChange}
-                />
-                <FormField
-                  id="dob"
-                  name="dob"
-                  type="date"
-                  label="Date of Birth / जन्म दिनांक"
-                  placeholder="mm/dd/yyyy"
-                  required
-                  value={formData.dob}
-                  onChange={handleChange}
-                />
-              </div>
-            </div>
-          </CardSection>
-
-          {/* Section 3 */}
-          <CardSection title="3. CONTACT DETAILS / संपर्क विवरण">
+        <form onSubmit={(e) => e.preventDefault()}>
+          
+          {/* Section 1: Personal Info */}
+          <SectionCard title="1. Personal Information / व्यक्तिगत जानकारी">
+            <InputField 
+              label="Full Name / पूरा नाम" 
+              name="fullName" 
+              placeholder="Dr./Prof./Your Name" 
+              required 
+            />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
-              <FormField
-                id="mobile"
-                name="mobile"
-                type="tel"
-                label="Mobile Number / मोबाइल नंबर"
-                placeholder="+91 XXXXX XXXXX"
-                required
-                value={formData.mobile}
-                onChange={handleChange}
-              />
-              <FormField
-                id="email"
-                name="email"
-                type="email"
-                label="Email Address / ईमेल पता"
-                required
-                value={formData.email}
-                onChange={handleChange}
+              <InputField label="Email Address / ईमेल पता" name="email" required />
+              <InputField label="Phone Number / फोन नंबर" name="phone" placeholder="+91 XXXXX XXXXX" required />
+            </div>
+            <InputField label="Date of Birth / जन्म दिनांक" name="dob" type="date" required />
+          </SectionCard>
+
+          {/* Section 2: Professional Details */}
+          <SectionCard title="2. Professional Details / व्यावसायिक विवरण">
+            <InputField label="Current Position / वर्तमान पद" name="currentPosition" placeholder="e.g., Senior Engineer, Professor, Scientist" required />
+            <InputField label="Organization / संगठन" name="organization" placeholder="Company/University/Institute name" required />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
+              <InputField label="Years of Experience / अनुभव के वर्ष" name="experience" placeholder="e.g., 5, 10, 15" required />
+            </div>
+            <div className="mb-6">
+              <FormLabel label="Professional Bio / व्यावसायिक जीवन परिचय" required />
+              <textarea 
+                name="bio"
+                rows={4}
+                className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-500 transition-colors resize-none"
+                placeholder="Brief description of your expertise, achievements, and why you want to mentor..."
               />
             </div>
-            <FormField
-              id="altEmail"
-              name="altEmail"
-              type="email"
-              label="Alternative Email / वैकल्पिक ईमेल पता"
-              value={formData.altEmail}
-              onChange={handleChange}
-            />
-          </CardSection>
+          </SectionCard>
 
-          {/* Section 4 */}
-          <CardSection title="4. PERMANENT ADDRESS DETAILS / स्थायी पता विवरण">
-            <FormField
-              id="address"
-              name="address"
-              label="Address / पता"
-              required
-              isTextarea
-              value={formData.address}
-              onChange={handleChange}
-            />
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6">
-              <FormField
-                id="city"
-                name="city"
-                label="City Name / शहर का नाम"
-                required
-                value={formData.city}
-                onChange={handleChange}
-              />
-              <FormField
-                id="state"
-                name="state"
-                label="State / राज्य"
-                required
-                value={formData.state}
-                onChange={handleChange}
-              />
-              <FormField
-                id="pinCode"
-                name="pinCode"
-                label="Pin Code / पिन कोड"
-                required
-                value={formData.pinCode}
-                onChange={handleChange}
-              />
-            </div>
-          </CardSection>
+          {/* Section 4: Mentoring Preferences */}
+<SectionCard title="4. MENTORING PREFERENCES / सलाह देने की वरीयताएं">
+  <div className="mb-6">
+    <FormLabel label="Preferred Mentoring Mode / पसंदीदा सलाह देने का तरीका" required />
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2">
+      {['Video Call', 'Phone Call', 'Live Chat', 'Email'].map((mode) => (
+        <label key={mode} className="flex items-center gap-3 cursor-pointer group">
+          <input type="checkbox" className="w-4 h-4 rounded bg-zinc-800 border-none checked:bg-[#d4ff33]" />
+          <span className="text-xs text-zinc-400 group-hover:text-zinc-200 transition-colors">{mode}</span>
+        </label>
+      ))}
+    </div>
+  </div>
+  
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
+    <div className="mb-6">
+      <FormLabel label="Availability / उपलब्धता" required />
+      <select className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-400 text-sm focus:outline-none">
+        <option>--Select Availability--</option>
+        <option>Weekends</option>
+        <option>Weekdays (Evenings)</option>
+      </select>
+    </div>
+    <InputField label="Maximum Students / अधिकतम छात्र" placeholder="How many students can you mentor simultaneously?" required />
+  </div>
+</SectionCard>
 
-          {/* Section 5 */}
-          <CardSection title="5. EDUCATIONAL / QUALIFICATION DETAILS / शैक्षिक / योग्यता का विवरण">
-            <FormField
-              id="institution"
-              name="institution"
-              label="Institution Name / संस्थान का नाम"
-              required
-              value={formData.institution}
-              onChange={handleChange}
-            />
-            <FormSelect
-              id="qualification"
-              name="qualification"
-              label="Educational Qualification / शैक्षिक योग्यता"
-              placeholder="--Select Qualification--"
-              options={["B.Tech", "M.Tech", "BCA", "MCA", "B.Sc", "Other"]}
-              required
-              value={formData.qualification}
-              onChange={handleChange}
-            />
-          </CardSection>
+{/* Section 5: Professional Compensation */}
+<SectionCard title="5. PROFESSIONAL COMPENSATION STRUCTURE / व्यावसायिक मुआवजा संरचना">
+  <div className="mb-8">
+    <FormLabel label="Consultation Fee (Per Session) / परामर्श शुल्क" required />
+    <div className="relative">
+      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#a4cc22] font-bold">₹</span>
+      <input 
+        type="text" 
+        placeholder="e.g., 500, 1000, 2500"
+        className="w-full pl-10 pr-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-500"
+      />
+    </div>
+    <p className="text-[10px] text-zinc-500 mt-2 italic">Standard rate for individual consultation sessions</p>
+  </div>
 
-          {/* Section 6 */}
-          <CardSection title="6. IDENTIFICATION DETAILS / पहचान का विवरण">
-            <label className="block text-zinc-100 text-[13px] font-semibold mb-3">
-              Upload Passport Size Photo / पासपोर्ट साइज फोटो अपलोड करें{" "}
-              <span className="text-red-500 ml-0.5">*</span>
-            </label>
-            <div className="relative w-full border border-dashed border-[#3a402a] rounded-xl py-14 flex flex-col items-center justify-center bg-[#111111]/50 hover:bg-[#161616] transition-colors cursor-pointer group">
-              <input
-                type="file"
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                accept="image/*"
-                required
-              />
-              <svg
-                className="w-5 h-5 text-zinc-400 mb-3 group-hover:text-zinc-200 transition-colors"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
-                />
-              </svg>
-              <p className="text-zinc-400 text-[13px] group-hover:text-zinc-300 transition-colors">
-                Click to upload or drag file (Max 800KB)
-              </p>
-            </div>
-          </CardSection>
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    {[
+      { title: "Intensive 5-Session Bundle", desc: "Bulk discount applicable" },
+      { title: "Comprehensive 10-Session Plan", desc: "20% savings on per-session rate" },
+      { title: "Extended Mentorship Program", desc: "Ongoing support & guidance" }
+    ].map((plan, i) => (
+      <div key={i} className="p-4 rounded-xl border border-[#2a2a2a] bg-[#141414] hover:border-[#d4ff33]/30 transition-colors">
+        <h4 className="text-zinc-100 text-[13px] font-bold mb-3">{plan.title}</h4>
+        <div className="bg-[#1a1a1a] border border-[#262626] rounded-md py-2 px-3 text-[11px] text-zinc-500 mb-2">
+          Total investment (optional)
+        </div>
+        <p className="text-[10px] text-zinc-500">{plan.desc}</p>
+      </div>
+    ))}
+  </div>
+</SectionCard>
 
-          {/* Declaration Section */}
-          <div className="bg-[#181818] rounded-xl border border-[#2a301a] p-6 mb-12">
-            <label className="flex items-start gap-4 cursor-pointer group">
-              <div className="pt-1 relative flex items-center justify-center">
-                <input
-                  type="checkbox"
-                  name="declaration"
-                  required
-                  checked={formData.declaration}
-                  onChange={handleChange}
-                  className="peer w-5 h-5 rounded-sm bg-white border-none appearance-none checked:bg-orange-500 cursor-pointer flex-shrink-0 transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-[#181818]"
-                />
-
-                {/* The Checkmark Arrow */}
-                <svg
-                  className="absolute w-3.5 h-3.5 text-white pointer-events-none opacity-0 peer-checked:opacity-100 transition-opacity"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="4"
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
+{/* Section 7: Previous Experience */}
+<SectionCard title="7. PREVIOUS MENTORING EXPERIENCE / पूर्व सलाह देने का अनुभव">
+  <div className="mb-6">
+    <FormLabel label="Have you mentored students/interns before? / क्या आपने पहले छात्रों/इंटर्न को मार्गदर्शन दिया है?" required />
+    <select className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-400 text-sm focus:outline-none">
+      <option>--Select--</option>
+      <option>Yes</option>
+      <option>No</option>
+    </select>
+  </div>
+  <div className="mb-2">
+    <FormLabel label="Tell us about your mentoring experience / अपने सलाह देने के अनुभव के बारे में बताएं" />
+    <textarea 
+      rows={4}
+      className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-100 placeholder-zinc-600 focus:outline-none resize-none"
+      placeholder="Number of students mentored, outcomes, success stories, etc..."
+    />
+  </div>
+</SectionCard>
+          {/* Section 6: Background Verification */}
+          <SectionCard title="6. Background & Verification / पृष्ठभूमि और सत्यापन">
+            <div className="mb-8">
+              <FormLabel label="Upload Resume/CV / रिज्यूमे/सीवी अपलोड करें" required />
+              <div className="border border-dashed border-zinc-800 rounded-xl py-10 flex flex-col items-center justify-center bg-[#111111]/50 hover:bg-[#161616] cursor-pointer group transition-colors">
+                <svg className="w-6 h-6 text-zinc-500 group-hover:text-zinc-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                <p className="text-zinc-500 text-xs">Click to upload or drag file (PDF, DOC, DOCX - Max 5MB)</p>
               </div>
+            </div>
+            <InputField label="LinkedIn Profile / लिंक्डइन प्रोफाइल" placeholder="https://linkedin.com/in/yourprofile" />
+          </SectionCard>
 
-              <p className="text-[13px] text-zinc-300 leading-relaxed text-justify group-hover:text-zinc-100 transition-colors">
-                I hereby declare that the information given above and in the
-                enclosed documents is true to the best of my knowledge and
-                belief and nothing has been concealed therein. I understand that
-                if the information given by me is proved false/not true, all the
-                benefits availed by me shall be withdrawn. / मैं घोषणा करता हूँ
-                कि ऊपर और संलग्न दस्तावेजों में दी गई जानकारी मेरी सर्वोत्तम
-                जानकारी और विश्वास के अनुसार सत्य है और इसमें कुछ भी छिपाया नहीं
-                गया है। मैं समझता हूँ कि यदि मेरे द्वारा दी गई जानकारी झूठी हुई
-                तो मेरे द्वारा प्राप्त किए गए सभी लाभ वापस ले लिए जाएंगे।
-              </p>
-            </label>
+          {/* Guidelines & Acceptance */}
+          <div className="bg-[#181818] rounded-xl border border-zinc-800 p-6 mb-8">
+             <div className="flex gap-4 mb-6">
+                <div className="bg-[#d4ff33]/10 p-2 rounded-lg self-start">
+                   <svg className="w-5 h-5 text-[#d4ff33]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
+                </div>
+                <div>
+                   <h4 className="text-white font-semibold">Registration Fee & Profile Activation</h4>
+                   <p className="text-zinc-400 text-[13px] mt-1">After verification, a fee of <span className="text-[#d4ff33] font-bold">₹1,000 for a 2-year tenure</span> is required to activate your mentor profile.</p>
+                </div>
+             </div>
+             
+             <label className="flex items-start gap-4 cursor-pointer pt-4 border-t border-zinc-800">
+               <div className="relative flex items-center justify-center mt-1">
+                 <input
+                   type="checkbox"
+                   name="declaration"
+                   className="peer w-5 h-5 rounded bg-zinc-800 border-none appearance-none checked:bg-[#d4ff33] transition-colors"
+                   onChange={handleChange}
+                 />
+                 <svg className="absolute w-3.5 h-3.5 text-black opacity-0 peer-checked:opacity-100 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M5 13l4 4L19 7"></path></svg>
+               </div>
+               <p className="text-xs text-zinc-300 leading-relaxed">
+                 I declare that the information provided is accurate and I agree to the mentoring guidelines and code of conduct.
+               </p>
+             </label>
           </div>
 
           {/* Submit Button */}
-          <div className="border-t border-[#262626] pt-8 flex justify-center">
+          <div className="flex justify-center pt-6">
             <button
               type="submit"
-              className="bg-orange-500 hover:bg-orange-600 text-black font-semibold text-sm px-8 py-3.5 rounded-full flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-lg shadow-[#d4ff33]/10"
+              className="bg-[#d4ff33] hover:bg-[#c3e82d] text-black font-bold px-10 py-4 rounded-full flex items-center gap-3 transition-all active:scale-95 shadow-lg shadow-[#d4ff33]/10"
             >
-              Proceed to Pay
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M14 5l7 7m0 0l-7 7m7-7H3"
-                />
-              </svg>
+              Submit Application
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
             </button>
           </div>
+          
         </form>
       </main>
     </div>
