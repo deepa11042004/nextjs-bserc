@@ -60,6 +60,11 @@ const NAV_ITEMS: { label: string; href?: string; dropdown?: DropdownItem[] }[] =
       dropdown: [
         {
           type: "link",
+          label: "Bserc Internship",
+          href: "/bsercinternship",
+        },
+        {
+          type: "link",
           label: "Summer Internship",
           href: "/careers/summer-internship",
         },
