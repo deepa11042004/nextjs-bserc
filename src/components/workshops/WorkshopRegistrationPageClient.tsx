@@ -242,6 +242,41 @@ function SubmitButton({ isSubmitting }: { isSubmitting: boolean }) {
   );
 }
 
+type SubmitStatus = {
+  type: "success" | "info" | "error";
+  message: string;
+};
+
+function StatusBanner({
+  status,
+  onDismiss,
+}: {
+  status: SubmitStatus;
+  onDismiss: () => void;
+}) {
+  const classesByType: Record<SubmitStatus["type"], string> = {
+    success: "border-emerald-500/70 bg-emerald-950/40 text-emerald-200",
+    info: "border-sky-500/70 bg-sky-950/40 text-sky-200",
+    error: "border-rose-500/70 bg-rose-950/40 text-rose-200",
+  };
+
+  return (
+    <div
+      role={status.type === "error" ? "alert" : "status"}
+      className={`flex items-start justify-between gap-4 rounded-lg border px-4 py-3 text-sm ${classesByType[status.type]}`}
+    >
+      <p>{status.message}</p>
+      <button
+        type="button"
+        onClick={onDismiss}
+        className="rounded px-2 py-1 text-xs font-semibold uppercase tracking-wide text-white/80 transition hover:text-white"
+      >
+        Close
+      </button>
+    </div>
+  );
+}
+
 export default function WorkshopRegistrationPageClient({
   workshop,
 }: {
@@ -250,7 +285,7 @@ export default function WorkshopRegistrationPageClient({
   const certificatePreviewSrc =
     workshop.certificateUrl || workshop.thumbnailUrl || "/img/page-1.png";
 
-  const [formData, setFormData] = useState({
+  const emptyFormData = {
     name: "",
     email: "",
     contact: "",
@@ -261,7 +296,9 @@ export default function WorkshopRegistrationPageClient({
     content: [] as string[],
     agreeRecord: false,
     agreeTerms: false,
-  });
+  };
+
+  const [formData, setFormData] = useState(emptyFormData);
 
   type InfoItem = {
     label: string;
@@ -303,7 +340,7 @@ export default function WorkshopRegistrationPageClient({
   }, [workshop.description]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState("");
+  const [submitStatus, setSubmitStatus] = useState<SubmitStatus | null>(null);
 
   const contentOptions = [
     "Drone Design Basics",
@@ -331,6 +368,7 @@ export default function WorkshopRegistrationPageClient({
   // Keep existing form behavior unchanged.
   const handleChange = (e: any) => {
     const { name, value, type, checked } = e.target;
+    setSubmitStatus(null);
 
     if (type === "checkbox" && name === "content") {
       setFormData((prev) => ({
@@ -346,9 +384,13 @@ export default function WorkshopRegistrationPageClient({
     }
   };
 
+  const clearForm = () => {
+    setFormData(emptyFormData);
+  };
+
   const handleSubmit = async (e: any) => {
     e.preventDefault();
-    setSubmitError("");
+    setSubmitStatus(null);
     setIsSubmitting(true);
 
     const registrationPayload: WorkshopRegistrationPayload = {
@@ -370,14 +412,21 @@ export default function WorkshopRegistrationPageClient({
       });
 
       if (order.already_registered) {
-        alert(order.message || "You are already registered for this workshop.");
+        setSubmitStatus({
+          type: "info",
+          message: order.message || "You are already registered for this workshop.",
+        });
         setIsSubmitting(false);
         return;
       }
 
       if (!order.requires_payment || order.amount <= 0) {
         await registerWorkshopWithoutPayment(registrationPayload);
-        alert("Registration Successful!");
+        clearForm();
+        setSubmitStatus({
+          type: "success",
+          message: "Registration successful!",
+        });
         setIsSubmitting(false);
         return;
       }
@@ -437,9 +486,16 @@ export default function WorkshopRegistrationPageClient({
               throw lastError;
             }
 
-            alert("Payment successful and registration completed!");
+            clearForm();
+            setSubmitStatus({
+              type: "success",
+              message: "Payment successful and registration completed!",
+            });
           } catch (error) {
-            setSubmitError(getErrorMessage(error));
+            setSubmitStatus({
+              type: "error",
+              message: getErrorMessage(error),
+            });
           } finally {
             setIsSubmitting(false);
           }
@@ -452,9 +508,10 @@ export default function WorkshopRegistrationPageClient({
       });
 
       razorpay.on("payment.failed", (response) => {
-        setSubmitError(
-          response.error?.description || "Payment failed. Please try again.",
-        );
+        setSubmitStatus({
+          type: "error",
+          message: response.error?.description || "Payment failed. Please try again.",
+        });
         setIsSubmitting(false);
       });
 
@@ -462,10 +519,15 @@ export default function WorkshopRegistrationPageClient({
     } catch (error) {
       const message = getErrorMessage(error);
       if (isAlreadyRegisteredMessage(message)) {
-        alert("You are already registered for this workshop.");
-        setSubmitError("");
+        setSubmitStatus({
+          type: "info",
+          message: "You are already registered for this workshop.",
+        });
       } else {
-        setSubmitError(message);
+        setSubmitStatus({
+          type: "error",
+          message,
+        });
       }
       setIsSubmitting(false);
     }
@@ -551,10 +613,11 @@ export default function WorkshopRegistrationPageClient({
             Participant Information
           </h2>
 
-          {submitError && (
-            <div className="rounded-lg border border-rose-500/60 bg-rose-950/40 px-4 py-3 text-sm text-rose-200">
-              {submitError}
-            </div>
+          {submitStatus && (
+            <StatusBanner
+              status={submitStatus}
+              onDismiss={() => setSubmitStatus(null)}
+            />
           )}
 
           {/* Row 1 */}
@@ -664,6 +727,7 @@ export default function WorkshopRegistrationPageClient({
               <input
                 type="checkbox"
                 name="agreeRecord"
+                checked={formData.agreeRecord}
                 onChange={handleChange}
                 required
               />
@@ -674,6 +738,7 @@ export default function WorkshopRegistrationPageClient({
               <input
                 type="checkbox"
                 name="agreeTerms"
+                checked={formData.agreeTerms}
                 onChange={handleChange}
                 required
               />
