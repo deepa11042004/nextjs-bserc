@@ -5,7 +5,7 @@ import { fetchWorkshopById } from "@/lib/workshops";
 
 export const revalidate = 300;
 
-export default async function WorkshopRegistrationPage({
+export default async function WorkshopDetailsRegistrationPage({
   params,
 }: {
   params: Promise<{ id: string }>;

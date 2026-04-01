@@ -132,6 +132,7 @@ export default function Footer() {
                 src="/img/BSERC_new.png"
                 alt="BSERC Logo Large"
                 fill
+                sizes="80px"
                 className="
                   object-contain
                   transition-transform duration-500 ease-in-out

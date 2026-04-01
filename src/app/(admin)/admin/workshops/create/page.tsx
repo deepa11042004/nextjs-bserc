@@ -19,6 +19,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/Button";
 import { Separator } from "@/components/ui/separator";
+import { AdminToast } from "@/components/admin/AdminToast";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface WorkshopPayload {
@@ -404,6 +405,8 @@ export default function AddNewWorkshopPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [selectedEligibilityOption, setSelectedEligibilityOption] = useState<string>("");
   const [customEligibility, setCustomEligibility] = useState("");
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [fileInputResetKey, setFileInputResetKey] = useState(0);
 
   const setField =
     (field: keyof typeof form) =>
@@ -492,6 +495,7 @@ export default function AddNewWorkshopPage() {
     setCustomEligibility("");
     setApiError("");
     setSubmitStatus("idle");
+    setFileInputResetKey((current) => current + 1);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -638,6 +642,7 @@ export default function AddNewWorkshopPage() {
 
       clearForm();
       setSubmitStatus("success");
+      setToastMessage("Workshop added successfully");
     } catch (err: unknown) {
       setApiError(err instanceof Error ? err.message : "Something went wrong");
       setSubmitStatus("error");
@@ -648,6 +653,13 @@ export default function AddNewWorkshopPage() {
 
     return (
       <div className="min-h-screen text-zinc-100 container mx-auto max-w-8xl">
+        <AdminToast
+          open={Boolean(toastMessage)}
+          message={toastMessage ?? ""}
+          variant="success"
+          onClose={() => setToastMessage(null)}
+        />
+
         {/* ── Header ── */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pt-3 pb-5 mb-6 border-b border-zinc-800">
           <div>
@@ -792,6 +804,7 @@ export default function AddNewWorkshopPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <FormFileUpload
+                    key={`thumbnail-upload-${fileInputResetKey}`}
                     name="thumbnail"
                     label="Thumbnail Image"
                     accept="image/png,image/jpeg,image/webp"
@@ -803,6 +816,7 @@ export default function AddNewWorkshopPage() {
                     error={errors.thumbnail}
                   />
                   <FormFileUpload
+                    key={`certificate-upload-${fileInputResetKey}`}
                     name="certificate_template"
                     label="Certificate Template"
                     accept="image/png,image/jpeg,image/webp"

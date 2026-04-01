@@ -33,8 +33,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en"  >
-      <body >
+    <html lang="en" data-scroll-behavior="smooth" className={cn("font-sans")}>
+      <body className={cn("font-poppins")}>
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
