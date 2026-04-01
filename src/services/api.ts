@@ -1,5 +1,15 @@
 import type { AuthResponse } from "@/types/auth";
 
+const publicApiBaseUrl = (process.env.NEXT_PUBLIC_API_URL ?? "").trim();
+
+function buildAuthUrl(endpoint: "/auth/login" | "/auth/register"): string {
+  if (publicApiBaseUrl) {
+    return `${publicApiBaseUrl.replace(/\/$/, "")}${endpoint}`;
+  }
+
+  return `/api${endpoint}`;
+}
+
 export class ApiError extends Error {
   status: number;
   details?: unknown;
@@ -64,14 +74,14 @@ export interface RegisterPayload extends LoginPayload {
 
 export const authApi = {
   login(payload: LoginPayload) {
-    return request<AuthResponse>("/auth/login", {
+    return request<AuthResponse>(buildAuthUrl("/auth/login"), {
       method: "POST",
       body: JSON.stringify(payload),
     });
   },
 
   register(payload: RegisterPayload) {
-    return request<AuthResponse>("/auth/register", {
+    return request<AuthResponse>(buildAuthUrl("/auth/register"), {
       method: "POST",
       body: JSON.stringify(payload),
     });
