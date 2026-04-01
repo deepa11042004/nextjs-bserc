@@ -64,14 +64,14 @@ export interface RegisterPayload extends LoginPayload {
 
 export const authApi = {
   login(payload: LoginPayload) {
-    return request<AuthResponse>("/api/auth/login", {
+    return request<AuthResponse>("/auth/login", {
       method: "POST",
       body: JSON.stringify(payload),
     });
   },
 
   register(payload: RegisterPayload) {
-    return request<AuthResponse>("/api/auth/register", {
+    return request<AuthResponse>("/auth/register", {
       method: "POST",
       body: JSON.stringify(payload),
     });
