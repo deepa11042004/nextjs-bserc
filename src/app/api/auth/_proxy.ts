@@ -1,17 +1,34 @@
 import { NextResponse } from "next/server";
 
-const FALLBACK_AUTH_URLS = [
+const DEV_FALLBACK_AUTH_URLS = [
   "http://127.0.0.1:5000",
   "http://localhost:5000",
 ];
 
+function isProductionRuntime(): boolean {
+  return process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
+}
+
+function getConfiguredApiUrl(): string {
+  const apiUrl = process.env.API_URL?.trim();
+  if (apiUrl) {
+    return apiUrl;
+  }
+
+  return process.env.NEXT_PUBLIC_API_URL?.trim() ?? "";
+}
+
 function getAuthBaseUrls(): string[] {
-  const envUrl = process.env.API_URL?.trim();
-  const raw = [envUrl, ...FALLBACK_AUTH_URLS].filter(
+  const envUrl = getConfiguredApiUrl();
+  const raw = isProductionRuntime()
+    ? [envUrl]
+    : [envUrl, ...DEV_FALLBACK_AUTH_URLS];
+
+  const normalized = raw.filter(
     (value): value is string => Boolean(value),
   );
 
-  return [...new Set(raw.map((value) => value.replace(/\/$/, "")))];
+  return [...new Set(normalized.map((value) => value.replace(/\/$/, "")))];
 }
 
 async function parseUpstreamBody(response: Response): Promise<unknown> {
@@ -44,7 +61,10 @@ export async function forwardAuthRequest(
 
   if (apiBaseUrls.length === 0) {
     return NextResponse.json(
-      { message: "API_URL is missing on the server" },
+      {
+        message:
+          "API_URL (or NEXT_PUBLIC_API_URL) is missing on the server. Configure it in Vercel project environment variables.",
+      },
       { status: 500 },
     );
   }
@@ -55,37 +75,46 @@ export async function forwardAuthRequest(
     return NextResponse.json({ message: "Invalid request body" }, { status: 400 });
   }
 
-  try {
-    for (const apiBaseUrl of apiBaseUrls) {
-      try {
-        const response = await fetch(`${apiBaseUrl}${endpoint}`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(body),
-          cache: "no-store",
-        });
+  let lastRetriablePayload: unknown = null;
+  let lastRetriableStatus: number | null = null;
 
-        if ([404, 500, 502, 503, 504].includes(response.status)) {
-          continue;
-        }
+  for (const apiBaseUrl of apiBaseUrls) {
+    try {
+      const response = await fetch(`${apiBaseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+        cache: "no-store",
+      });
 
-        const payload = await parseUpstreamBody(response);
-        return NextResponse.json(payload, { status: response.status });
-      } catch {
+      const payload = await parseUpstreamBody(response);
+
+      if ([500, 502, 503, 504].includes(response.status)) {
+        lastRetriablePayload = payload;
+        lastRetriableStatus = response.status;
         continue;
       }
-    }
 
+      return NextResponse.json(payload, { status: response.status });
+    } catch {
+      continue;
+    }
+  }
+
+  if (lastRetriableStatus !== null) {
     return NextResponse.json(
-      { message: "Authentication service is unavailable" },
-      { status: 502 },
-    );
-  } catch {
-    return NextResponse.json(
-      { message: "Authentication service is unavailable" },
-      { status: 502 },
+      lastRetriablePayload ?? { message: "Authentication service is unavailable" },
+      { status: lastRetriableStatus },
     );
   }
+
+  return NextResponse.json(
+    {
+      message:
+        "Authentication service is unavailable. Verify API_URL points to a reachable public backend.",
+    },
+    { status: 502 },
+  );
 }
