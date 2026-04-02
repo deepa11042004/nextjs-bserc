@@ -1,7 +1,8 @@
 "use client";
+
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
-  // Added for Programs
   Users,
   Mail,
   Shield,
@@ -20,7 +21,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/Badge";
-
 import {
   Table,
   TableBody,
@@ -32,7 +32,6 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 
-// Types
 interface StatCard {
   title: string;
   value: number | string;
@@ -44,12 +43,13 @@ interface StatCard {
   highlight?: string;
 }
 
-interface Participant {
+interface ParticipantRow {
   id: string;
   name: string;
   email: string;
   program: string;
-  date: string;
+  createdAt: string | null;
+  createdAtUnix: number | null;
   avatar: string;
 }
 
@@ -61,89 +61,19 @@ interface Query {
   status: "new" | "read";
 }
 
-// Mock data
-const statsData: StatCard[] = [
-  {
-    title: "Total Programs",
-    value: 8,
-    subtitle: "8 Active",
-    icon: <Mail className="h-5 w-5" />, // Fixed icon
-    gradient: "from-blue-600 to-blue-400",
-    link: "/admin/programs",
-    linkText: "View Programs",
-  },
-  {
-    title: "Total Participants",
-    value: 498,
-    subtitle: "Website Users",
-    icon: <Users className="h-5 w-5" />,
-    gradient: "from-green-700 to-green-500",
-    link: "/admin/participants",
-    linkText: "View Participants",
-  },
-  {
-    title: "Contact Queries",
-    value: 20,
-    subtitle: "13 Unread",
-    highlight: "13 Unread",
-    icon: <Mail className="h-5 w-5" />,
-    gradient: "from-amber-600 to-amber-400",
-    link: "/admin/contact-queries",
-    linkText: "View Queries",
-  },
-  {
-    title: "Admin Users",
-    value: 2,
-    subtitle: "System Administrators",
-    icon: <Shield className="h-5 w-5" />,
-    gradient: "from-zinc-600 to-zinc-400",
-    link: "/admin/users",
-    linkText: "Manage Admins",
-  },
-];
+type WorkshopListItem = {
+  id?: number | string;
+};
 
-const recentParticipants: Participant[] = [
-  {
-    id: "1",
-    name: "Argha Tribedy",
-    email: "arghatribedy6@gmail.com",
-    program: "Defence Drone W...",
-    date: "3 hours ago",
-    avatar: "https://ui-avatars.com/api/?name=Argha+Tribedy&size=32",
-  },
-  {
-    id: "2",
-    name: "Nachaegari Sreyesh Kumar",
-    email: "shreynachaegari@gmail.com",
-    program: "Defence Drone W...",
-    date: "1 day ago",
-    avatar: "https://ui-avatars.com/api/?name=Nachaegari+Sreyesh+Kumar&size=32",
-  },
-  {
-    id: "3",
-    name: "Vikas Jamadar",
-    email: "vikasjamadar83@gmail.com",
-    program: "AIRCRAFT DESIGN...",
-    date: "1 day ago",
-    avatar: "https://ui-avatars.com/api/?name=Vikas+Jamadar&size=32",
-  },
-  {
-    id: "4",
-    name: "Prajwal Hubballi",
-    email: "hubballiprajwal20@gmail.com",
-    program: "AIRCRAFT DESIGN...",
-    date: "1 day ago",
-    avatar: "https://ui-avatars.com/api/?name=Prajwal+Hubballi&size=32",
-  },
-  {
-    id: "5",
-    name: "Labish",
-    email: "lovishsharma9090@gmail.com",
-    program: "ROBOTICS DESIGN...",
-    date: "1 day ago",
-    avatar: "https://ui-avatars.com/api/?name=Labish&size=32",
-  },
-];
+type ParticipantApiItem = {
+  id?: number | string;
+  full_name?: string;
+  email?: string;
+  workshop_title?: string;
+  workshop_id?: number | string | null;
+  created_at?: string | null;
+  created_at_unix?: number | string | null;
+};
 
 const recentQueries: Query[] = [
   {
@@ -183,7 +113,135 @@ const recentQueries: Query[] = [
   },
 ];
 
-// Stat Card Component
+function extractWorkshopItems(payload: unknown): WorkshopListItem[] {
+  if (Array.isArray(payload)) {
+    return payload as WorkshopListItem[];
+  }
+
+  if (payload && typeof payload === "object") {
+    const record = payload as Record<string, unknown>;
+    if (Array.isArray(record.data)) {
+      return record.data as WorkshopListItem[];
+    }
+
+    if (Array.isArray(record.results)) {
+      return record.results as WorkshopListItem[];
+    }
+
+    if (Array.isArray(record.workshops)) {
+      return record.workshops as WorkshopListItem[];
+    }
+  }
+
+  return [];
+}
+
+function extractParticipants(payload: unknown): ParticipantApiItem[] {
+  if (Array.isArray(payload)) {
+    return payload as ParticipantApiItem[];
+  }
+
+  if (payload && typeof payload === "object") {
+    const record = payload as Record<string, unknown>;
+
+    if (Array.isArray(record.participants)) {
+      return record.participants as ParticipantApiItem[];
+    }
+
+    if (Array.isArray(record.data)) {
+      return record.data as ParticipantApiItem[];
+    }
+
+    if (Array.isArray(record.results)) {
+      return record.results as ParticipantApiItem[];
+    }
+  }
+
+  return [];
+}
+
+function formatRelativeTime(
+  value?: string | null,
+  referenceMs = Date.now(),
+  createdAtUnix?: number | null,
+): string {
+  let timestampMs: number | null = null;
+
+  const unixSeconds = Number(createdAtUnix);
+  if (Number.isFinite(unixSeconds) && unixSeconds > 0) {
+    timestampMs = unixSeconds * 1000;
+  } else if (value) {
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) {
+      timestampMs = parsed.getTime();
+    }
+  }
+
+  if (timestampMs === null) {
+    return "Recently";
+  }
+
+  const diffMs = referenceMs - timestampMs;
+  if (diffMs < 0) {
+    return new Date(timestampMs).toLocaleDateString();
+  }
+
+  if (diffMs < 60_000) {
+    return "Just now";
+  }
+
+  const diffMinutes = Math.floor(diffMs / 60_000);
+  if (diffMinutes < 60) {
+    return `${diffMinutes} min ago`;
+  }
+
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) {
+    return `${diffHours} hr ago`;
+  }
+
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays < 30) {
+    return `${diffDays} day${diffDays === 1 ? "" : "s"} ago`;
+  }
+
+  return new Date(timestampMs).toLocaleDateString();
+}
+
+function toParticipantRow(item: ParticipantApiItem): ParticipantRow {
+  const idAsNumber =
+    typeof item.id === "number"
+      ? item.id
+      : Number.parseInt(String(item.id ?? ""), 10);
+
+  const id = Number.isInteger(idAsNumber) && idAsNumber > 0 ? idAsNumber : 0;
+  const name = (item.full_name || "").trim() || `Participant ${id || "-"}`;
+  const email = (item.email || "").trim() || "N/A";
+  const workshopId =
+    typeof item.workshop_id === "number"
+      ? item.workshop_id
+      : Number.parseInt(String(item.workshop_id ?? ""), 10);
+  const program =
+    (item.workshop_title || "").trim() ||
+    (Number.isInteger(workshopId) && workshopId > 0
+      ? `Workshop ${workshopId}`
+      : "Workshop");
+  const createdAtUnix = Number(item.created_at_unix);
+
+  return {
+    id: String(id || Math.random()),
+    name,
+    email,
+    program,
+    createdAt: item.created_at || null,
+    createdAtUnix:
+      Number.isFinite(createdAtUnix) && createdAtUnix > 0
+        ? createdAtUnix
+        : null,
+    avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&size=32`,
+  };
+}
+
 const StatCard: React.FC<{ card: StatCard }> = ({ card }) => (
   <Card
     className={`h-full overflow-hidden border-0 bg-gradient-to-br ${card.gradient} text-white shadow-lg`}
@@ -222,11 +280,11 @@ const StatCard: React.FC<{ card: StatCard }> = ({ card }) => (
   </Card>
 );
 
-// Participants Table Component
 const ParticipantsTable: React.FC<{
-  participants: Participant[];
+  participants: ParticipantRow[];
   isLoading?: boolean;
-}> = ({ participants, isLoading = false }) => {
+  nowMs?: number;
+}> = ({ participants, isLoading = false, nowMs = Date.now() }) => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-40">
@@ -240,56 +298,64 @@ const ParticipantsTable: React.FC<{
       <TableHeader>
         <TableRow className="border-zinc-800">
           <TableHead className="w-[200px] text-zinc-400">Name</TableHead>
-          <TableHead className="text-zinc-400">Program</TableHead>
+          <TableHead className="text-zinc-400">Workshop</TableHead>
           <TableHead className="text-right text-zinc-400">Date</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
-        {participants.map((participant) => (
-          <TableRow
-            key={participant.id}
-            className="border-zinc-800 hover:bg-zinc-900/50"
-          >
-            <TableCell>
-              <div className="flex items-center gap-3">
-                <Avatar className="h-8 w-8 border border-zinc-700">
-                  <AvatarImage
-                    src={participant.avatar}
-                    alt={participant.name}
-                  />
-                  <AvatarFallback className="bg-zinc-800 text-zinc-400">
-                    {participant.name.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex flex-col">
-                  <span className="font-medium text-sm text-zinc-100">
-                    {participant.name}
-                  </span>
-                  <span className="text-xs text-zinc-500">
-                    {participant.email}
-                  </span>
-                </div>
-              </div>
-            </TableCell>
-            <TableCell>
-              <Badge
-                variant="outline"
-                className="border-zinc-700 text-zinc-300 font-normal bg-transparent"
-              >
-                {participant.program}
-              </Badge>
-            </TableCell>
-            <TableCell className="text-right text-sm text-zinc-500">
-              {participant.date}
+        {participants.length === 0 ? (
+          <TableRow className="border-zinc-800">
+            <TableCell colSpan={3} className="py-8 text-center text-zinc-500">
+              No participants found.
             </TableCell>
           </TableRow>
-        ))}
+        ) : (
+          participants.map((participant) => (
+            <TableRow
+              key={participant.id}
+              className="border-zinc-800 hover:bg-zinc-900/50"
+            >
+              <TableCell>
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-8 w-8 border border-zinc-700">
+                    <AvatarImage src={participant.avatar} alt={participant.name} />
+                    <AvatarFallback className="bg-zinc-800 text-zinc-400">
+                      {participant.name.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex flex-col">
+                    <span className="font-medium text-sm text-zinc-100">
+                      {participant.name}
+                    </span>
+                    <span className="text-xs text-zinc-500">
+                      {participant.email}
+                    </span>
+                  </div>
+                </div>
+              </TableCell>
+              <TableCell>
+                <Badge
+                  variant="outline"
+                  className="border-zinc-700 text-zinc-300 font-normal bg-transparent"
+                >
+                  {participant.program}
+                </Badge>
+              </TableCell>
+              <TableCell className="text-right text-sm text-zinc-500">
+                {formatRelativeTime(
+                  participant.createdAt,
+                  nowMs,
+                  participant.createdAtUnix,
+                )}
+              </TableCell>
+            </TableRow>
+          ))
+        )}
       </TableBody>
     </Table>
   );
 };
 
-// Queries Table Component
 const QueriesTable: React.FC<{ queries: Query[]; isLoading?: boolean }> = ({
   queries,
   isLoading = false,
@@ -347,15 +413,146 @@ const QueriesTable: React.FC<{ queries: Query[]; isLoading?: boolean }> = ({
   );
 };
 
-// Main Dashboard Component
 export default function MainDashboard() {
-  const isLoading = false;
+  const [workshopCount, setWorkshopCount] = useState(0);
+  const [participants, setParticipants] = useState<ParticipantRow[]>([]);
+  const [isStatsLoading, setIsStatsLoading] = useState(true);
+  const [isParticipantsLoading, setIsParticipantsLoading] = useState(true);
+  const [relativeTimeTick, setRelativeTimeTick] = useState(() => Date.now());
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setRelativeTimeTick(Date.now());
+    }, 60_000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadWorkshops = async () => {
+      setIsStatsLoading(true);
+
+      try {
+        const response = await fetch("/api/workshop-list", {
+          method: "GET",
+          cache: "no-store",
+        });
+
+        const payload = await response.json().catch(() => []);
+        if (!response.ok) {
+          throw new Error("Unable to fetch workshops");
+        }
+
+        if (!isMounted) {
+          return;
+        }
+
+        setWorkshopCount(extractWorkshopItems(payload).length);
+      } catch {
+        if (isMounted) {
+          setWorkshopCount(0);
+        }
+      } finally {
+        if (isMounted) {
+          setIsStatsLoading(false);
+        }
+      }
+    };
+
+    const loadParticipants = async () => {
+      setIsParticipantsLoading(true);
+
+      try {
+        const response = await fetch("/api/workshop-list/participants", {
+          method: "GET",
+          cache: "no-store",
+        });
+
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error("Unable to fetch participants");
+        }
+
+        if (!isMounted) {
+          return;
+        }
+
+        const participantRows = extractParticipants(payload).map(toParticipantRow);
+        setParticipants(participantRows);
+      } catch {
+        if (isMounted) {
+          setParticipants([]);
+        }
+      } finally {
+        if (isMounted) {
+          setIsParticipantsLoading(false);
+        }
+      }
+    };
+
+    loadWorkshops();
+    loadParticipants();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const statsData: StatCard[] = useMemo(
+    () => [
+      {
+        title: "Total Workshops",
+        value: isStatsLoading ? "..." : workshopCount,
+        subtitle: isStatsLoading
+          ? "Loading workshops..."
+          : `${workshopCount} Available`,
+        icon: <Mail className="h-5 w-5" />,
+        gradient: "from-blue-600 to-blue-400",
+        link: "/admin/workshops",
+        linkText: "View Workshops",
+      },
+      {
+        title: "Total Participants",
+        value: isParticipantsLoading ? "..." : participants.length,
+        subtitle: isParticipantsLoading
+          ? "Loading participants..."
+          : "Workshop Registrations",
+        icon: <Users className="h-5 w-5" />,
+        gradient: "from-green-700 to-green-500",
+        link: "/admin/participants",
+        linkText: "View Participants",
+      },
+      {
+        title: "Contact Queries",
+        value: 20,
+        subtitle: "13 Unread",
+        highlight: "13 Unread",
+        icon: <Mail className="h-5 w-5" />,
+        gradient: "from-amber-600 to-amber-400",
+        link: "/admin/contact-queries",
+        linkText: "View Queries",
+      },
+      {
+        title: "Admin Users",
+        value: 2,
+        subtitle: "System Administrators",
+        icon: <Shield className="h-5 w-5" />,
+        gradient: "from-zinc-600 to-zinc-400",
+        link: "/admin/users",
+        linkText: "Manage Admins",
+      },
+    ],
+    [isParticipantsLoading, isStatsLoading, participants.length, workshopCount],
+  );
+
+  const recentParticipants = useMemo(() => participants.slice(0, 5), [participants]);
 
   return (
-    // Force dark background explicitly
-
     <div className="min-h-screen  text-zinc-100 container mx-auto max-w-8xl">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pt-3 pb-5 mb-6 border-b border-zinc-800">
         <div>
           <h1 className="text-4xl font-bold tracking-tight text-white">
@@ -365,10 +562,8 @@ export default function MainDashboard() {
             Welcome back! Here&apos;s what&apos;s happening today.
           </p>
         </div>
-        {/* Theme Toggle Removed */}
       </div>
 
-      {/* Stats Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {statsData.map((card, index) => (
           <StatCard key={index} card={card} />
@@ -377,9 +572,7 @@ export default function MainDashboard() {
 
       <Separator className="my-6 bg-zinc-800" />
 
-      {/* Tables Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Participants */}
         <Card className="h-full flex flex-col bg-zinc-900 border-zinc-800">
           <CardHeader className="pb-3">
             <div className="flex justify-between items-center">
@@ -398,13 +591,13 @@ export default function MainDashboard() {
             <div className="overflow-x-auto -mx-6 px-6">
               <ParticipantsTable
                 participants={recentParticipants}
-                isLoading={isLoading}
+                isLoading={isParticipantsLoading}
+                nowMs={relativeTimeTick}
               />
             </div>
           </CardContent>
         </Card>
 
-        {/* Recent Queries */}
         <Card className="h-full flex flex-col bg-zinc-900 border-zinc-800">
           <CardHeader className="pb-3">
             <div className="flex justify-between items-center">
@@ -422,7 +615,7 @@ export default function MainDashboard() {
           </CardHeader>
           <CardContent className="flex-1 pb-0 overflow-hidden">
             <div className="overflow-x-auto -mx-6 px-6">
-              <QueriesTable queries={recentQueries} isLoading={isLoading} />
+              <QueriesTable queries={recentQueries} isLoading={false} />
             </div>
           </CardContent>
         </Card>

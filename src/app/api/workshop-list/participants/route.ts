@@ -5,8 +5,6 @@ const DEV_FALLBACK_BACKEND_URLS = [
   "http://localhost:5000",
 ];
 
-const WORKSHOP_LIST_PATHS = ["/api/workshop-list", "/api/workshop-list/list"];
-
 type UpstreamSnapshot = {
   status: number;
   contentType: string;
@@ -69,43 +67,33 @@ export async function GET() {
     );
   }
 
+  const endpoint = "/api/workshop-list/participants";
   let lastRetriableResponse: UpstreamSnapshot | null = null;
 
   for (const backendUrl of backendUrls) {
-    for (const path of WORKSHOP_LIST_PATHS) {
-      try {
-        const upstreamResponse = await fetch(`${backendUrl}${path}`, {
-          method: "GET",
-          headers: {
-            Accept: "application/json",
-          },
-          cache: "no-store",
-        });
+    try {
+      const upstreamResponse = await fetch(`${backendUrl}${endpoint}`, {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+        },
+        cache: "no-store",
+      });
 
-        const snapshot: UpstreamSnapshot = {
-          status: upstreamResponse.status,
-          contentType: upstreamResponse.headers.get("content-type") ?? "",
-          bodyText: await upstreamResponse.text(),
-        };
+      const snapshot: UpstreamSnapshot = {
+        status: upstreamResponse.status,
+        contentType: upstreamResponse.headers.get("content-type") ?? "",
+        bodyText: await upstreamResponse.text(),
+      };
 
-        if (upstreamResponse.ok) {
-          return toResponse(snapshot);
-        }
-
-        // Try alternate list path if one of the aliases is unavailable.
-        if (snapshot.status === 404) {
-          continue;
-        }
-
-        if ([500, 502, 503, 504].includes(snapshot.status)) {
-          lastRetriableResponse = snapshot;
-          continue;
-        }
-
-        return toResponse(snapshot);
-      } catch {
+      if ([500, 502, 503, 504].includes(snapshot.status)) {
+        lastRetriableResponse = snapshot;
         continue;
       }
+
+      return toResponse(snapshot);
+    } catch {
+      continue;
     }
   }
 

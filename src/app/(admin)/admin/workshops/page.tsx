@@ -13,18 +13,17 @@ import {
   Cpu,
   Telescope,
   Satellite,
-  ChevronRight,
   Loader2,
 } from "lucide-react";
 
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { AdminToast } from "@/components/admin/AdminToast";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import {
@@ -37,12 +36,6 @@ import {
 } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 // Types
 interface Program {
@@ -189,9 +182,15 @@ function normalizeWorkshop(item: WorkshopListItem): Program | null {
 // Programs Table Component (matching your theme)
 const ProgramsTable: React.FC<{
   programs: Program[];
-  onDelete: (id: number) => void;
+  onRequestDelete: (program: Program) => void;
   isLoading?: boolean;
-}> = ({ programs, onDelete, isLoading = false }) => {
+  deletingProgramId?: number | null;
+}> = ({
+  programs,
+  onRequestDelete,
+  isLoading = false,
+  deletingProgramId = null,
+}) => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-40">
@@ -207,7 +206,7 @@ const ProgramsTable: React.FC<{
           {/* ID Column - First */}
           <TableHead className="w-[60px] text-white text-center">ID</TableHead>
           <TableHead className="w-[250px] text-white">Workshop</TableHead>
-          <TableHead className="text-white">Category</TableHead>
+          <TableHead className="text-white">Mode</TableHead>
           <TableHead className="text-white">Registered</TableHead>
           <TableHead className="text-white">Status</TableHead>
           <TableHead className="text-right text-white">Actions</TableHead>
@@ -264,37 +263,47 @@ const ProgramsTable: React.FC<{
                 </Badge>
               </TableCell>
               <TableCell className="text-right">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
+                <div className="flex items-center justify-end gap-2">
+                  <Link href={`/admin/workshops/${program.id}/participants`}>
                     <Button
                       variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800"
+                      size="sm"
+                      className="h-8 px-2 text-zinc-300 hover:bg-transparent hover:text-zinc-100"
                     >
-                      <ChevronRight className="h-4 w-4 rotate-90" />
+                      <Users className="mr-1.5 h-3.5 w-3.5 text-blue-400" />
+                      View
                     </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent
-                    align="end"
-                    className="bg-zinc-900 border-zinc-800"
-                  >
-                    <DropdownMenuItem className="text-zinc-100 focus:text-zinc-100 focus:bg-zinc-800">
-                      <Users className="mr-2 h-4 w-4 text-blue-400" />
-                      View Participants
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="text-zinc-100 focus:text-zinc-100 focus:bg-zinc-800">
-                      <Pencil className="mr-2 h-4 w-4 text-zinc-400" />
-                      Edit Workshop
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => onDelete(program.id)}
-                      className="text-zinc-100 focus:text-rose-400 focus:bg-zinc-800"
+                  </Link>
+                  <Link href={`/admin/workshops/${program.id}/edit`}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-2 text-zinc-300 hover:bg-transparent hover:text-zinc-100"
                     >
-                      <Trash2 className="mr-2 h-4 w-4 text-rose-400" />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                      <Pencil className="mr-1.5 h-3.5 w-3.5 text-zinc-400" />
+                      Edit
+                    </Button>
+                  </Link>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={deletingProgramId === program.id}
+                    onClick={() => onRequestDelete(program)}
+                    className="h-8 px-2 text-rose-300 hover:bg-transparent hover:text-rose-200"
+                  >
+                    {deletingProgramId === program.id ? (
+                      <>
+                        <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                        Deleting...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                        Delete
+                      </>
+                    )}
+                  </Button>
+                </div>
               </TableCell>
             </TableRow>
           ))
@@ -310,6 +319,32 @@ export default function ProgramsManagement() {
   const [totalPrograms, setTotalPrograms] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [fetchError, setFetchError] = useState("");
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [deletingProgramId, setDeletingProgramId] = useState<number | null>(
+    null,
+  );
+  const [deleteCandidate, setDeleteCandidate] = useState<{
+    id: number;
+    title: string;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!deleteCandidate || deletingProgramId !== null) {
+      return;
+    }
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setDeleteCandidate(null);
+      }
+    };
+
+    window.addEventListener("keydown", handleEscape);
+
+    return () => {
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [deleteCandidate, deletingProgramId]);
 
   useEffect(() => {
     let isMounted = true;
@@ -374,14 +409,119 @@ export default function ProgramsManagement() {
     };
   }, []);
 
-  const handleDelete = (id: number) => {
-    if (confirm("Are you sure you want to delete this workshop?")) {
-      setPrograms((prev) => prev.filter((program) => program.id !== id));
+  const handleDeleteRequest = (program: Program) => {
+    setDeleteCandidate({
+      id: program.id,
+      title: program.title,
+    });
+    setFetchError("");
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteCandidate) {
+      return;
     }
+
+    const { id, title } = deleteCandidate;
+    setDeletingProgramId(id);
+    setFetchError("");
+
+    try {
+      const response = await fetch(`/api/workshop-list/${encodeURIComponent(String(id))}`, {
+        method: "DELETE",
+      });
+
+      const payload = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        const message =
+          payload &&
+          typeof payload === "object" &&
+          "message" in payload &&
+          typeof (payload as { message?: unknown }).message === "string"
+            ? (payload as { message: string }).message
+            : "Unable to delete workshop";
+        throw new Error(message);
+      }
+
+      setPrograms((prev) => prev.filter((program) => program.id !== id));
+      setTotalPrograms((prev) => (prev > 0 ? prev - 1 : 0));
+      setToastMessage(`${title} deleted successfully`);
+      setDeleteCandidate(null);
+    } catch (error) {
+      setFetchError(
+        error instanceof Error && error.message
+          ? error.message
+          : "Unable to delete workshop",
+      );
+    } finally {
+      setDeletingProgramId(null);
+    }
+  };
+
+  const closeDeleteModal = () => {
+    if (deletingProgramId !== null) {
+      return;
+    }
+
+    setDeleteCandidate(null);
   };
 
   return (
     <div className="min-h-screen text-zinc-100 container mx-auto max-w-8xl">
+      <AdminToast
+        open={Boolean(toastMessage)}
+        message={toastMessage ?? ""}
+        variant="success"
+        onClose={() => setToastMessage(null)}
+      />
+
+      {deleteCandidate && (
+        <div
+          className="fixed inset-0 z-40 flex items-center justify-center bg-black/65 p-4"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              closeDeleteModal();
+            }
+          }}
+        >
+          <div className="w-full max-w-md rounded-xl border border-zinc-800 bg-zinc-900 p-5 shadow-xl">
+            <h2 className="text-lg font-semibold text-zinc-100">
+              Delete Workshop
+            </h2>
+            <p className="mt-2 text-sm text-zinc-300">
+              Are you sure you want to delete {deleteCandidate.title}? This action cannot be undone.
+            </p>
+            <div className="mt-5 flex justify-end gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={deletingProgramId !== null}
+                onClick={closeDeleteModal}
+                className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100"
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                disabled={deletingProgramId !== null}
+                onClick={handleDeleteConfirm}
+                className="bg-rose-600 text-white hover:bg-rose-700"
+              >
+                {deletingProgramId !== null ? (
+                  <>
+                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  "Delete"
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pt-3 pb-5 mb-6 border-b border-zinc-800">
         <div>
@@ -441,8 +581,9 @@ export default function ProgramsManagement() {
           <div className="overflow-x-auto -mx-6 px-6">
             <ProgramsTable
               programs={programs}
-              onDelete={handleDelete}
+              onRequestDelete={handleDeleteRequest}
               isLoading={isLoading}
+              deletingProgramId={deletingProgramId}
             />
           </div>
         </CardContent>

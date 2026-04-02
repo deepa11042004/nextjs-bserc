@@ -7,6 +7,10 @@ const FALLBACK_BACKEND_URLS = [
   "http://localhost:5000",
 ];
 
+function isProductionRuntime(): boolean {
+  return process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
+}
+
 const HOP_BY_HOP_HEADERS = [
   "host",
   "connection",
@@ -23,7 +27,10 @@ const HOP_BY_HOP_HEADERS = [
 
 function getCandidateBackendUrls(): string[] {
   const envUrl = process.env.API_URL?.trim();
-  const raw = [envUrl, ...FALLBACK_BACKEND_URLS].filter(
+  const raw = (isProductionRuntime()
+    ? [envUrl]
+    : [...FALLBACK_BACKEND_URLS, envUrl]
+  ).filter(
     (value): value is string => Boolean(value),
   );
 

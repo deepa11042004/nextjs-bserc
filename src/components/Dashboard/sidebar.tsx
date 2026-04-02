@@ -8,7 +8,6 @@ import {
   ExternalLink,
   HelpCircle,
   Menu,
-  Tags,
   LayoutPanelLeft,
   Contact,
   UserRoundSearch,
@@ -134,22 +133,6 @@ export default function Sidebar() {
                   Management
                 </div>
                 <div className="space-y-1">
-                  <NavItem
-                    href="/admin/program-categories"
-                    icon={Tags}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    isActive={normalizedPath === "/admin/program-categories"}
-                  >
-                    Program Categories
-                  </NavItem>
-                  <NavItem
-                    href="/admin/programs"
-                    icon={LayoutPanelLeft}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    isActive={normalizedPath === "/admin/programs"}
-                  >
-                    Programs
-                  </NavItem>
                   <NavItem
                     href="/admin/workshops"
                     icon={LayoutPanelLeft}

@@ -35,12 +35,7 @@ const NAV_ITEMS: { label: string; href?: string; dropdown?: DropdownItem[] }[] =
     {
       label: "Programme",
       dropdown: [
-        {
-          type: "link",
-          label: "One Day Workshop",
-          href: "/programs/category/one-day-workshop",
-        },
-        { type: "link", label: "All Programs", href: "/programs" },
+        { type: "link", label: "Workshop", href: "/workshops" },
       ],
     },
 
