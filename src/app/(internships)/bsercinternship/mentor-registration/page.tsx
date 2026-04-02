@@ -72,10 +72,10 @@
 //   </div>
 // );
 
-// export default function MentorRegistrationForm() {
-//   // We'll use two states to ensure both the Guidelines and Code of Conduct are accepted
-//   const [guidelinesAccepted, setGuidelinesAccepted] = useState<boolean>(false);
-//   const [conductAccepted, setConductAccepted] = useState<boolean>(false);
+export default function MentorRegistrationForm() {
+  // We'll use two states to ensure both the Guidelines and Code of Conduct are accepted
+  const [guidelinesAccepted, setGuidelinesAccepted] = useState<boolean>(false);
+  const [conductAccepted, setConductAccepted] = useState<boolean>(false);
 
 //   const isFormReady = guidelinesAccepted && conductAccepted;
 //   const plans: EngagementPlan[] = [
