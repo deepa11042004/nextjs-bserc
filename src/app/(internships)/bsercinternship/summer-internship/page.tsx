@@ -1,5 +1,7 @@
 "use client";
 
+ 
+import { Check, Search, ChevronDown, ArrowRight, Upload } from "lucide-react";
 import React, { useState } from "react";
 
 // ─────────────────────────────────────────────────────────────
@@ -110,20 +112,10 @@ function FormSelect({
           ))}
         </select>
         {/* Custom select dropdown arrow */}
+          
         <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
-          <svg
-            className="w-4 h-4 text-zinc-500"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M19 9l-7 7-7-7"
-            />
-          </svg>
+           
+          <ChevronDown className="w-5 h-5 text-zinc-500"/>
         </div>
       </div>
     </div>
@@ -226,6 +218,7 @@ export default function InternshipApplicationForm() {
                 name="internshipName"
                 label="Internship Name / इंटर्नशिप का नाम"
                 value="Def-Space Summer Internship"
+                 
                 disabled
               />
               <FormField
@@ -395,19 +388,8 @@ export default function InternshipApplicationForm() {
                 accept="image/*"
                 required
               />
-              <svg
-                className="w-5 h-5 text-zinc-400 mb-3 group-hover:text-zinc-200 transition-colors"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
-                />
-              </svg>
+             
+              <Upload  className="w-6 h-6 text-zinc-400 mb-3 group-hover:text-zinc-200 transition-colors" />
               <p className="text-zinc-400 text-[13px] group-hover:text-zinc-300 transition-colors">
                 Click to upload or drag file (Max 800KB)
               </p>
@@ -442,6 +424,8 @@ export default function InternshipApplicationForm() {
           d="M5 13l4 4L19 7"
         />
       </svg>
+     
+      
     </div>
     
     <p className="text-[13px] text-zinc-300 leading-relaxed text-justify group-hover:text-zinc-100 transition-colors">
@@ -465,19 +449,7 @@ export default function InternshipApplicationForm() {
               className="bg-orange-500 hover:bg-orange-600 text-black font-semibold text-sm px-8 py-3.5 rounded-full flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-lg shadow-[#d4ff33]/10"
             >
               Proceed to Pay
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M14 5l7 7m0 0l-7 7m7-7H3"
-                />
-              </svg>
+              <ArrowRight className="w-5 h-5" />
             </button>
           </div>
         </form>

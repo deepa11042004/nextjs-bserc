@@ -125,3 +125,14 @@ html {
   background: #e48810;
   flex-shrink: 0;
 }
+
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* 2. Remove the spinners for Firefox */
+input[type=number] {
+  -moz-appearance: textfield;
+}

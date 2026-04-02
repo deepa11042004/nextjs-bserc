@@ -6,12 +6,12 @@ import { useState, useEffect } from "react";
 import { Menu, X } from "lucide-react";
 
 const NAV_ITEMS = [
-  { label: "Home", href: "/bsercinternship" },
-  { label: "About Internship", href: "/bsercinternship/about" },
-  { label: "Internship Registration", href: "/bsercinternship/summer-internship" },
-  { label: "Register as Mentor", href: "/bsercinternship/mentor-registration" },
-  { label: "Mentorship", href: "/bsercinternship/mentorship" },
-  { label: "Attendance", href: "/bsercinternship/attendance" },
+  { label: "HOME", href: "/summer-school" },
+  { label: "ABOUT ", href: "/bsercinternship/about" },
+  { label: "REGISTRATION", href: "/bsercinternship/summer-internship" },
+  { label: "MENTORS", href: "/bsercinternship/mentor-registration" },
+  { label: "REG.MENTOR", href: "/bsercinternship/mentorship" },
+  { label: "CONTACT US", href: "/bsercinternship/attendance" },
 ];
 
 export default function Navbar() {
@@ -30,7 +30,7 @@ export default function Navbar() {
     <>
       {/* Header */}
       <header className="w-full bg-black border-b border-white/5 sticky top-0 z-[60] backdrop-blur-md">
-        <nav className="max-w-8xl mx-auto flex items-center justify-between px-4 sm:px-6 h-[70px]">
+        <nav className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 h-[70px]">
           {/* Logo */}
           <Link
             href="/"
@@ -65,7 +65,7 @@ export default function Navbar() {
           </ul>
 
           {/* Desktop Right */}
-          <div className="hidden lg:flex items-center">
+          {/* <div className="hidden lg:flex items-center">
             <Link
               href="/"
               className="relative px-6 py-2 font-semibold text-white rounded-lg overflow-hidden group"
@@ -73,7 +73,7 @@ export default function Navbar() {
               <span className="absolute inset-0 bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 opacity-80 group-hover:opacity-100 transition-opacity duration-300 rounded-lg"></span>
               <span className="relative z-10">Get Started</span>
             </Link>
-          </div>
+          </div> */}
 
           {/* Mobile Toggle */}
           <button
@@ -110,7 +110,7 @@ export default function Navbar() {
               ))}
 
               {/* Login Button */}
-              <li className="mt-4 px-4">
+              {/* <li className="mt-4 px-4">
                 <Link
                   href="/"
                   onClick={closeMenu}
@@ -118,7 +118,7 @@ export default function Navbar() {
                 >
                   Get Started
                 </Link>
-              </li>
+              </li> */}
             </ul>
           </div>
         </>

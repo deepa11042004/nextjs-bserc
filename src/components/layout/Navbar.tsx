@@ -35,18 +35,18 @@ const NAV_ITEMS: { label: string; href?: string; dropdown?: DropdownItem[] }[] =
     {
       label: "Programme",
       dropdown: [
-        { type: "link", label: "Workshop", href: "/workshops" },
+        {
+          type: "link",
+          label: "One Day Workshop",
+          href: "/programs/category/one-day-workshop",
+        },
+        { type: "link", label: "All Programs", href: "/programs" },
       ],
     },
 
     {
       label: "Career",
       dropdown: [
-        {
-          type: "link",
-          label: "Bserc Internship",
-          href: "/bsercinternship",
-        },
         {
           type: "link",
           label: "Summer Internship",
