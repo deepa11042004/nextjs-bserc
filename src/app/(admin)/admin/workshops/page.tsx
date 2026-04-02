@@ -48,7 +48,6 @@ import {
 interface Program {
   id: number;
   title: string;
-  description: string;
   thumbnail: string;
   category: string;
   registered: number;
@@ -59,11 +58,11 @@ interface Program {
 type WorkshopListItem = {
   id?: number | string;
   title?: string;
-  description?: string | null;
   thumbnail_url?: string | null;
   mode?: string | null;
   eligibility?: string | null;
   workshop_date?: string | null;
+  registered_count?: number | string | null;
 };
 
 const DEFAULT_THUMBNAIL =
@@ -147,22 +146,6 @@ function extractWorkshopItems(payload: unknown): WorkshopListItem[] {
   return [];
 }
 
-function getDescriptionPreview(value: string): string {
-  const cleaned = value.replace(/\s+/g, " ").trim();
-  if (!cleaned) {
-    return "No description available";
-  }
-
-  const sentenceMatches = cleaned.match(/[^.!?]+[.!?]+|[^.!?]+$/g);
-  if (!sentenceMatches) {
-    const words = cleaned.split(" ");
-    return words.length > 60 ? `${words.slice(0, 60).join(" ")}...` : cleaned;
-  }
-
-  const preview = sentenceMatches.slice(0, 5).join(" ").trim();
-  return sentenceMatches.length > 5 ? `${preview}...` : preview;
-}
-
 function normalizeWorkshop(item: WorkshopListItem): Program | null {
   const idAsNumber =
     typeof item.id === "number"
@@ -178,8 +161,6 @@ function normalizeWorkshop(item: WorkshopListItem): Program | null {
     return null;
   }
 
-  const description = getDescriptionPreview((item.description || "").trim());
-
   const category =
     (item.mode || "").trim() || (item.eligibility || "").trim() || "General";
 
@@ -188,13 +169,18 @@ function normalizeWorkshop(item: WorkshopListItem): Program | null {
     ? thumbnailUrl
     : DEFAULT_THUMBNAIL;
 
+  const parsedRegistered = Number(item.registered_count);
+  const registered =
+    Number.isFinite(parsedRegistered) && parsedRegistered >= 0
+      ? parsedRegistered
+      : 0;
+
   return {
     id: idAsNumber,
     title,
-    description,
     thumbnail,
     category,
-    registered: 0,
+    registered,
     status: resolveProgramStatus(item.workshop_date),
     icon: resolveProgramIcon(`${title} ${category}`),
   };
@@ -220,7 +206,7 @@ const ProgramsTable: React.FC<{
         <TableRow className="border-zinc-800">
           {/* ID Column - First */}
           <TableHead className="w-[60px] text-white text-center">ID</TableHead>
-          <TableHead className="w-[250px] text-white">Program</TableHead>
+          <TableHead className="w-[250px] text-white">Workshop</TableHead>
           <TableHead className="text-white">Category</TableHead>
           <TableHead className="text-white">Registered</TableHead>
           <TableHead className="text-white">Status</TableHead>
@@ -231,7 +217,7 @@ const ProgramsTable: React.FC<{
         {programs.length === 0 ? (
           <TableRow className="border-zinc-800">
             <TableCell colSpan={6} className="py-8 text-center text-zinc-500">
-              No programs found.
+              No workshops found.
             </TableCell>
           </TableRow>
         ) : (
@@ -255,9 +241,6 @@ const ProgramsTable: React.FC<{
                   <div className="flex flex-col">
                     <span className="font-medium text-sm text-zinc-100">
                       {program.title}
-                    </span>
-                    <span className="text-xs text-zinc-500 line-clamp-1">
-                      {program.description}
                     </span>
                   </div>
                 </div>
@@ -301,7 +284,7 @@ const ProgramsTable: React.FC<{
                     </DropdownMenuItem>
                     <DropdownMenuItem className="text-zinc-100 focus:text-zinc-100 focus:bg-zinc-800">
                       <Pencil className="mr-2 h-4 w-4 text-zinc-400" />
-                      Edit Program
+                      Edit Workshop
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => onDelete(program.id)}
@@ -350,7 +333,7 @@ export default function ProgramsManagement() {
             "message" in payload &&
             typeof (payload as { message?: unknown }).message === "string"
               ? (payload as { message: string }).message
-              : "Unable to fetch programs";
+              : "Unable to fetch workshops";
 
           throw new Error(message);
         }
@@ -375,7 +358,7 @@ export default function ProgramsManagement() {
         setFetchError(
           error instanceof Error && error.message
             ? error.message
-            : "Unable to fetch programs",
+            : "Unable to fetch workshops",
         );
       } finally {
         if (isMounted) {
@@ -392,7 +375,7 @@ export default function ProgramsManagement() {
   }, []);
 
   const handleDelete = (id: number) => {
-    if (confirm("Are you sure you want to delete this program?")) {
+    if (confirm("Are you sure you want to delete this workshop?")) {
       setPrograms((prev) => prev.filter((program) => program.id !== id));
     }
   };
@@ -406,7 +389,7 @@ export default function ProgramsManagement() {
             Workshops
           </h1>
           <p className="text-sm text-zinc-400 mt-1">
-            Manage and monitor all your educational programs
+            Manage and monitor all your workshops
           </p>
         </div>
 
@@ -427,7 +410,7 @@ export default function ProgramsManagement() {
             <div className="flex items-center gap-2">
               <Rocket className="h-4 w-4 text-blue-400" />
               <CardTitle className="text-lg text-zinc-100">
-                All Programs
+                All Workshops
               </CardTitle>
             </div>
             <div className="flex items-center gap-2">
@@ -466,7 +449,7 @@ export default function ProgramsManagement() {
         <CardFooter className="border-t border-zinc-800 pt-4">
           <div className="flex items-center justify-between w-full text-sm text-zinc-500">
             <span>
-              Showing {programs.length} of {totalPrograms} programs
+              Showing {programs.length} of {totalPrograms} workshops
             </span>
             <div className="flex items-center gap-2">
               <Button
