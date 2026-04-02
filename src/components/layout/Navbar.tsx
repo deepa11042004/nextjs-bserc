@@ -47,7 +47,7 @@ const NAV_ITEMS: { label: string; href?: string; dropdown?: DropdownItem[] }[] =
           href: "/bsercinternship",
         },
 
-        { type: "link", label: "Bserc school", href: "/summer-school" },
+        { type: "link", label: "Bserc Def-Space Summer School", href: "/summer-school" },
       ],
     },
 
