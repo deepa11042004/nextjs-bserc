@@ -43,18 +43,7 @@ const NAV_ITEMS: { label: string; href?: string; dropdown?: DropdownItem[] }[] =
         { type: "link", label: "All Programs", href: "/programs" },
       ],
     },
-    {
-      label: "Administration",
-      dropdown: [
-        { type: "link", label: "Chairman", href: "/" },
-        { type: "link", label: "Secretary", href: "/" },
-        { type: "link", label: "Director General", href: "/" },
-        { type: "link", label: "Director", href: "/" },
-        { type: "link", label: "Staff", href: "/" },
-        { type: "link", label: "Coordinator", href: "/" },
-        { type: "link", label: "Committee", href: "/" },
-      ],
-    },
+
     {
       label: "Career",
       dropdown: [
@@ -90,6 +79,19 @@ const NAV_ITEMS: { label: string; href?: string; dropdown?: DropdownItem[] }[] =
       label: "More",
       dropdown: [
         { type: "link", label: "Advisory Body", href: "/advisory-board" },
+        {
+          label: "Administration",
+          type: "nested",
+          children: [
+            { label: "Chairman", href: "/" },
+            { label: "Secretary", href: "/" },
+            { label: "Director General", href: "/" },
+            { label: "Director", href: "/" },
+            { label: "Staff", href: "/" },
+            { label: "Coordinator", href: "/" },
+            { label: "Committee", href: "/" },
+          ],
+        },
         {
           type: "nested",
           label: "People",
@@ -202,11 +204,7 @@ export default function Navbar() {
           </ul>
 
           <div className="hidden lg:flex items-center">
-            {!isStudentSession ? (
-              <StudentLoginButton />
-            ) : (
-              <StudentProfile />
-            )}
+            {!isStudentSession ? <StudentLoginButton /> : <StudentProfile />}
           </div>
 
           {/* Hamburger */}
