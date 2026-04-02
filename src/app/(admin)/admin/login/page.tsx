@@ -94,15 +94,7 @@ export default function AdminLoginPage() {
     <AuthShell
       title="Admin access"
       subtitle="Secure sign in for authorized staff"
-      actionLink={{
-        href: "/login",
-        label: "Student login"
-      }}
     >
-      <div className="rounded-2xl border border-sky-500/30 bg-slate-900/90 px-4 py-3 text-xs text-sky-100">
-        Admin Portal: use your official organization credentials.
-      </div>
-
       <AdminToast
         open={status?.type === "success"}
         message={status?.type === "success" ? status.message : ""}

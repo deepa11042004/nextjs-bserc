@@ -35,19 +35,7 @@ const NAV_ITEMS: { label: string; href?: string; dropdown?: DropdownItem[] }[] =
     {
       label: "Programme",
       dropdown: [
-        {
-          type: "link",
-          label: "Workshop",
-          href: "/programs/category/one-day-workshop",
-        },
-        { type: "link", label: "All Programs", href: "/programs" },
-        {
-          type: "link",
-          label: "Bserc Internship",
-          href: "/bsercinternship",
-        },
-
-        { type: "link", label: "Bserc Def-Space Summer School", href: "/summer-school" },
+        { type: "link", label: "Workshop", href: "/workshops" },
       ],
     },
 
