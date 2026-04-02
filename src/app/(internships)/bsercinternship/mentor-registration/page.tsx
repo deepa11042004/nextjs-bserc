@@ -72,7 +72,7 @@ const InputField: React.FC<InputFieldProps> = ({
   </div>
 );
 
-export default function MentorRegistrationForm() {
+export default function page() {
   // We'll use two states to ensure both the Guidelines and Code of Conduct are accepted
   const [guidelinesAccepted, setGuidelinesAccepted] = useState<boolean>(false);
   const [conductAccepted, setConductAccepted] = useState<boolean>(false);

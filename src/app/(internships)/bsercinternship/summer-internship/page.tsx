@@ -145,7 +145,7 @@ function CardSection({
 // Main Application Form Component
 // ─────────────────────────────────────────────────────────────
 
-export default function InternshipApplicationForm() {
+export default function page() {
   const [formData, setFormData] = useState({
     fullName: "",
     guardianName: "",
