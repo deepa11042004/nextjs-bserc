@@ -2,6 +2,7 @@
 
 import { FormEvent, ChangeEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Eye, EyeOff } from "lucide-react";
 
 import { AuthShell } from "@/components/auth/AuthShell";
 import { FormField } from "@/components/auth/FormField";
@@ -26,6 +27,7 @@ export default function LoginPage() {
     message: string;
   } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (key: keyof typeof form) =>
     (event: ChangeEvent<HTMLInputElement>) => {
@@ -120,17 +122,37 @@ export default function LoginPage() {
           autoComplete="username"
         />
 
-        <FormField
-          id="password"
-          label="Password"
-          type="password"
-          placeholder="••••••••"
-          value={form.password}
-          onChange={handleChange("password")}
-          required
-          error={errors.password}
-          autoComplete="current-password"
-        />
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium text-slate-200" htmlFor="password">
+            Password
+            <span className="ml-1 text-pink-400">*</span>
+          </label>
+          <div className="relative">
+            <input
+              id="password"
+              name="password"
+              type={showPassword ? "text" : "password"}
+              value={form.password}
+              onChange={handleChange("password")}
+              placeholder="••••••••"
+              autoComplete="current-password"
+              className="w-full rounded-2xl border px-4 py-3 bg-slate-900/60 text-sm text-white transition duration-200 focus:outline-none focus:ring-2 focus:ring-sky-500 border-slate-800 focus:border-sky-400"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((s) => !s)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-black"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+          {errors.password && (
+            <p className="text-xs text-rose-400 mt-1" role="alert">
+              {errors.password}
+            </p>
+          )}
+        </div>
 
         <button
           type="submit"

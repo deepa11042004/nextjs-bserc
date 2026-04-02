@@ -557,7 +557,7 @@ export default function MentorRegistrationForm() {
                 flex items-center gap-2 px-10 py-4 rounded-full font-bold transition-all active:scale-95
                 ${
                   isFormReady
-                    ? "bg-orange-500 hover:bg-orange-600 text-black text-black shadow-lg shadow-[#ccf15a]/10"
+                    ? "bg-orange-500 hover:bg-orange-600 text-black shadow-lg shadow-[#ccf15a]/10"
                     : "bg-zinc-800 text-zinc-500 cursor-not-allowed"
                 }
               `}
