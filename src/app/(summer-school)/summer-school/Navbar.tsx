@@ -65,7 +65,7 @@ export default function Navbar() {
           </ul>
 
           {/* Desktop Right */}
-          {/* <div className="hidden lg:flex items-center">
+          <div className="hidden lg:flex items-center">
             <Link
               href="/"
               className="relative px-6 py-2 font-semibold text-white rounded-lg overflow-hidden group"
@@ -73,7 +73,7 @@ export default function Navbar() {
               <span className="absolute inset-0 bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 opacity-80 group-hover:opacity-100 transition-opacity duration-300 rounded-lg"></span>
               <span className="relative z-10">Get Started</span>
             </Link>
-          </div> */}
+          </div>
 
           {/* Mobile Toggle */}
           <button
@@ -110,7 +110,7 @@ export default function Navbar() {
               ))}
 
               {/* Login Button */}
-              {/* <li className="mt-4 px-4">
+              <li className="mt-4 px-4">
                 <Link
                   href="/"
                   onClick={closeMenu}
@@ -118,7 +118,7 @@ export default function Navbar() {
                 >
                   Get Started
                 </Link>
-              </li> */}
+              </li>
             </ul>
           </div>
         </>
