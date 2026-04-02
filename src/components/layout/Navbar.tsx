@@ -36,6 +36,8 @@ const NAV_ITEMS: { label: string; href?: string; dropdown?: DropdownItem[] }[] =
       label: "Programme",
       dropdown: [
         { type: "link", label: "Workshop", href: "/workshops" },
+        { type: "link", label: "BSERC Internship", href: "/bsercinternship" },
+        { type: "link", label: "Summer School", href: "/summer-school" },
       ],
     },
 
