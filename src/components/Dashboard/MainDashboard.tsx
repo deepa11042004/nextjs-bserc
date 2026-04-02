@@ -284,7 +284,13 @@ const ParticipantsTable: React.FC<{
   participants: ParticipantRow[];
   isLoading?: boolean;
   nowMs?: number;
-}> = ({ participants, isLoading = false, nowMs = Date.now() }) => {
+}> = ({ participants, isLoading = false, nowMs }) => {
+  const [currentTimeMs, setCurrentTimeMs] = useState<number>(() => nowMs ?? Date.now());
+
+  useEffect(() => {
+    setCurrentTimeMs(nowMs ?? Date.now());
+  }, [nowMs]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-40">

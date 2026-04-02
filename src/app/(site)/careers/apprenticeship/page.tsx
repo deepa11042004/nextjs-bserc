@@ -1,6 +1,7 @@
 "use client";
 
 import HeroBanner from "@/components/layout/Banner";
+import Link from "next/link";
 import React from "react";
 
 interface FeatureItem {
@@ -92,12 +93,9 @@ const page: React.FC = () => {
               </div>
 
               {/* CTA Button */}
-              <a
-                className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-8 rounded-lg transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900"
-                href="/contact"
-              >
+              <Link href="/contact" className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-8 rounded-lg transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900">
                 Apply Now
-              </a>
+              </Link>
             </div>
           </div>
         </div>

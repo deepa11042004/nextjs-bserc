@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import "@/app/globals.css";
+import { cn } from "@/lib/utils";
  
 import { AuthProvider } from "@/context/AuthContext";
 
-// Import local fonts
- 
 
  
 export const metadata: Metadata = {
