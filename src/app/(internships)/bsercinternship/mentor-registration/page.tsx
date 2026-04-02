@@ -426,14 +426,20 @@ export default function MentorRegistrationForm() {
         <SectionCard title="7. PREVIOUS MENTORING EXPERIENCE / पूर्व सलाह देने का अनुभव">
           <div className="mb-6">
             <FormLabel
-              label="Have you mentored students/interns before? / क्या आपने पहले छात्रों/इंटर्न को मार्गदर्शन दिया है?"
+              label="Have you mentored students/interns before? / क्या आपने पहले छात्रों/इंटर्न को मार्गदर्शन दिया है? "
               required
             />
-            <select className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-400 text-sm focus:outline-none">
-              <option>--Select--</option>
-              <option>Yes</option>
-              <option>No</option>
-            </select>
+            <div className="relative">
+              <select className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-400 text-sm focus:outline-none focus:border-zinc-500 appearance-none transition-colors">
+                <option>--Select--</option>
+                <option>Yes, I have mentored students</option>
+                <option>Limited experience</option>
+                <option>No, but I'm eager to mentor</option>
+              </select>
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-500">
+                <ChevronDown />
+              </div>
+            </div>
           </div>
           <div className="mb-2">
             <FormLabel label="Tell us about your mentoring experience / अपने सलाह देने के अनुभव के बारे में बताएं" />
@@ -445,86 +451,96 @@ export default function MentorRegistrationForm() {
           </div>
         </SectionCard>
 
-        <SectionCard title="6. Background & Verification / पृष्ठभूमि और सत्यापन">
-          <div className="mb-8">
-            <FormLabel
-              label="Upload Resume/CV / रिज्यूमे/सीवी अपलोड करें"
-              required
-            />
-            <div className="border border-dashed border-zinc-800 rounded-xl py-10 flex flex-col items-center justify-center bg-[#111111]/50 hover:bg-[#161616] cursor-pointer group transition-colors">
-              <svg
-                className="w-6 h-6 text-zinc-500 group-hover:text-zinc-300 mb-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
-                />
-              </svg>
-              <p className="text-zinc-500 text-xs">
-                Click to upload or drag file (PDF, DOC, DOCX - Max 5MB)
-              </p>
-            </div>
-          </div>
-
-          <div className="flex gap-4 mb-8">
-            <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-orange-200 flex items-center justify-center">
-              <Search className="text-orange-500 w-5 h-5" />
-            </div>
-            <div>
-              <h4 className="text-xl font-semibold text-gray-100 mb-2">
-                Profile Visibility & Collaboration
-              </h4>
-              <p className="text-gray-400 leading-relaxed text-sm">
-                Your expertise will be highlighted to potential mentees,
-                startups, and professionals for collaboration.
-              </p>
-            </div>
-          </div>
-
-          <label className="flex items-start gap-4 cursor-pointer select-none pt-4 border-t border-[#2d3023]">
-            <div className="relative flex items-center mt-1">
-              <input
-                type="checkbox"
-                checked={guidelinesAccepted}
-                onChange={() => setGuidelinesAccepted(!guidelinesAccepted)}
-                className="peer h-5 w-5 cursor-pointer appearance-none rounded border-2 border-gray-500 bg-transparent checked:bg-white checked:border-white transition-all"
-              />
-              <Check
-                className="absolute h-4 w-4 text-black opacity-0 peer-checked:opacity-100 pointer-events-none left-0.5"
-                strokeWidth={4}
-              />
-            </div>
-            <div className="text-gray-200 text-xs md:text-sm">
-              I understand and accept the guidelines. I agree to pay the ₹1,000
-              registration fee /
-              <span className="block text-gray-400 mt-1">
-                मैं दिशानिर्देशों को समझता हूँ और ₹1,000 पंजीकरण शुल्क का भुगतान
-                करने के लिए सहमत हूँ
-              </span>
-            </div>
-          </label>
-
-          <div className="bg-[#111111] border border-[#262620] rounded-2xl p-8 mb-10">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-orange-200 flex items-center justify-center">
-                <Check className="text-orange-500 w-5 h-5" strokeWidth={3} />
+        <SectionCard title="8. GUIDELINES & FINAL DECLARATION / दिशानिर्देश और अंतिम घोषणा">
+          {/* Registration Guidelines Box */}
+          <div className="bg-[#111111] border border-[#2d3023] rounded-3xl p-8 mb-6">
+            <div className="flex gap-4 mb-8">
+              <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-orange-300 flex items-center justify-center">
+                <Check className="text-orange-500 w-6 h-6" strokeWidth={3} />
               </div>
-              <h4 className="text-white font-medium text-lg">
-                Code of Conduct / आचरण संहिता
-              </h4>
+              <div>
+                <h4 className="text-xl font-semibold text-gray-100 mb-2">
+                  Registration Fee & Profile Activation
+                </h4>
+                <p className="text-gray-400 leading-relaxed text-sm ">
+                  After successful verification of your credentials and payment
+                  of the mentor registration fee of{" "}
+                  <span className="text-[#a3e635] font-bold">
+                    ₹ 1,000 for a 2-year tenure
+                  </span>{" "}
+                  , your mentor profile will be activated and made visible to
+                  interns, students, startups, professionals, and
+                  companies.{" "}
+                </p>
+              </div>
             </div>
-            <p className="text-zinc-500 text-sm mb-8 leading-relaxed">
-              As a mentor, you agree to maintain professional ethics, provide
-              quality guidance, respect student confidentiality, and uphold the
-              values of the Def-Space program.
-            </p>
 
-            <label className="flex items-start gap-4 cursor-pointer select-none">
+            <div className="flex gap-4 mb-8">
+              <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-orange-300 flex items-center justify-center">
+                <Search className="text-orange-500 w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="text-xl font-semibold text-gray-100 mb-2">
+                  Profile Visibility & Collaboration
+                </h4>
+                <p className="text-gray-400 leading-relaxed text-sm">
+                  These stakeholders may directly view your profile and initiate
+                  mentorship requests or collaboration opportunities as
+                  appropriate. Your expertise will be highlighted to potential
+                  mentees.
+                </p>
+              </div>
+            </div>
+
+            {/* Guideline Checkbox */}
+            <label className="flex items-start gap-4 cursor-pointer select-none pt-4 border-t border-[#2d3023]">
+              <div className="relative flex items-center mt-1">
+                <input
+                  type="checkbox"
+                  checked={guidelinesAccepted}
+                  onChange={() => setGuidelinesAccepted(!guidelinesAccepted)}
+                  className="peer h-6 w-6 cursor-pointer appearance-none rounded border-2 border-gray-500 bg-transparent checked:bg-white checked:border-white transition-all"
+                />
+                <Check
+                  className="absolute h-5 w-5 text-black opacity-0 peer-checked:opacity-100 pointer-events-none left-0.5"
+                  strokeWidth={4}
+                />
+              </div>
+              <div className="text-gray-200 text-xs md:text-sm">
+                I understand and accept the guidelines. I agree to pay the
+                ₹1,000 registration fee for 2-year tenure /
+                <span className="block text-gray-400 mt-1">
+                  मैं दिशानिर्देशों को समझता/समझती हूँ और स्वीकार करता/करती हूँ।
+                  मैं 2 साल की अवधि के लिए ₹1,000 पंजीकरण शुल्क का भुगतान करने
+                  के लिए सहमत हूँ
+                </span>
+              </div>
+            </label>
+          </div>
+
+          {/* Code of Conduct Box (New Addition) */}
+          <div className="bg-[#111111] border border-[#262620] rounded-2xl p-8 mb-10">
+            {/* Top Section */}
+            <div className="flex items-start gap-4 mb-6">
+              <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-orange-300 flex items-center justify-center">
+                <Check className="text-orange-500 w-6 h-6" strokeWidth={3} />
+              </div>
+
+              <div>
+                <h4 className="text-xl font-semibold text-gray-100">
+                  Code of Conduct / आचरण संहिता
+                </h4>
+                <p className="text-gray-400 leading-relaxed text-sm mt-2">
+                  As a mentor, you agree to maintain professional ethics,
+                  provide quality guidance, respect student confidentiality, and
+                  uphold the values of the Def-Space program.
+                </p>
+              </div>
+            </div>
+
+            {/* Checkbox Section */}
+            <label className="flex items-start gap-3 cursor-pointer select-none">
+              {/* Checkbox */}
               <div className="relative flex items-center mt-1">
                 <input
                   type="checkbox"
@@ -533,21 +549,23 @@ export default function MentorRegistrationForm() {
                   className="peer h-5 w-5 cursor-pointer appearance-none rounded border-2 border-zinc-600 bg-transparent checked:bg-white checked:border-white transition-all"
                 />
                 <Check
-                  className="absolute h-4 w-4 text-black opacity-0 peer-checked:opacity-100 pointer-events-none left-0.5"
+                  className="absolute h-4 w-4 text-black opacity-0 peer-checked:opacity-100 pointer-events-none left-[2px]"
                   strokeWidth={4}
                 />
               </div>
-              <div className="text-white text-[13px] font-semibold leading-relaxed">
+
+              {/* Text */}
+              <div className="text-white text-sm font-medium leading-relaxed">
                 I declare that the information provided is accurate and I agree
                 to the mentoring guidelines and code of conduct /
-                <span className="block font-normal text-zinc-400 mt-1">
+                <span className="block text-zinc-400 mt-1 text-xs">
                   मैं घोषणा करता हूँ कि प्रदान की गई जानकारी सटीक है और मैं सलाह
                   देने के दिशानिर्देशों और आचरण संहिता से सहमत हूँ
                 </span>
               </div>
             </label>
           </div>
-
+          {/* Submit Button Section */}
           <div className="flex flex-col items-center">
             <div className="w-full h-px bg-zinc-800/50 mb-12"></div>
             <button
