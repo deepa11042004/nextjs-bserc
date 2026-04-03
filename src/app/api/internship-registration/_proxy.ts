@@ -5,7 +5,10 @@ const DEV_FALLBACK_BACKEND_URLS = [
   "http://localhost:5000",
 ];
 
-type MentorEndpoint = "/api/mentor/register";
+type InternshipRegistrationEndpoint =
+  | "/api/internship/registration/create-order"
+  | "/api/internship/registration/verify-payment"
+  | "/api/internship/registration/register";
 
 function isProductionRuntime(): boolean {
   return process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
@@ -92,18 +95,15 @@ async function buildForwardPayload(request: Request): Promise<ForwardPayload | n
   };
 }
 
-export async function forwardMentorRequest(
+export async function forwardInternshipRegistrationRequest(
   request: Request,
-  endpoint: MentorEndpoint,
+  endpoint: InternshipRegistrationEndpoint,
 ): Promise<NextResponse> {
-  const apiBaseUrls = getBackendBaseUrls();
+  const backendUrls = getBackendBaseUrls();
 
-  if (!apiBaseUrls.length) {
+  if (backendUrls.length === 0) {
     return NextResponse.json(
-      {
-        message:
-          "API_URL (or NEXT_PUBLIC_API_URL) is missing on the server. Configure it in environment variables.",
-      },
+      { message: "API_URL (or NEXT_PUBLIC_API_URL) is missing on the server" },
       { status: 500 },
     );
   }
@@ -117,24 +117,24 @@ export async function forwardMentorRequest(
   let lastRetriablePayload: unknown = null;
   let lastRetriableStatus: number | null = null;
 
-  for (const apiBaseUrl of apiBaseUrls) {
+  for (const backendUrl of backendUrls) {
     try {
-      const response = await fetch(`${apiBaseUrl}${endpoint}`, {
+      const upstreamResponse = await fetch(`${backendUrl}${endpoint}`, {
         method: "POST",
         headers: payload.headers,
         body: payload.body,
         cache: "no-store",
       });
 
-      const upstreamPayload = await parseUpstreamBody(response);
+      const responsePayload = await parseUpstreamBody(upstreamResponse);
 
-      if ([500, 502, 503, 504].includes(response.status)) {
-        lastRetriablePayload = upstreamPayload;
-        lastRetriableStatus = response.status;
+      if ([500, 502, 503, 504].includes(upstreamResponse.status)) {
+        lastRetriablePayload = responsePayload;
+        lastRetriableStatus = upstreamResponse.status;
         continue;
       }
 
-      return NextResponse.json(upstreamPayload, { status: response.status });
+      return NextResponse.json(responsePayload, { status: upstreamResponse.status });
     } catch {
       continue;
     }
@@ -147,7 +147,7 @@ export async function forwardMentorRequest(
   }
 
   return NextResponse.json(
-    { message: "Mentor registration service is unavailable" },
+    { message: "Internship registration service is unavailable" },
     { status: 502 },
   );
 }
