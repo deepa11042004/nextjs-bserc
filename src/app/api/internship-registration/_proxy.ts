@@ -8,10 +8,19 @@ const DEV_FALLBACK_BACKEND_URLS = [
 type InternshipRegistrationEndpoint =
   | "/api/internship/registration/create-order"
   | "/api/internship/registration/verify-payment"
-  | "/api/internship/registration/register";
+  | "/api/internship/registration/register"
+  | "/api/internship/registration/list";
+
+type InternshipHttpMethod = "GET" | "POST";
 
 function isProductionRuntime(): boolean {
   return process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
+}
+
+function isLocalHostname(hostname: string): boolean {
+  return (
+    hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1"
+  );
 }
 
 function getConfiguredApiUrl(): string {
@@ -23,11 +32,33 @@ function getConfiguredApiUrl(): string {
   return process.env.NEXT_PUBLIC_API_URL?.trim() ?? "";
 }
 
-function getBackendBaseUrls(): string[] {
+function isLoopbackUrl(value: string): boolean {
+  if (!value) {
+    return false;
+  }
+
+  try {
+    const parsed = new URL(value);
+    return (
+      parsed.hostname === "localhost" ||
+      parsed.hostname === "127.0.0.1" ||
+      parsed.hostname === "::1"
+    );
+  } catch {
+    return false;
+  }
+}
+
+function getBackendBaseUrls(options?: { preferLocal?: boolean }): string[] {
   const envUrl = getConfiguredApiUrl();
-  const raw = isProductionRuntime()
-    ? [envUrl]
-    : [...DEV_FALLBACK_BACKEND_URLS, envUrl];
+  const preferLocal = Boolean(options?.preferLocal);
+  const shouldIncludeDevFallback = !isProductionRuntime() || preferLocal;
+
+  const raw = shouldIncludeDevFallback
+    ? isLoopbackUrl(envUrl)
+      ? [envUrl, ...DEV_FALLBACK_BACKEND_URLS]
+      : [...DEV_FALLBACK_BACKEND_URLS, envUrl]
+    : [envUrl];
 
   const normalized = raw.filter((value): value is string => Boolean(value));
   return [...new Set(normalized.map((value) => value.replace(/\/$/, "")))];
@@ -60,7 +91,14 @@ async function parseIncomingJson(request: Request): Promise<unknown> {
   }
 }
 
-async function buildForwardPayload(request: Request): Promise<ForwardPayload | null> {
+async function buildForwardPayload(
+  request: Request,
+  method: InternshipHttpMethod,
+): Promise<ForwardPayload | null> {
+  if (method === "GET") {
+    return {};
+  }
+
   const contentType = request.headers.get("content-type")?.toLowerCase() ?? "";
 
   if (contentType.includes("application/json")) {
@@ -98,8 +136,17 @@ async function buildForwardPayload(request: Request): Promise<ForwardPayload | n
 export async function forwardInternshipRegistrationRequest(
   request: Request,
   endpoint: InternshipRegistrationEndpoint,
+  method: InternshipHttpMethod = "POST",
 ): Promise<NextResponse> {
-  const backendUrls = getBackendBaseUrls();
+  let preferLocal = false;
+  try {
+    const requestUrl = new URL(request.url);
+    preferLocal = isLocalHostname(requestUrl.hostname);
+  } catch {
+    preferLocal = false;
+  }
+
+  const backendUrls = getBackendBaseUrls({ preferLocal });
 
   if (backendUrls.length === 0) {
     return NextResponse.json(
@@ -108,7 +155,7 @@ export async function forwardInternshipRegistrationRequest(
     );
   }
 
-  const payload = await buildForwardPayload(request);
+  const payload = await buildForwardPayload(request, method);
 
   if (payload === null) {
     return NextResponse.json({ message: "Invalid request body" }, { status: 400 });
@@ -120,7 +167,7 @@ export async function forwardInternshipRegistrationRequest(
   for (const backendUrl of backendUrls) {
     try {
       const upstreamResponse = await fetch(`${backendUrl}${endpoint}`, {
-        method: "POST",
+        method,
         headers: payload.headers,
         body: payload.body,
         cache: "no-store",
