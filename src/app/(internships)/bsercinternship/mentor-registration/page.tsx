@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { FormEvent, useState } from "react";
 import { Check, Search, ChevronDown, ArrowRight, Upload } from "lucide-react";
 
 interface EngagementPlan {
@@ -63,6 +63,7 @@ const InputField: React.FC<InputFieldProps> = ({
       name={name}
       placeholder={placeholder}
       min={min}
+      required={required}
       onChange={onChange}
       className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-[#a4cc22]/50 transition-colors"
     />
@@ -72,28 +73,128 @@ const InputField: React.FC<InputFieldProps> = ({
 export default function MentorRegistrationForm() {
   const [guidelinesAccepted, setGuidelinesAccepted] = useState<boolean>(false);
   const [conductAccepted, setConductAccepted] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [submitError, setSubmitError] = useState<string>("");
+  const [submitSuccess, setSubmitSuccess] = useState<string>("");
+  const [resumeFileName, setResumeFileName] = useState<string>("");
+  const [profilePhotoFileName, setProfilePhotoFileName] = useState<string>("");
 
   const isFormReady = guidelinesAccepted && conductAccepted;
   const plans: EngagementPlan[] = [
     {
-      name: "bundle5",
+      name: "price_5_sessions",
       titleEn: "Intensive 5-Session Bundle ",
       titleHi: "5-सत्र बंडल",
       benefit: "Bulk discount applicable",
     },
     {
-      name: "plan10",
+      name: "price_10_sessions",
       titleEn: "Comprehensive 10-Session Plan ",
       titleHi: "10-सत्र योजना",
       benefit: "20% savings on per-session rate",
     },
     {
-      name: "extended",
+      name: "price_extended",
       titleEn: "Extended Mentorship Program ",
       titleHi: "विस्तारित कार्यक्रम",
       benefit: "Ongoing support & guidance",
     },
   ];
+
+  const parseApiMessage = async (response: Response): Promise<string> => {
+    const text = await response.text();
+    if (!text) {
+      return response.ok
+        ? "Mentor registered successfully"
+        : "Request failed";
+    }
+
+    try {
+      const parsed = JSON.parse(text) as { message?: string; error?: string };
+      return parsed.message || parsed.error || text;
+    } catch {
+      return text;
+    }
+  };
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSubmitError("");
+    setSubmitSuccess("");
+
+    if (!guidelinesAccepted || !conductAccepted) {
+      setSubmitError(
+        "Please accept the guidelines and code of conduct before submitting.",
+      );
+      return;
+    }
+
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    const modeKeys = [
+      "video_call",
+      "phone_call",
+      "live_chat",
+      "email_support",
+    ] as const;
+
+    const hasAnyModeSelected = modeKeys.some((key) => formData.has(key));
+    if (!hasAnyModeSelected) {
+      setSubmitError("Please select at least one mentoring mode.");
+      return;
+    }
+
+    modeKeys.forEach((key) => {
+      formData.set(key, String(formData.has(key)));
+    });
+
+    formData.set(
+      "complimentary_session",
+      String(formData.has("complimentary_session")),
+    );
+
+    const mentoredBeforeValue = String(
+      formData.get("has_mentored_before") ?? "",
+    ).trim();
+    if (mentoredBeforeValue === "yes" || mentoredBeforeValue === "limited") {
+      formData.set("has_mentored_before", "true");
+    } else if (mentoredBeforeValue === "no") {
+      formData.set("has_mentored_before", "false");
+    } else {
+      formData.delete("has_mentored_before");
+    }
+
+    formData.set("accepted_guidelines", String(guidelinesAccepted));
+    formData.set("accepted_code_of_conduct", String(conductAccepted));
+
+    setIsSubmitting(true);
+    try {
+      const response = await fetch("/api/mentor/register", {
+        method: "POST",
+        body: formData,
+      });
+
+      const message = await parseApiMessage(response);
+      if (!response.ok) {
+        throw new Error(message || "Unable to submit mentor registration.");
+      }
+
+      setSubmitSuccess(message || "Mentor registered successfully.");
+      form.reset();
+      setGuidelinesAccepted(false);
+      setConductAccepted(false);
+      setResumeFileName("");
+      setProfilePhotoFileName("");
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Unable to submit mentor registration.";
+      setSubmitError(message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#0d0d0d] text-zinc-300 py-16 px-4 selection:bg-[#a4cc22] selection:text-black">
@@ -113,29 +214,45 @@ export default function MentorRegistrationForm() {
             innovators. Join our mentorship program.
           </p>
         </div>
+        {submitError && (
+          <div className="mb-6 rounded-md border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+            {submitError}
+          </div>
+        )}
+        {submitSuccess && (
+          <div className="mb-6 rounded-md border border-[#a4cc22]/40 bg-[#a4cc22]/10 px-4 py-3 text-sm text-[#d7f58b]">
+            {submitSuccess}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit}>
         <SectionCard title="1. PERSONAL INFORMATION / व्यक्तिगत जानकारी">
           <InputField
             label="Full Name / पूरा नाम "
             placeholder="Dr./Prof./Your Name"
+            name="full_name"
             required
           />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
             <InputField
               label="Email Address / ईमेल पता "
               placeholder="yourname@domain.com"
+              type="email"
+              name="email"
               required
             />
             <InputField
-              type="number"
-              min="1"
+              type="tel"
               label="Phone Number / फोन नंबर "
               placeholder="+91 XXXXX XXXXX"
+              name="phone"
               required
             />
           </div>
           <InputField
             label="Date of Birth / जन्म दिनांक"
             type="date"
+            name="dob"
             required
           />
         </SectionCard>
@@ -144,16 +261,21 @@ export default function MentorRegistrationForm() {
           <InputField
             label="Current Position / वर्तमान पद"
             placeholder="e.g., Senior Engineer, Professor, Scientist"
+            name="current_position"
             required
           />
           <InputField
             label="Organization / संगठन"
             placeholder="Company/University/Institute name"
+            name="organization"
             required
           />
           <InputField
+            type="number"
+            min="0"
             label="Years of Experience / अनुभव के वर्ष"
             placeholder="e.g., 5, 10, 15"
+            name="years_experience"
             required
           />
           <div className="mb-6">
@@ -163,6 +285,8 @@ export default function MentorRegistrationForm() {
             />
 
             <textarea
+              name="professional_bio"
+              required
               rows={4}
               className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-500  "
               placeholder="Brief description of your expertise and achievements..."
@@ -177,15 +301,20 @@ export default function MentorRegistrationForm() {
               required
             />
             <div className="relative">
-              <select className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-400 text-sm focus:outline-none appearance-none">
-                <option>--Select Primary Track--</option>
-                <option>Advanced Drone Technology (AIR Taxi)</option>
-                <option>Defence Drone Technology</option>
-                <option>Aircraft Design Technology</option>
-                <option>Rocketry</option>
-                <option>Robotics & Artificial Intelligence</option>
-                <option>Project & Innovation for Viksit Bharat@2047</option>
-                <option>Multiple Tracks (I can mentor across tracks)</option>
+              <select
+                name="primary_track"
+                required
+                defaultValue=""
+                className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-400 text-sm focus:outline-none appearance-none"
+              >
+                <option value="">--Select Primary Track--</option>
+                <option value="Advanced Drone Technology (AIR Taxi)">Advanced Drone Technology (AIR Taxi)</option>
+                <option value="Defence Drone Technology">Defence Drone Technology</option>
+                <option value="Aircraft Design Technology">Aircraft Design Technology</option>
+                <option value="Rocketry">Rocketry</option>
+                <option value="Robotics & Artificial Intelligence">Robotics & Artificial Intelligence</option>
+                <option value="Project & Innovation for Viksit Bharat@2047">Project & Innovation for Viksit Bharat@2047</option>
+                <option value="Multiple Tracks (I can mentor across tracks)">Multiple Tracks (I can mentor across tracks)</option>
               </select>
               <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-500">
                 <ChevronDown />
@@ -195,6 +324,7 @@ export default function MentorRegistrationForm() {
           <div className="mb-6">
             <FormLabel label="Secondary/Additional Skills / माध्यमिक/अतिरिक्त कौशल" />
             <textarea
+              name="secondary_skills"
               rows={3}
               className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-100 focus:outline-none"
               placeholder="List any other relevant skills, certifications, or areas of expertise..."
@@ -203,6 +333,7 @@ export default function MentorRegistrationForm() {
           <InputField
             label="Key Competencies / मुख्य योग्यताएं"
             placeholder="e.g., CAD Design, Aerodynamics, Control Systems, Machine Learning, Project Management..."
+            name="key_competencies"
             required
           />
         </SectionCard>
@@ -215,10 +346,10 @@ export default function MentorRegistrationForm() {
             </label>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
-                { id: "video", label: " Video Call / वीडियो कॉल" },
-                { id: "phone", label: "Phone Call / फोन कॉल" },
-                { id: "chat", label: "Live Chat / लाइव चैट" },
-                { id: "email", label: "Email / ईमेल" },
+                { id: "video_call", label: " Video Call / वीडियो कॉल" },
+                { id: "phone_call", label: "Phone Call / फोन कॉल" },
+                { id: "live_chat", label: "Live Chat / लाइव चैट" },
+                { id: "email_support", label: "Email / ईमेल" },
               ].map((mode) => (
                 <label
                   key={mode.id}
@@ -227,6 +358,8 @@ export default function MentorRegistrationForm() {
                   <div className="relative flex items-center justify-center">
                     <input
                       type="checkbox"
+                      name={mode.id}
+                      value="true"
                       className="peer h-5 w-5 cursor-pointer appearance-none rounded border-2 border-zinc-600 bg-transparent checked:bg-white checked:border-white transition-all"
                     />
                     <Check
@@ -247,13 +380,18 @@ export default function MentorRegistrationForm() {
               Availability / उपलब्धता <span className="text-red-500">*</span>
             </label>
             <div className="relative">
-              <select className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-400 text-sm focus:outline-none focus:border-zinc-500 appearance-none transition-colors">
-                <option>--Select Availability--</option>
-                <option>Full-time (Can dedicate significant hours)</option>
-                <option>Part-time (Few hours per week)</option>
-                <option>Flexible (Available as needed)</option>
-                <option>Weekends Only</option>
-                <option>Evenings Only (After 6 PM)</option>
+              <select
+                name="availability"
+                required
+                defaultValue=""
+                className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-400 text-sm focus:outline-none focus:border-zinc-500 appearance-none transition-colors"
+              >
+                <option value="">--Select Availability--</option>
+                <option value="Full-time (Can dedicate significant hours)">Full-time (Can dedicate significant hours)</option>
+                <option value="Part-time (Few hours per week)">Part-time (Few hours per week)</option>
+                <option value="Flexible (Available as needed)">Flexible (Available as needed)</option>
+                <option value="Weekends Only">Weekends Only</option>
+                <option value="Evenings Only (After 6 PM)">Evenings Only (After 6 PM)</option>
               </select>
               <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-500">
                 <ChevronDown />
@@ -267,7 +405,10 @@ export default function MentorRegistrationForm() {
               <span className="text-red-500">*</span>
             </label>
             <input
-              type="text"
+              type="number"
+              min="1"
+              name="max_students"
+              required
               placeholder="How many students can you mentor simultaneously?"
               className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-500 transition-colors"
             />
@@ -279,14 +420,19 @@ export default function MentorRegistrationForm() {
               <span className="text-red-500">*</span>
             </label>
             <div className="relative">
-              <select className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-400 text-sm focus:outline-none focus:border-zinc-500 appearance-none transition-colors">
-                <option>--Select Duration--</option>
-                <option>30 Minutes</option>
-                <option>45 Minutes</option>
-                <option>1 hour</option>
-                <option>1.5 hours</option>
-                <option>2 hours</option>
-                <option>Flexible</option>
+              <select
+                name="session_duration"
+                required
+                defaultValue=""
+                className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-400 text-sm focus:outline-none focus:border-zinc-500 appearance-none transition-colors"
+              >
+                <option value="">--Select Duration--</option>
+                <option value="30 Minutes">30 Minutes</option>
+                <option value="45 Minutes">45 Minutes</option>
+                <option value="1 hour">1 hour</option>
+                <option value="1.5 hours">1.5 hours</option>
+                <option value="2 hours">2 hours</option>
+                <option value="Flexible">Flexible</option>
               </select>
               <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-500">
                 <ChevronDown />
@@ -307,6 +453,9 @@ export default function MentorRegistrationForm() {
               </span>
               <input
                 type="number"
+                name="consultation_fee"
+                min="0"
+                required
                 className="w-full pl-10 pr-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-100 focus:outline-none focus:border-[#a4cc22]/50 transition-colors"
                 placeholder="e.g., 500, 1000, 2500"
               />
@@ -355,6 +504,8 @@ export default function MentorRegistrationForm() {
             <div className="relative flex items-center justify-center">
               <input
                 type="checkbox"
+                name="complimentary_session"
+                value="true"
                 className="peer h-5 w-5 cursor-pointer appearance-none rounded border-2 border-zinc-600 bg-transparent checked:bg-white checked:border-white transition-all"
               />
               <Check
@@ -375,14 +526,27 @@ export default function MentorRegistrationForm() {
               Upload Resume/CV / रिज्यूमे/सीवी अपलोड करें{" "}
               <span className="text-red-500">*</span>
             </label>
-            <div className="border border-dashed border-[#333] rounded-xl py-12 flex flex-col items-center justify-center bg-[#111111]/50 hover:bg-[#161616] cursor-pointer group transition-colors">
+            <label className="relative border border-dashed border-[#333] rounded-xl py-12 flex flex-col items-center justify-center bg-[#111111]/50 hover:bg-[#161616] cursor-pointer group transition-colors">
+              <input
+                type="file"
+                name="resume"
+                accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                required
+                onChange={(event) =>
+                  setResumeFileName(event.target.files?.[0]?.name ?? "")
+                }
+                className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+              />
               <div className="mb-3 text-zinc-500 group-hover:text-zinc-300">
                 <Upload />
               </div>
               <p className="text-zinc-500 text-xs font-medium">
                 Click to upload or drag file (PDF, DOC, DOCX - Max 5MB)
               </p>
-            </div>
+              {resumeFileName && (
+                <p className="mt-3 text-xs text-[#a4cc22]">Selected: {resumeFileName}</p>
+              )}
+            </label>
           </div>
 
           <div className="mb-8">
@@ -390,14 +554,27 @@ export default function MentorRegistrationForm() {
               Upload Profile Photo / प्रोफाइल फोटो अपलोड करें{" "}
               <span className="text-red-500">*</span>
             </label>
-            <div className="border border-dashed border-[#333] rounded-xl py-12 flex flex-col items-center justify-center bg-[#111111]/50 hover:bg-[#161616] cursor-pointer group transition-colors">
+            <label className="relative border border-dashed border-[#333] rounded-xl py-12 flex flex-col items-center justify-center bg-[#111111]/50 hover:bg-[#161616] cursor-pointer group transition-colors">
+              <input
+                type="file"
+                name="profile_photo"
+                accept="image/jpeg,image/jpg,image/png,image/webp"
+                required
+                onChange={(event) =>
+                  setProfilePhotoFileName(event.target.files?.[0]?.name ?? "")
+                }
+                className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+              />
               <div className="mb-3 text-zinc-500 group-hover:text-zinc-300">
                 <Upload />
               </div>
               <p className="text-zinc-500 text-xs font-medium">
                 Click to upload or drag file (JPG, PNG - Max 2MB)
               </p>
-            </div>
+              {profilePhotoFileName && (
+                <p className="mt-3 text-xs text-[#a4cc22]">Selected: {profilePhotoFileName}</p>
+              )}
+            </label>
           </div>
 
           <div className="mb-6">
@@ -406,6 +583,7 @@ export default function MentorRegistrationForm() {
             </label>
             <input
               type="url"
+              name="linkedin_url"
               placeholder="https://linkedin.com/in/yourprofile"
               className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-500 transition-colors"
             />
@@ -417,6 +595,7 @@ export default function MentorRegistrationForm() {
             </label>
             <input
               type="url"
+              name="portfolio_url"
               placeholder="https://yourportfolio.com"
               className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-500 transition-colors"
             />
@@ -430,11 +609,16 @@ export default function MentorRegistrationForm() {
               required
             />
             <div className="relative">
-              <select className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-400 text-sm focus:outline-none focus:border-zinc-500 appearance-none transition-colors">
-                <option>--Select--</option>
-                <option>Yes, I have mentored students</option>
-                <option>Limited experience</option>
-                <option>No, but I'm eager to mentor</option>
+              <select
+                name="has_mentored_before"
+                required
+                defaultValue=""
+                className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-400 text-sm focus:outline-none focus:border-zinc-500 appearance-none transition-colors"
+              >
+                <option value="">--Select--</option>
+                <option value="yes">Yes, I have mentored students</option>
+                <option value="limited">Limited experience</option>
+                <option value="no">No, but I'm eager to mentor</option>
               </select>
               <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-500">
                 <ChevronDown />
@@ -444,6 +628,7 @@ export default function MentorRegistrationForm() {
           <div className="mb-2">
             <FormLabel label="Tell us about your mentoring experience / अपने सलाह देने के अनुभव के बारे में बताएं" />
             <textarea
+              name="mentoring_experience"
               rows={4}
               className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-100 placeholder-zinc-600 focus:outline-none resize-none"
               placeholder="Number of students mentored, outcomes, success stories, etc..."
@@ -570,21 +755,22 @@ export default function MentorRegistrationForm() {
             <div className="w-full h-px bg-zinc-800/50 mb-12"></div>
             <button
               type="submit"
-              disabled={!isFormReady}
+              disabled={!isFormReady || isSubmitting}
               className={`
                 flex items-center gap-2 px-10 py-4 rounded-full font-bold transition-all active:scale-95
                 ${
-                  isFormReady
+                  isFormReady && !isSubmitting
                     ? "bg-orange-500 hover:bg-orange-600 text-black shadow-lg shadow-[#ccf15a]/10"
                     : "bg-zinc-800 text-zinc-500 cursor-not-allowed"
                 }
               `}
             >
-              Submit Application
+              {isSubmitting ? "Submitting..." : "Submit Application"}
               <ArrowRight className="w-5 h-5" />
             </button>
           </div>
         </SectionCard>
+        </form>
       </main>
     </div>
   );
