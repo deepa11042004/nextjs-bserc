@@ -9,6 +9,12 @@ function isProductionRuntime(): boolean {
   return process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
 }
 
+function isLocalHostname(hostname: string): boolean {
+  return (
+    hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1"
+  );
+}
+
 function getConfiguredApiUrl(): string {
   const apiUrl = process.env.API_URL?.trim();
   if (apiUrl) {
@@ -18,16 +24,38 @@ function getConfiguredApiUrl(): string {
   return process.env.NEXT_PUBLIC_API_URL?.trim() ?? "";
 }
 
+function isLoopbackUrl(value: string): boolean {
+  if (!value) {
+    return false;
+  }
+
+  try {
+    const parsed = new URL(value);
+    return (
+      parsed.hostname === "localhost" ||
+      parsed.hostname === "127.0.0.1" ||
+      parsed.hostname === "::1"
+    );
+  } catch {
+    return false;
+  }
+}
+
 type WorkshopRegistrationEndpoint =
   | "/api/workshop/enrollment"
   | "/api/workshop/enrollment/create-order"
   | "/api/workshop/enrollment/verify-payment";
 
-function getBackendBaseUrls(): string[] {
+function getBackendBaseUrls(options?: { preferLocal?: boolean }): string[] {
   const envUrl = getConfiguredApiUrl();
-  const raw = isProductionRuntime()
-    ? [envUrl]
-    : [envUrl, ...DEV_FALLBACK_BACKEND_URLS];
+  const preferLocal = Boolean(options?.preferLocal);
+  const shouldIncludeDevFallback = !isProductionRuntime() || preferLocal;
+
+  const raw = shouldIncludeDevFallback
+    ? isLoopbackUrl(envUrl)
+      ? [envUrl, ...DEV_FALLBACK_BACKEND_URLS]
+      : [...DEV_FALLBACK_BACKEND_URLS, envUrl]
+    : [envUrl];
 
   const normalized = raw.filter(
     (value): value is string => Boolean(value),
@@ -62,7 +90,15 @@ export async function forwardWorkshopRegistrationRequest(
   request: Request,
   endpoint: WorkshopRegistrationEndpoint,
 ) {
-  const apiBaseUrls = getBackendBaseUrls();
+  let preferLocal = false;
+  try {
+    const requestUrl = new URL(request.url);
+    preferLocal = isLocalHostname(requestUrl.hostname);
+  } catch {
+    preferLocal = false;
+  }
+
+  const apiBaseUrls = getBackendBaseUrls({ preferLocal });
 
   if (!apiBaseUrls.length) {
     return NextResponse.json(
