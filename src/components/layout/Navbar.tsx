@@ -47,7 +47,7 @@ const NAV_ITEMS: { label: string; href?: string; dropdown?: DropdownItem[] }[] =
         {
           type: "link",
           label: "Summer Internship",
-          href: "/careers/summer-internship",
+          href: "/bsercinternship/summer-internship",
         },
         {
           type: "link",

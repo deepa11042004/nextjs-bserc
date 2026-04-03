@@ -1,8 +1,115 @@
 "use client";
 
- 
 import { Check, Search, ChevronDown, ArrowRight, Upload } from "lucide-react";
 import React, { useState } from "react";
+import {
+  createInternshipPaymentOrder,
+  registerInternshipWithoutPayment,
+  verifyInternshipPaymentAndRegister,
+} from "@/services/internshipRegistration";
+
+type RazorpaySuccessResponse = {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+};
+
+type RazorpayFailureResponse = {
+  error?: {
+    description?: string;
+  };
+};
+
+type RazorpayOptions = {
+  key: string;
+  amount: number;
+  currency: string;
+  name: string;
+  description?: string;
+  order_id: string;
+  prefill?: {
+    name?: string;
+    email?: string;
+    contact?: string;
+  };
+  theme?: {
+    color?: string;
+  };
+  handler: (response: RazorpaySuccessResponse) => void | Promise<void>;
+  modal?: {
+    ondismiss?: () => void;
+  };
+};
+
+type RazorpayInstance = {
+  open: () => void;
+  on: (
+    event: "payment.failed",
+    handler: (response: RazorpayFailureResponse) => void,
+  ) => void;
+};
+
+declare global {
+  interface Window {
+    Razorpay?: new (options: RazorpayOptions) => RazorpayInstance;
+  }
+}
+
+type SubmitStatus = {
+  type: "success" | "info" | "error";
+  message: string;
+};
+
+const MAX_PASSPORT_PHOTO_BYTES = 800 * 1024;
+const ALLOWED_PASSPORT_PHOTO_TYPES = new Set([
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/webp",
+  "image/heic",
+  "image/heif",
+]);
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message.trim()) {
+    return error.message;
+  }
+
+  return "Something went wrong. Please try again.";
+}
+
+function isAlreadyRegisteredMessage(message: string): boolean {
+  return message.toLowerCase().includes("already applied");
+}
+
+function loadRazorpayScript(): Promise<boolean> {
+  if (typeof window === "undefined") {
+    return Promise.resolve(false);
+  }
+
+  if (window.Razorpay) {
+    return Promise.resolve(true);
+  }
+
+  return new Promise((resolve) => {
+    const existing = document.querySelector(
+      'script[src="https://checkout.razorpay.com/v1/checkout.js"]',
+    );
+
+    if (existing) {
+      existing.addEventListener("load", () => resolve(true), { once: true });
+      existing.addEventListener("error", () => resolve(false), { once: true });
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+}
 
 // ─────────────────────────────────────────────────────────────
 // Reusable UI Components
@@ -141,12 +248,45 @@ function CardSection({
   );
 }
 
+function StatusBanner({
+  status,
+  onDismiss,
+}: {
+  status: SubmitStatus;
+  onDismiss: () => void;
+}) {
+  const classesByType: Record<SubmitStatus["type"], string> = {
+    success: "border-emerald-500/60 bg-emerald-500/10 text-emerald-200",
+    info: "border-sky-500/60 bg-sky-500/10 text-sky-200",
+    error: "border-rose-500/60 bg-rose-500/10 text-rose-200",
+  };
+
+  return (
+    <div
+      role={status.type === "error" ? "alert" : "status"}
+      className={`mb-6 flex items-start justify-between gap-4 rounded-lg border px-4 py-3 text-sm ${classesByType[status.type]}`}
+    >
+      <p>{status.message}</p>
+      <button
+        type="button"
+        onClick={onDismiss}
+        className="rounded px-2 py-1 text-xs font-semibold uppercase tracking-wide text-white/80 transition hover:text-white"
+      >
+        Close
+      </button>
+    </div>
+  );
+}
+
 // ─────────────────────────────────────────────────────────────
 // Main Application Form Component
 // ─────────────────────────────────────────────────────────────
 
 export default function InternshipApplicationForm() {
-  const [formData, setFormData] = useState({
+  const internshipName = "Def-Space Summer Internship";
+  const internshipDesignation = "Def-Space Tech Intern";
+
+  const emptyFormData = {
     fullName: "",
     guardianName: "",
     gender: "",
@@ -161,7 +301,21 @@ export default function InternshipApplicationForm() {
     institution: "",
     qualification: "",
     declaration: false,
-  });
+  };
+
+  const [formData, setFormData] = useState(emptyFormData);
+  const [passportPhoto, setPassportPhoto] = useState<File | null>(null);
+  const [passportPhotoName, setPassportPhotoName] = useState<string>("");
+  const [photoInputKey, setPhotoInputKey] = useState<number>(0);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [submitStatus, setSubmitStatus] = useState<SubmitStatus | null>(null);
+
+  const clearForm = () => {
+    setFormData(emptyFormData);
+    setPassportPhoto(null);
+    setPassportPhotoName("");
+    setPhotoInputKey((prev) => prev + 1);
+  };
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -169,6 +323,8 @@ export default function InternshipApplicationForm() {
     >,
   ) => {
     const { name, value, type } = e.target;
+    setSubmitStatus(null);
+
     if (type === "checkbox") {
       const checked = (e.target as HTMLInputElement).checked;
       setFormData((prev) => ({ ...prev, [name]: checked }));
@@ -177,14 +333,206 @@ export default function InternshipApplicationForm() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.declaration) {
-      alert("Please accept the declaration to proceed.");
+  const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] || null;
+
+    if (!file) {
+      setPassportPhoto(null);
+      setPassportPhotoName("");
       return;
     }
-    console.log("Form Data Submitted:", formData);
-    alert("Proceeding to payment...");
+
+    const mimeType = file.type.toLowerCase();
+
+    if (!ALLOWED_PASSPORT_PHOTO_TYPES.has(mimeType)) {
+      setPassportPhoto(null);
+      setPassportPhotoName("");
+      setSubmitStatus({
+        type: "error",
+        message: "Invalid photo format. Please upload JPG, PNG, WEBP, HEIC, or HEIF.",
+      });
+      event.target.value = "";
+      return;
+    }
+
+    if (file.size > MAX_PASSPORT_PHOTO_BYTES) {
+      setPassportPhoto(null);
+      setPassportPhotoName("");
+      setSubmitStatus({
+        type: "error",
+        message: "Passport photo is too large. Maximum allowed size is 800KB.",
+      });
+      event.target.value = "";
+      return;
+    }
+
+    setPassportPhoto(file);
+    setPassportPhotoName(file?.name || "");
+    setSubmitStatus(null);
+  };
+
+  const buildRegistrationFormData = (paymentDetails?: {
+    razorpay_order_id: string;
+    razorpay_payment_id: string;
+    razorpay_signature: string;
+  }) => {
+    const payload = new FormData();
+
+    payload.append("internship_name", internshipName);
+    payload.append("internship_designation", internshipDesignation);
+    payload.append("full_name", formData.fullName.trim());
+    payload.append("guardian_name", formData.guardianName.trim());
+    payload.append("gender", formData.gender.trim());
+    payload.append("dob", formData.dob.trim());
+    payload.append("mobile_number", formData.mobile.trim());
+    payload.append("email", formData.email.trim());
+    payload.append("alternative_email", formData.altEmail.trim());
+    payload.append("address", formData.address.trim());
+    payload.append("city", formData.city.trim());
+    payload.append("state", formData.state.trim());
+    payload.append("pin_code", formData.pinCode.trim());
+    payload.append("institution_name", formData.institution.trim());
+    payload.append("educational_qualification", formData.qualification.trim());
+    payload.append("declaration_accepted", String(formData.declaration));
+
+    if (passportPhoto) {
+      payload.append("passport_photo", passportPhoto);
+    }
+
+    if (paymentDetails) {
+      payload.append("razorpay_order_id", paymentDetails.razorpay_order_id);
+      payload.append("razorpay_payment_id", paymentDetails.razorpay_payment_id);
+      payload.append("razorpay_signature", paymentDetails.razorpay_signature);
+    }
+
+    return payload;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    setSubmitStatus(null);
+
+    if (!formData.declaration) {
+      setSubmitStatus({
+        type: "error",
+        message: "Please accept the declaration to proceed.",
+      });
+      return;
+    }
+
+    if (!passportPhoto) {
+      setSubmitStatus({
+        type: "error",
+        message: "Please upload a passport size photo before proceeding.",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const order = await createInternshipPaymentOrder({
+        email: formData.email.trim(),
+      });
+
+      if (order.already_registered) {
+        setSubmitStatus({
+          type: "info",
+          message:
+            order.message || "You have already applied for this internship.",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (!order.requires_payment || order.amount <= 0) {
+        await registerInternshipWithoutPayment(buildRegistrationFormData());
+        clearForm();
+        setSubmitStatus({
+          type: "success",
+          message: "Application submitted successfully.",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (!order.key_id || !order.order_id) {
+        throw new Error("Payment initialization failed. Please try again.");
+      }
+
+      const loaded = await loadRazorpayScript();
+      if (!loaded || !window.Razorpay) {
+        throw new Error("Unable to load Razorpay checkout. Please try again.");
+      }
+
+      const razorpay = new window.Razorpay({
+        key: order.key_id,
+        amount: order.amount,
+        currency: order.currency,
+        name: "BSERC",
+        description: internshipName,
+        order_id: order.order_id,
+        prefill: {
+          name: formData.fullName,
+          email: formData.email,
+          contact: formData.mobile,
+        },
+        theme: {
+          color: "#f97316",
+        },
+        handler: async (response) => {
+          try {
+            await verifyInternshipPaymentAndRegister(
+              buildRegistrationFormData({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              }),
+            );
+
+            clearForm();
+            setSubmitStatus({
+              type: "success",
+              message:
+                "Payment successful and internship application submitted!",
+            });
+          } catch (error) {
+            const message = getErrorMessage(error);
+            setSubmitStatus({
+              type: isAlreadyRegisteredMessage(message) ? "info" : "error",
+              message,
+            });
+          } finally {
+            setIsSubmitting(false);
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            setIsSubmitting(false);
+          },
+        },
+      });
+
+      razorpay.on("payment.failed", (response) => {
+        setSubmitStatus({
+          type: "error",
+          message:
+            response.error?.description ||
+            "Payment failed. Please try again.",
+        });
+        setIsSubmitting(false);
+      });
+
+      razorpay.open();
+    } catch (error) {
+      const message = getErrorMessage(error);
+      setSubmitStatus({
+        type: isAlreadyRegisteredMessage(message) ? "info" : "error",
+        message,
+      });
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -209,6 +557,13 @@ export default function InternshipApplicationForm() {
           </p>
         </div>
 
+        {submitStatus && (
+          <StatusBanner
+            status={submitStatus}
+            onDismiss={() => setSubmitStatus(null)}
+          />
+        )}
+
         <form onSubmit={handleSubmit}>
           {/* Section 1 */}
           <CardSection title="1. INTERNSHIP DETAILS / इंटर्नशिप विवरण">
@@ -217,15 +572,14 @@ export default function InternshipApplicationForm() {
                 id="internshipName"
                 name="internshipName"
                 label="Internship Name / इंटर्नशिप का नाम"
-                value="Def-Space Summer Internship"
-                 
+                value={internshipName}
                 disabled
               />
               <FormField
                 id="designation"
                 name="designation"
                 label="Designation of Internship / इंटर्नशिप का प्रकार"
-                value="Def-Space Tech Intern"
+                value={internshipDesignation}
                 disabled
               />
             </div>
@@ -381,19 +735,30 @@ export default function InternshipApplicationForm() {
               Upload Passport Size Photo / पासपोर्ट साइज फोटो अपलोड करें{" "}
               <span className="text-red-500 ml-0.5">*</span>
             </label>
-            <div className="relative w-full border border-dashed border-[#3a402a] rounded-xl py-14 flex flex-col items-center justify-center bg-[#111111]/50 hover:bg-[#161616] transition-colors cursor-pointer group">
-              <input
-                type="file"
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                accept="image/*"
-                required
-              />
-             
-              <Upload  className="w-6 h-6 text-zinc-400 mb-3 group-hover:text-zinc-200 transition-colors" />
+            <input
+              key={photoInputKey}
+              id="passport_photo"
+              type="file"
+              name="passport_photo"
+              className="sr-only"
+              accept=".jpg,.jpeg,.png,.webp,.heic,.heif"
+              onChange={handlePhotoChange}
+            />
+            <label
+              htmlFor="passport_photo"
+              className="w-full border border-dashed border-[#3a402a] rounded-xl py-14 flex flex-col items-center justify-center bg-[#111111]/50 hover:bg-[#161616] transition-colors cursor-pointer group"
+            >
+              <Upload className="w-6 h-6 text-zinc-400 mb-3 group-hover:text-zinc-200 transition-colors" />
               <p className="text-zinc-400 text-[13px] group-hover:text-zinc-300 transition-colors">
-                Click to upload or drag file (Max 800KB)
+                Click to upload photo (Max 800KB)
               </p>
-            </div>
+              <p className="mt-1 text-[11px] text-zinc-500 group-hover:text-zinc-400 transition-colors">
+                Supported: JPG, PNG, WEBP, HEIC, HEIF
+              </p>
+              {passportPhotoName && (
+                <p className="mt-2 text-xs text-[#d4ff33]">Selected: {passportPhotoName}</p>
+              )}
+            </label>
           </CardSection>
 
          {/* Declaration Section */}
@@ -446,9 +811,14 @@ export default function InternshipApplicationForm() {
           <div className="border-t border-[#262626] pt-8 flex justify-center">
             <button
               type="submit"
-              className="bg-orange-500 hover:bg-orange-600 text-black font-semibold text-sm px-8 py-3.5 rounded-full flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-lg shadow-[#d4ff33]/10"
+              disabled={isSubmitting}
+              className={`text-black font-semibold text-sm px-8 py-3.5 rounded-full flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-lg shadow-[#d4ff33]/10 ${
+                isSubmitting
+                  ? "bg-zinc-700 text-zinc-300 cursor-not-allowed"
+                  : "bg-orange-500 hover:bg-orange-600"
+              }`}
             >
-              Proceed to Pay
+              {isSubmitting ? "Processing..." : "Proceed to Pay"}
               <ArrowRight className="w-5 h-5" />
             </button>
           </div>
