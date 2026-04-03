@@ -63,7 +63,7 @@ export async function forwardAuthRequest(
     return NextResponse.json(
       {
         message:
-          "API_URL (or NEXT_PUBLIC_API_URL) is missing on the server. Configure it in Vercel project environment variables.",
+          "API_URL (or NEXT_PUBLIC_AUTH_API_URL) is missing on the server. Configure it in Vercel project environment variables.",
       },
       { status: 500 },
     );
