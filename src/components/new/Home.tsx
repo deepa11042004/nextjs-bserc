@@ -69,7 +69,7 @@ const Hero: React.FC = () => {
             <div className="absolute inset-0 bg-gray-500/5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <div className="relative z-10 text-center">
               <h3 className="text-3xl md:text-5xl font-bold font-serif text-white mb-2">
-                Chandrayaan
+                Chandrayaan 
               </h3>
               <h3 className="text-4xl md:text-6xl font-bold font-serif text-white mb-2">
                 3
