@@ -1,12 +1,5 @@
-import React from 'react'
+import { redirect } from "next/navigation";
 
-const page = () => {
-  return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-semibold text-white">all faculty</h1>
-      
-    </div>
-  )
+export default function FacultyRouteRedirectPage() {
+  redirect("/admin/mentors");
 }
-
-export default page
