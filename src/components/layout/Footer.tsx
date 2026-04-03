@@ -1,170 +1,209 @@
 "use client";
-
-import Link from "next/link";
+import {
+  FaFacebookF,
+  FaInstagram,
+  FaTwitter,
+  FaLinkedinIn,
+} from "react-icons/fa";
+import { FiMapPin, FiPhone, FiMail } from "react-icons/fi";
+import { IconType } from "react-icons";
 import Image from "next/image";
-export default function Footer() {
+import type { StaticImageData } from "next/image";
+
+// Type definitions
+interface SocialLink {
+  icon: IconType;
+  label: string;
+  href: string;
+}
+
+interface ContactItem {
+  icon: IconType;
+  label: string;
+}
+
+interface PartnerLogo {
+  src: string | StaticImageData;
+  alt: string;
+  style?: React.CSSProperties;
+}
+
+// Typed data arrays
+const socialLinks: SocialLink[] = [
+  { icon: FaFacebookF, label: "Facebook", href: "#" },
+  { icon: FaInstagram, label: "Instagram", href: "#" },
+  { icon: FaTwitter, label: "Twitter", href: "#" },
+  { icon: FaLinkedinIn, label: "LinkedIn", href: "#" },
+];
+
+const learningLinks: string[] = [
+  "All Courses",
+  "My Learning",
+  "Categories",
+  "Certifications",
+  "Skill Tracks",
+];
+
+const companyLinks: string[] = [
+  "About Us",
+  "Careers",
+  "Blog / Articles",
+  "Privacy Policy",
+  "Terms & Conditions",
+];
+
+const contactItems: ContactItem[] = [
+  { icon: FiMapPin, label: "New Delhi, India" },
+  { icon: FiPhone, label: "+91 7042880241" },
+  { icon: FiMail, label: "info@bserc.org" },
+  { icon: FiMail, label: "contact@bserc.org" },
+];
+
+const partnerLogos: PartnerLogo[] = [
+   { src: "/img/isro.png", alt: "ISRO" },
+   { src: "/img/drdo.png", alt: "DRDO" },
+  {
+    src: "/img/ministry.png",
+    alt: "Ministry of Education",
+    style: { filter: "brightness(0) invert(1)" },
+  },
+  
+ 
+  { src: "/img/iit-delhi.png", alt: "IIT Delhi" },
+];
+// Component with TypeScript typing
+const Footer: React.FC = () => {
   return (
-    <footer className="bg-black text-gray-300 py-12 px-6 ">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
-        {/* Column 1: Logo & Description */}
-        <div>
-          <div className="flex items-center gap-3 mb-4">
-            <Image
-              src="/img/BSERC_new.png"
-              alt="BSERC Logo"
-              width={50}
-              height={50}
-              className="opacity-100"
-            />
+    <footer className=" bg-black text-white border-t  border-white/10">
+      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+          {/* Brand */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center">
+                <Image
+                width={500}
+                height={500}
+                  src="/img/bserc_footer.png"
+                  alt="BSERC logo"
+                  className="h-full w-full object-contain"
+                />
+              </div>
+              <div>
+                <p className="text-xl font-bold">BSERC</p>
+                <p className="text-xs tracking-[0.2em] text-slate-400">
+                  HUB FOR SPACE EDUCATION
+                </p>
+              </div>
+            </div>
+            <div className="mt-2 flex items-center gap-3">
+              {partnerLogos.map((item, idx) => (
+                <div
+                  key={idx}
+                  className="flex h-10 w-20 items-center justify-center"
+                >
+                  <Image
+                  width={500}
+                height={500}
+                    src={item.src}
+                    alt={item.alt}
+                    className="h-full w-full object-contain"
+                    style={item.style}
+                  />
+                </div>
+              ))}
+            </div>
+            <p className="text-sm text-slate-300 leading-relaxed">
+              Empowering Future Innovators in Space Exploration. We are
+              dedicated to advancing space science education and fostering
+              innovation across India.
+            </p>
 
-            <div>
-              <h2 className="text-white font-bold text-lg tracking-wide">
-                BSERC
-              </h2>
-              <p className="text-xs text-gray-400 uppercase tracking-widest">
-                Hub for Space Education
-              </p>
+            <div className="flex items-center gap-3">
+              {socialLinks.map(({ icon: Icon, label, href }) => (
+                <a
+                  key={label}
+                  href={href}
+                  aria-label={label}
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-[#0b1224] text-slate-200 transition hover:text-white hover:scale-105 hover:shadow-[0_0_18px_rgba(59,130,246,0.45)]"
+                >
+                  <Icon size={16} />
+                </a>
+              ))}
             </div>
           </div>
-          <p className="text-sm leading-relaxed mb-6 max-w-sm">
-            Empowering Future Innovators in Space Exploration. We are dedicated
-            to advancing space science education and fostering innovation across
-            India.
-          </p>
 
-          {/* Social Buttons */}
-          <div className="flex gap-3">
-            {["F", "I", "T", "L"].map((icon) => (
-              <button
-                key={icon}
-                aria-label={`Social link ${icon}`}
-                className="w-8 h-8 rounded-full border border-gray-600 flex items-center justify-center text-sm font-semibold hover:bg-gray-700 transition"
-              >
-                {icon}
-              </button>
-            ))}
+          {/* Learning */}
+          <div>
+            <h4 className="mb-4 text-sm font-semibold uppercase tracking-wide text-slate-400">
+              Learning
+            </h4>
+            <ul className="space-y-3 text-sm text-slate-300">
+              {learningLinks.map((item) => (
+                <li key={item}>
+                  <a
+                    href="#"
+                    className="inline-flex items-center gap-2 transition hover:text-[#3B82F6] hover:translate-x-1"
+                  >
+                    {item}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Company */}
+          <div>
+            <h4 className="mb-4 text-sm font-semibold uppercase tracking-wide text-slate-400">
+              Company
+            </h4>
+            <ul className="space-y-3 text-sm text-slate-300">
+              {companyLinks.map((item) => (
+                <li key={item}>
+                  <a
+                    href="#"
+                    className="inline-flex items-center gap-2 transition hover:text-[#3B82F6] hover:translate-x-1"
+                  >
+                    {item}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Contact */}
+          <div>
+            <h4 className="mb-4 text-sm font-semibold uppercase tracking-wide text-slate-400">
+              Head Office
+            </h4>
+            <ul className="space-y-3 text-sm text-slate-300">
+              {contactItems.map(({ icon: Icon, label }, idx) => (
+                <li key={`${label}-${idx}`} className="flex items-start gap-3">
+                  <span className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-lg bg-[#0b1224] text-[#3B82F6]">
+                    <Icon size={16} />
+                  </span>
+                  <span className="leading-relaxed">{label}</span>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
 
-        {/* Column 2: Quick Links */}
-        <div>
-          <h3 className="text-white font-bold mb-3 tracking-widest uppercase border-b-2 border-cyan-500 inline-block pb-1">
-            Quick Links
-          </h3>
-          <ul className="mt-3 space-y-2 text-sm">
-            <li>
-              <Link href="/about-us" className="hover:text-cyan-400 transition">
-                About BSERC
-              </Link>
-            </li>
-            <li>
-              <Link href="/team" className="hover:text-cyan-400 transition">
-                Team & Mentors
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/workshops"
-                className="hover:text-cyan-400 transition"
-              >
-                Workshops & Seminars
-              </Link>
-            </li>
-            <li>
-              <Link href="/skills" className="hover:text-cyan-400 transition">
-                Skills & Education
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/contact"
-                className="hover:text-cyan-400 transition font-semibold"
-              >
-                Contact Us
-              </Link>
-            </li>
-          </ul>
-        </div>
-
-        {/* Column 3: Head Office */}
-        <div>
-          <h3 className="text-white font-bold mb-3 tracking-widest uppercase border-b-2 border-cyan-500 inline-block pb-1">
-            Head Office
-          </h3>
-          <ul className="mt-3 space-y-3 text-sm">
-            <li className="flex items-center gap-2  ">
-              <span role="img" aria-label="location pin">
-                📍
-              </span>
-              New Delhi, India
-            </li>
-            <li className="flex items-center gap-2">
-              <span role="img" aria-label="phone">
-                📞
-              </span>
-              +91 7042880241
-            </li>
-            <li className="flex items-center gap-2">
-              <span role="img" aria-label="email">
-                ✉️
-              </span>
-              info@bserc.org
-            </li>
-            <li className="flex items-center gap-2">
-              <span role="img" aria-label="email">
-                ✉️
-              </span>
-              contact@bserc.org
-            </li>
-          </ul>
-        </div>
-
-         
-        {/* Column 4: Stay Informed */}
-        <div className="text-center sm:text-left ">
-          <h3 className="text-white font-bold mb-3 tracking-widest uppercase border-b-2 border-cyan-500 inline-block pb-1">
-            Stay Informed
-          </h3>
-
-          <div className="flex justify-center sm:justify-start mt-4">
-            <div className="relative w-20 h-20 group">
-              <Image
-                src="/img/BSERC_new.png"
-                alt="BSERC Logo Large"
-                fill
-                sizes="80px"
-                className="
-                  object-contain
-                  transition-transform duration-500 ease-in-out
-                  group-hover:scale-110 
-                  group-hover:rotate-90
-                "
-              />
-            </div>
+        <div className="mt-12 border-t border-white/5 pt-6 flex flex-col gap-3 text-xs text-slate-400 sm:flex-row sm:items-center sm:justify-between">
+          <p>© 2026 BSERC. All rights reserved.</p>
+          <div className="flex items-center gap-4">
+            <a href="#" className="transition hover:text-[#3B82F6]">
+              Privacy
+            </a>
+            <span className="text-slate-600">|</span>
+            <a href="#" className="transition hover:text-[#3B82F6]">
+              Terms
+            </a>
           </div>
-        </div>
-      </div>
-
-      {/* Bottom copyright */}
-      <div className="max-w-7xl mx-auto mt-10 border-t border-gray-800 pt-6 text-xs text-gray-500 flex flex-col md:flex-row justify-between">
-        <p>
-          © 2026 <strong className="text-white">BSERC</strong>. All Rights
-          Reserved.
-        </p>
-        <div className="flex gap-6 mt-3 md:mt-0">
-          <Link href="/privacy" className="hover:text-cyan-400 transition">
-            Privacy Policy
-          </Link>
-          <span>|</span>
-          <Link href="/terms" className="hover:text-cyan-400 transition">
-            Terms & Conditions
-          </Link>
-          <span>|</span>
-          <Link href="/refund" className="hover:text-cyan-400 transition">
-            Refund Policy
-          </Link>
         </div>
       </div>
     </footer>
   );
-}
+};
+
+export default Footer;
