@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-//import Footer from "@/components/layout/Footer";
+import Footer from "@/components/layout/Footer";
 import Navbar from "./Navbar";
 
 export default function SchoolLayout({
@@ -12,6 +12,7 @@ export default function SchoolLayout({
     <>
       <Navbar />
       {children}
+      <Footer />
        
     </>
   );
