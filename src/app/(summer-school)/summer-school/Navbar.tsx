@@ -8,10 +8,10 @@ import { Menu, X } from "lucide-react";
 const NAV_ITEMS = [
   { label: "HOME", href: "/summer-school" },
   { label: "ABOUT ", href: "/summer-school/about" },
-  { label: "REGISTRATION", href: "/summer-school/summer-internship" },
+  { label: "REGISTRATION", href: "/summer-school/student-registration" },
   { label: "MENTORS", href: "/summer-school/mentor-registration" },
   { label: "REG.MENTOR", href: "/summer-school/mentorship" },
-  { label: "CONTACT US", href: "/summer-school/attendance" },
+  { label: "REG.SCHOOL", href: "/summer-school/school-registration" },
 ];
 
 export default function Navbar() {
@@ -67,11 +67,11 @@ export default function Navbar() {
           {/* Desktop Right */}
           <div className="hidden lg:flex items-center">
             <Link
-              href="/"
+              href="/summer-school/contact"
               className="relative px-6 py-2 font-semibold text-white rounded-lg overflow-hidden group"
             >
               <span className="absolute inset-0 bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 opacity-80 group-hover:opacity-100 transition-opacity duration-300 rounded-lg"></span>
-              <span className="relative z-10">Get Started</span>
+              <span className="relative z-10">CONTACT US</span>
             </Link>
           </div>
 
@@ -112,11 +112,11 @@ export default function Navbar() {
               {/* Login Button */}
               <li className="mt-4 px-4">
                 <Link
-                  href="/"
+                  href="/summer-school/contact"
                   onClick={closeMenu}
                   className="block text-center py-3 font-semibold text-white rounded-lg bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 transition"
                 >
-                  Get Started
+                  CONTACT US
                 </Link>
               </li>
             </ul>
