@@ -5,6 +5,12 @@ const DEV_FALLBACK_AUTH_URLS = [
   "http://localhost:5000",
 ];
 
+function isLocalHostname(hostname: string): boolean {
+  return (
+    hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1"
+  );
+}
+
 function isProductionRuntime(): boolean {
   return process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
 }
@@ -18,10 +24,13 @@ function getConfiguredApiUrl(): string {
   return process.env.NEXT_PUBLIC_API_URL?.trim() ?? "";
 }
 
-function getAuthBaseUrls(): string[] {
+function getAuthBaseUrls(options?: { preferLocal?: boolean }): string[] {
   const envUrl = getConfiguredApiUrl();
+  const preferLocal = Boolean(options?.preferLocal);
   const raw = isProductionRuntime()
     ? [envUrl]
+    : preferLocal
+    ? [...DEV_FALLBACK_AUTH_URLS, envUrl]
     : [envUrl, ...DEV_FALLBACK_AUTH_URLS];
 
   const normalized = raw.filter(
@@ -57,13 +66,21 @@ export async function forwardAuthRequest(
   request: Request,
   endpoint: "/auth/login" | "/auth/register",
 ) {
-  const apiBaseUrls = getAuthBaseUrls();
+  let preferLocal = false;
+  try {
+    const requestUrl = new URL(request.url);
+    preferLocal = isLocalHostname(requestUrl.hostname);
+  } catch {
+    preferLocal = false;
+  }
+
+  const apiBaseUrls = getAuthBaseUrls({ preferLocal });
 
   if (apiBaseUrls.length === 0) {
     return NextResponse.json(
       {
         message:
-          "API_URL (or NEXT_PUBLIC_AUTH_API_URL) is missing on the server. Configure it in Vercel project environment variables.",
+          "API_URL (or NEXT_PUBLIC_API_URL) is missing on the server. Configure it in Vercel project environment variables.",
       },
       { status: 500 },
     );

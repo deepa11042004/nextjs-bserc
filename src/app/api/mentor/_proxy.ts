@@ -78,6 +78,14 @@ async function parseUpstreamBody(response: Response): Promise<unknown> {
   }
 }
 
+function isJsonContentType(contentType: string | null): boolean {
+  if (!contentType) {
+    return false;
+  }
+
+  return contentType.toLowerCase().includes("application/json");
+}
+
 async function parseIncomingJson(request: Request): Promise<unknown> {
   try {
     return await request.json();
@@ -170,6 +178,20 @@ export async function forwardMentorRequest(
         body: payload.body,
         cache: "no-store",
       });
+
+      const contentType = response.headers.get("content-type");
+
+      if (!isJsonContentType(contentType)) {
+        const bodyBuffer = await response.arrayBuffer();
+
+        return new NextResponse(bodyBuffer, {
+          status: response.status,
+          headers: {
+            "Content-Type": contentType || "application/octet-stream",
+            "Cache-Control": "no-store",
+          },
+        });
+      }
 
       const upstreamPayload = await parseUpstreamBody(response);
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { FileImage, Loader2, NotebookPen } from "lucide-react";
+import { Loader2, NotebookPen } from "lucide-react";
 
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,11 +22,34 @@ import {
   getApiMessage,
   getPaymentBadgeClasses,
 } from "@/components/admin/internships/internshipUtils";
+import {
+  getInternshipFeeSettings,
+  updateInternshipFeeSettings,
+} from "@/services/internshipRegistration";
+
+type InternshipFilter = "all" | "regular" | "lateral";
+type FeeStatus = { type: "success" | "error"; message: string };
 
 export default function InternshipApplications() {
   const [applications, setApplications] = useState<InternshipApplication[]>([]);
+  const [filter, setFilter] = useState<InternshipFilter>("all");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [generalFeeInput, setGeneralFeeInput] = useState("100");
+  const [lateralFeeInput, setLateralFeeInput] = useState("100");
+  const [isFeeLoading, setIsFeeLoading] = useState(true);
+  const [isFeeSaving, setIsFeeSaving] = useState(false);
+  const [feeStatus, setFeeStatus] = useState<FeeStatus | null>(null);
+
+  const filteredApplications = useMemo(() => {
+    if (filter === "all") {
+      return applications;
+    }
+
+    return applications.filter((application) =>
+      filter === "lateral" ? application.is_lateral : !application.is_lateral,
+    );
+  }, [applications, filter]);
 
   useEffect(() => {
     let isMounted = true;
@@ -72,14 +95,92 @@ export default function InternshipApplications() {
       }
     };
 
+    const loadFeeSettings = async () => {
+      setIsFeeLoading(true);
+
+      try {
+        const payload = await getInternshipFeeSettings();
+
+        if (!isMounted) {
+          return;
+        }
+
+        setGeneralFeeInput(String(payload.general_fee_rupees ?? 0));
+        setLateralFeeInput(String(payload.lateral_fee_rupees ?? 0));
+      } catch (err) {
+        if (!isMounted) {
+          return;
+        }
+
+        setFeeStatus({
+          type: "error",
+          message:
+            err instanceof Error && err.message
+              ? err.message
+              : "Unable to load internship fee settings.",
+        });
+      } finally {
+        if (isMounted) {
+          setIsFeeLoading(false);
+        }
+      }
+    };
+
     loadApplications();
+    loadFeeSettings();
 
     return () => {
       isMounted = false;
     };
   }, []);
 
-  const totalApplications = useMemo(() => applications.length, [applications]);
+  const handleSaveFeeSettings = async () => {
+    const generalFee = Number(generalFeeInput);
+    const lateralFee = Number(lateralFeeInput);
+
+    if (
+      !Number.isFinite(generalFee) ||
+      generalFee < 0 ||
+      !Number.isFinite(lateralFee) ||
+      lateralFee < 0
+    ) {
+      setFeeStatus({
+        type: "error",
+        message: "Please enter valid non-negative fee values for both registration types.",
+      });
+      return;
+    }
+
+    setIsFeeSaving(true);
+    setFeeStatus(null);
+
+    try {
+      const payload = await updateInternshipFeeSettings({
+        general_fee_rupees: generalFee,
+        lateral_fee_rupees: lateralFee,
+      });
+
+      setGeneralFeeInput(String(payload.general_fee_rupees));
+      setLateralFeeInput(String(payload.lateral_fee_rupees));
+      setFeeStatus({
+        type: "success",
+        message: payload.message || "Internship fees updated successfully.",
+      });
+    } catch (err) {
+      setFeeStatus({
+        type: "error",
+        message:
+          err instanceof Error && err.message
+            ? err.message
+            : "Unable to update internship fees.",
+      });
+    } finally {
+      setIsFeeSaving(false);
+    }
+  };
+
+  const totalApplications = useMemo(() => filteredApplications.length, [filteredApplications]);
+  const totalApplicationsAll = useMemo(() => applications.length, [applications]);
 
   return (
     <div className="min-h-screen container mx-auto max-w-8xl text-zinc-100">
@@ -94,14 +195,109 @@ export default function InternshipApplications() {
         </div>
       </div>
 
+      <Card className="mb-6 bg-zinc-900 border-zinc-800">
+        <CardHeader>
+          <CardTitle className="text-zinc-100 text-lg flex items-center gap-2">
+            <NotebookPen className="h-4 w-4 text-cyan-400" />
+            Internship Fee Settings
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {feeStatus && (
+            <div
+              className={`mb-4 rounded-md border px-3 py-2 text-sm ${
+                feeStatus.type === "success"
+                  ? "border-emerald-500/40 bg-emerald-950/30 text-emerald-200"
+                  : "border-rose-500/40 bg-rose-950/30 text-rose-200"
+              }`}
+            >
+              {feeStatus.message}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <label className="text-sm text-zinc-300 font-medium">General Registration Fee (INR)</label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={generalFeeInput}
+                onChange={(event) => setGeneralFeeInput(event.target.value)}
+                disabled={isFeeLoading || isFeeSaving}
+                className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100 outline-none focus:border-cyan-500"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm text-zinc-300 font-medium">Lateral Registration Fee (INR)</label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={lateralFeeInput}
+                onChange={(event) => setLateralFeeInput(event.target.value)}
+                disabled={isFeeLoading || isFeeSaving}
+                className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100 outline-none focus:border-cyan-500"
+              />
+            </div>
+          </div>
+
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs text-zinc-400">
+              {isFeeLoading
+                ? "Loading current fee settings..."
+                : "These fees are used during payment order creation for general and lateral registrations."}
+            </p>
+            <button
+              type="button"
+              onClick={handleSaveFeeSettings}
+              disabled={isFeeLoading || isFeeSaving}
+              className="rounded-full bg-cyan-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-300"
+            >
+              {isFeeSaving ? "Saving..." : "Save Fees"}
+            </button>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card className="bg-zinc-900 border-zinc-800">
         <CardHeader>
-          <div className="flex items-center justify-between gap-3">
-            <CardTitle className="text-zinc-100 text-lg flex items-center gap-2">
-              <NotebookPen className="h-4 w-4 text-blue-400" />
-              Submitted Applications
-            </CardTitle>
-            <span className="text-sm text-zinc-400">Total: {totalApplications}</span>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+              <CardTitle className="text-zinc-100 text-lg flex items-center gap-2">
+                <NotebookPen className="h-4 w-4 text-blue-400" />
+                Submitted Applications
+              </CardTitle>
+              <div className="flex flex-wrap items-center gap-2">
+                {(["all", "regular", "lateral"] as const).map((option) => {
+                  const label =
+                    option === "all"
+                      ? "All"
+                      : option === "regular"
+                      ? "General Internship"
+                      : "Lateral Internship";
+
+                  return (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => setFilter(option)}
+                      className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                        filter === option
+                          ? "bg-cyan-500 text-black"
+                          : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <span className="text-sm text-zinc-400">
+              Showing {totalApplications} of {totalApplicationsAll}
+            </span>
           </div>
         </CardHeader>
         <CardContent>
@@ -122,23 +318,22 @@ export default function InternshipApplications() {
                   <TableRow className="border-zinc-800">
                     <TableHead className="text-white min-w-[220px]">Applicant</TableHead>
                     <TableHead className="text-white min-w-[250px]">Contact</TableHead>
-                    <TableHead className="text-white min-w-[230px]">Address</TableHead>
                     <TableHead className="text-white min-w-[200px]">Institution</TableHead>
-                    <TableHead className="text-white min-w-[220px]">Internship</TableHead>
                     <TableHead className="text-white min-w-[220px]">Payment</TableHead>
-                    <TableHead className="text-white min-w-[170px]">Document</TableHead>
                     <TableHead className="text-white min-w-[170px]">Applied At</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {applications.length === 0 ? (
+                  {filteredApplications.length === 0 ? (
                     <TableRow className="border-zinc-800">
-                      <TableCell colSpan={8} className="py-8 text-center text-zinc-500">
-                        No internship applications found.
+                      <TableCell colSpan={5} className="py-8 text-center text-zinc-500">
+                        {applications.length === 0
+                          ? "No internship applications found."
+                          : "No applications found for the selected filter."}
                       </TableCell>
                     </TableRow>
                   ) : (
-                    applications.map((application) => (
+                    filteredApplications.map((application) => (
                       <TableRow key={application.id} className="border-zinc-800 align-top">
                         <TableCell>
                           <div className="flex flex-col gap-1 text-sm">
@@ -162,15 +357,6 @@ export default function InternshipApplications() {
 
                         <TableCell>
                           <div className="flex flex-col gap-1 text-sm text-zinc-300">
-                            <span className="line-clamp-2">{application.address}</span>
-                            <span className="text-zinc-500">
-                              {application.city}, {application.state} - {application.pin_code}
-                            </span>
-                          </div>
-                        </TableCell>
-
-                        <TableCell>
-                          <div className="flex flex-col gap-1 text-sm text-zinc-300">
                             <span>{application.institution_name}</span>
                             <span className="text-zinc-500">
                               {application.educational_qualification}
@@ -178,13 +364,6 @@ export default function InternshipApplications() {
                             <span className="text-zinc-500">
                               Declaration: {application.declaration_accepted ? "Accepted" : "No"}
                             </span>
-                          </div>
-                        </TableCell>
-
-                        <TableCell>
-                          <div className="flex flex-col gap-1 text-sm text-zinc-300">
-                            <span>{application.internship_name}</span>
-                            <span className="text-zinc-500">{application.internship_designation}</span>
                           </div>
                         </TableCell>
 
@@ -205,20 +384,14 @@ export default function InternshipApplications() {
                           </div>
                         </TableCell>
 
-                        <TableCell>
-                          <div className="flex flex-col gap-1 text-sm text-zinc-300">
-                            <span className="inline-flex items-center gap-1">
-                              <FileImage className="h-3.5 w-3.5 text-zinc-400" />
-                              {application.has_passport_photo ? "Uploaded" : "Missing"}
-                            </span>
-                            <span className="text-zinc-500 text-xs line-clamp-2">
-                              {application.passport_photo_file_name || "-"}
+                        <TableCell className="text-zinc-300 text-sm">
+                          <div className="flex flex-col gap-1">
+                            <span className="font-medium text-zinc-100">{application.internship_name}</span>
+                            <span className="text-zinc-500">{formatDateTime(application.created_at)}</span>
+                            <span className="text-xs text-zinc-400">
+                              {application.is_lateral ? "Lateral Registration" : "Regular Registration"}
                             </span>
                           </div>
-                        </TableCell>
-
-                        <TableCell className="text-zinc-300 text-sm">
-                          {formatDateTime(application.created_at)}
                         </TableCell>
                       </TableRow>
                     ))
