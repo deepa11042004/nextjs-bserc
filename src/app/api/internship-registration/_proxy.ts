@@ -128,7 +128,8 @@ async function buildForwardPayload(
     body: rawBody.byteLength > 0 ? rawBody : undefined,
     headers: contentType
       ? {
-          "Content-Type": request.headers.get("content-type") || "application/octet-stream",
+          "Content-Type":
+            request.headers.get("content-type") || "application/octet-stream",
         }
       : undefined,
   };
@@ -159,7 +160,10 @@ export async function forwardInternshipRegistrationRequest(
   const payload = await buildForwardPayload(request, method);
 
   if (payload === null) {
-    return NextResponse.json({ message: "Invalid request body" }, { status: 400 });
+    return NextResponse.json(
+      { message: "Invalid request body" },
+      { status: 400 },
+    );
   }
 
   let lastRetriablePayload: unknown = null;
@@ -182,7 +186,9 @@ export async function forwardInternshipRegistrationRequest(
         continue;
       }
 
-      return NextResponse.json(responsePayload, { status: upstreamResponse.status });
+      return NextResponse.json(responsePayload, {
+        status: upstreamResponse.status,
+      });
     } catch {
       continue;
     }

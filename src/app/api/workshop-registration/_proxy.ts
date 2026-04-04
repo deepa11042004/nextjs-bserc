@@ -57,9 +57,7 @@ function getBackendBaseUrls(options?: { preferLocal?: boolean }): string[] {
       : [...DEV_FALLBACK_BACKEND_URLS, envUrl]
     : [envUrl];
 
-  const normalized = raw.filter(
-    (value): value is string => Boolean(value),
-  );
+  const normalized = raw.filter((value): value is string => Boolean(value));
 
   return [...new Set(normalized.map((value) => value.replace(/\/$/, "")))];
 }
@@ -113,7 +111,10 @@ export async function forwardWorkshopRegistrationRequest(
   const body = await parseIncomingBody(request);
 
   if (!body || typeof body !== "object") {
-    return NextResponse.json({ message: "Invalid request body" }, { status: 400 });
+    return NextResponse.json(
+      { message: "Invalid request body" },
+      { status: 400 },
+    );
   }
 
   let lastRetriablePayload: unknown = null;
