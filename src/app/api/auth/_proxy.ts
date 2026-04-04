@@ -21,7 +21,7 @@ function getConfiguredApiUrl(): string {
     return apiUrl;
   }
 
-  return process.env.NEXT_PUBLIC_API_URL?.trim() ?? "";
+  return process.env.API_URL?.trim() ?? "";
 }
 
 function getAuthBaseUrls(options?: { preferLocal?: boolean }): string[] {
@@ -80,7 +80,7 @@ export async function forwardAuthRequest(
     return NextResponse.json(
       {
         message:
-          "API_URL (or NEXT_PUBLIC_API_URL) is missing on the server. Configure it in Vercel project environment variables.",
+          "API_URL (or API_URL) is missing on the server. Configure it in Vercel project environment variables.",
       },
       { status: 500 },
     );

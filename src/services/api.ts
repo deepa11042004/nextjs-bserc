@@ -1,6 +1,6 @@
 import type { AuthResponse } from "@/types/auth";
 
-const publicApiBaseUrl = (process.env.NEXT_PUBLIC_API_URL ?? "").trim();
+const publicApiBaseUrl = (process.env.API_URL ?? "").trim();
 
 function buildAuthUrl(endpoint: "/auth/login" | "/auth/register"): string {
   if (publicApiBaseUrl) {
