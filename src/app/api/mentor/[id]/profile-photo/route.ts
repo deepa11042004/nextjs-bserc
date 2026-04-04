@@ -1,13 +1,15 @@
 import { forwardMentorRequest } from "@/app/api/mentor/_proxy";
+import { NextRequest } from "next/server";
 
-type Params = {
-  params: {
+type RouteContext = {
+  params: Promise<{
     id: string;
-  };
+  }>;
 };
 
-export async function GET(request: Request, { params }: Params) {
-  const mentorId = String(params.id || "").trim();
+export async function GET(request: NextRequest, context: RouteContext) {
+  const { id } = await context.params;
+  const mentorId = String(id || "").trim();
 
   if (!mentorId) {
     return Response.json({ message: "Invalid mentor id" }, { status: 400 });
