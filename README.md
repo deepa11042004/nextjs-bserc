@@ -47,8 +47,13 @@ All proxy routes forward requests to API_URL with local fallback hosts for devel
 
 
 //testing
+<<<<<<< HEAD
 test 1 
 test 2
 test 3
 test 4
 test 5
+=======
+
+
+>>>>>>> f5e3acf (remove unnecessary blank line from README.md)
