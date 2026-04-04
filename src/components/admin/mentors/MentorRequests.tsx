@@ -226,82 +226,84 @@ export default function MentorRequests() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    mentors.map((mentor) => (
-                      <TableRow key={mentor.id} className="border-zinc-800">
-                        <TableCell>
-                          <div className="flex flex-col">
-                            <span className="text-zinc-100 font-medium">{mentor.full_name}</span>
-                            <span className="text-zinc-400 text-xs">{mentor.email}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-zinc-300">{mentor.phone || "-"}</TableCell>
-                        <TableCell>
-                          <div className="flex flex-col text-zinc-300 text-sm">
-                            <span>{mentor.organization || "-"}</span>
-                            <span className="text-zinc-500">{mentor.current_position || "-"}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-col text-zinc-300 text-sm">
-                            <span>{mentor.primary_track || "-"}</span>
-                            <span className="text-zinc-500">{mentor.availability || "-"}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={getStatusBadgeClasses(mentor.status)}>
-                            {mentor.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-zinc-300">
-                          {formatMentorDate(mentor.created_at)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              disabled={isActionPending(mentor.id)}
-                              onClick={() => void handleApprove(mentor.id)}
-                              className="border border-emerald-700 bg-transparent text-emerald-300 hover:bg-emerald-950/50 hover:text-emerald-200"
-                            >
-                              {isApproving(mentor.id) ? (
-                                <>
-                                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                                  Approving...
-                                </>
-                              ) : (
-                                <>
-                                  <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
-                                  Accept
-                                </>
-                              )}
-                            </Button>
+                    mentors.map((mentor) => {
+                      return (
+                        <TableRow key={mentor.id} className="border-zinc-800">
+                          <TableCell>
+                            <div className="flex flex-col">
+                              <span className="text-zinc-100 font-medium">{mentor.full_name}</span>
+                              <span className="text-zinc-400 text-xs">{mentor.email}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-zinc-300">{mentor.phone || "-"}</TableCell>
+                          <TableCell>
+                            <div className="flex flex-col text-zinc-300 text-sm">
+                              <span>{mentor.organization || "-"}</span>
+                              <span className="text-zinc-500">{mentor.current_position || "-"}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-col text-zinc-300 text-sm">
+                              <span>{mentor.primary_track || "-"}</span>
+                              <span className="text-zinc-500">{mentor.availability || "-"}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={getStatusBadgeClasses(mentor.status)}>
+                              {mentor.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-zinc-300">
+                            {formatMentorDate(mentor.created_at)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                disabled={isActionPending(mentor.id)}
+                                onClick={() => void handleApprove(mentor.id)}
+                                className="border border-emerald-700 bg-transparent text-emerald-300 hover:bg-emerald-950/50 hover:text-emerald-200"
+                              >
+                                {isApproving(mentor.id) ? (
+                                  <>
+                                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                                    Approving...
+                                  </>
+                                ) : (
+                                  <>
+                                    <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
+                                    Accept
+                                  </>
+                                )}
+                              </Button>
 
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              disabled={isActionPending(mentor.id)}
-                              onClick={() => void handleReject(mentor.id)}
-                              className="border border-rose-700 bg-transparent text-rose-300 hover:bg-rose-950/50 hover:text-rose-200"
-                            >
-                              {isRejecting(mentor.id) ? (
-                                <>
-                                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                                  Rejecting...
-                                </>
-                              ) : (
-                                <>
-                                  <XCircle className="mr-1.5 h-3.5 w-3.5" />
-                                  Reject
-                                </>
-                              )}
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                disabled={isActionPending(mentor.id)}
+                                onClick={() => void handleReject(mentor.id)}
+                                className="border border-rose-700 bg-transparent text-rose-300 hover:bg-rose-950/50 hover:text-rose-200"
+                              >
+                                {isRejecting(mentor.id) ? (
+                                  <>
+                                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                                    Rejecting...
+                                  </>
+                                ) : (
+                                  <>
+                                    <XCircle className="mr-1.5 h-3.5 w-3.5" />
+                                    Reject
+                                  </>
+                                )}
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
                   )}
                 </TableBody>
               </Table>
