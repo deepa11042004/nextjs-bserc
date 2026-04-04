@@ -9,12 +9,13 @@ import SchoolHighlights from "@/components/SummerSchool/SchoolHighlights";
 import CertificationFee from "@/components/SummerSchool/CertificationFee";
 import MeritScholarships from "@/components/SummerSchool/MeritScholarships";
 import RegisterCTA from "@/components/SummerSchool/RegisterCTA";
+
  
 
 const page = () => {
   return (
     <>
-      <Hero/>
+      <Hero/>      
       <Stats/>   
       <Bharat/>
       <ProgramOverview/>
@@ -24,8 +25,7 @@ const page = () => {
       <SchoolHighlights/>
       <CertificationFee/>
       <MeritScholarships/>
-      <RegisterCTA/>
-       
+      <RegisterCTA/>       
     </>
   );
 };
