@@ -25,6 +25,7 @@ const page = () => {
       <CertificationFee/>
       <MeritScholarships/>
       <RegisterCTA/>
+       
     </>
   );
 };
