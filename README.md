@@ -50,3 +50,4 @@ All proxy routes forward requests to API_URL with local fallback hosts for devel
 test 1 
 test 2
 test 3
+test 4
