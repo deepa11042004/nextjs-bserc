@@ -11,7 +11,7 @@ interface RegisterCTAProps {
 const RegisterCTA: React.FC<RegisterCTAProps> = ({
   title = "Register for Def-Space Summer School 2026 via the official BSERC portal",
   buttonText = "REGISTER NOW",
-  buttonLink = "#register",
+  buttonLink = "/summer-school/student-registration",
 }) => {
   return (
     <section className={`w-full py-12 sm:py-16 px-4 bg-black  `}>

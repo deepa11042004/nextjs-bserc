@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import Link from "next/link";
 
 interface SlideData {
   id: number;
@@ -10,7 +9,6 @@ interface SlideData {
   title: string;
   desc: string;
   cta: string;
-  link: string;
   accentColor?: "cyan" | "violet" | "emerald" | "orange";
 }
 
@@ -18,10 +16,9 @@ const slides: SlideData[] = [
   {
     id: 1,
     badge: "🚀 Programme 2026",
-    title: "Bharat Def-Space Summer School 2026",
+    title: "Def-Space Summer  Internship 2026",
     desc: "A flagship 6-week intensive online initiative under Def-Space Education & Innovation — shaping India's future in Space, Defence, and Technology.",
     cta: "Register Now",
-  link: "/summer-school/school-registration",
     accentColor: "cyan",
   },
   {
@@ -30,7 +27,6 @@ const slides: SlideData[] = [
     title: "Innovation in Defence & Space Technology",
     desc: "Explore Rocketry, Drones, AI, Robotics, and Aircraft Design. Aligned with Viksit Bharat @2047 and Atmanirbhar Bharat vision.",
     cta: "Learn More",
-    link: "/summer-school/school-registration",
     accentColor: "emerald",
   },
   {
@@ -39,7 +35,6 @@ const slides: SlideData[] = [
     title: "Career Pathways in - ISRO - DRDO - HAL",
     desc: "Earn BSERC-issued certificates, explore career routes in India's top defence & space organisations, and unlock merit scholarship opportunities.",
     cta: "Apply for Scholarship",
-    link: "/summer-school/school-registration",
     accentColor: "violet",
   },
 ];
@@ -102,14 +97,14 @@ export default function HeroSlider() {
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
+
   const autoplayRef = useRef<NodeJS.Timeout | null>(null);
   const progressRef = useRef<NodeJS.Timeout | null>(null);
 
   // Check for reduced motion preference
-  const prefersReducedMotion =
-    typeof window !== "undefined"
-      ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
-      : false;
+  const prefersReducedMotion = typeof window !== "undefined" 
+    ? window.matchMedia("(prefers-reduced-motion: reduce)").matches 
+    : false;
 
   // Progress bar animation
   useEffect(() => {
@@ -118,12 +113,14 @@ export default function HeroSlider() {
       return;
     }
 
+    
     const startTime = Date.now();
-
+    
     progressRef.current = setInterval(() => {
       const elapsed = Date.now() - startTime;
       const newProgress = Math.min((elapsed / AUTOPLAY_DELAY) * 100, 100);
-
+      
+      
       if (newProgress >= 100 && progressRef.current) {
         clearInterval(progressRef.current);
       }
@@ -167,24 +164,25 @@ export default function HeroSlider() {
 
   const goToSlide = useCallback((index: number) => {
     setCurrentSlide(index);
+ 
   }, []);
 
   // Touch handlers
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStart(e.targetTouches[0].clientX);
   };
-
+  
   const handleTouchMove = (e: React.TouchEvent) => {
     setTouchEnd(e.targetTouches[0].clientX);
   };
-
+  
   const handleTouchEnd = () => {
     if (touchStart === null || touchEnd === null) {
       setTouchStart(null);
       setTouchEnd(null);
       return;
     }
-
+    
     const distance = touchStart - touchEnd;
     const isLeftSwipe = distance > 30;
     const isRightSwipe = distance < -30;
@@ -194,7 +192,7 @@ export default function HeroSlider() {
     } else if (isRightSwipe) {
       goToSlide(currentSlide === 0 ? slides.length - 1 : currentSlide - 1);
     }
-
+    
     setTouchStart(null);
     setTouchEnd(null);
   };
@@ -248,9 +246,7 @@ export default function HeroSlider() {
             <article
               key={slide.id}
               className={`absolute inset-0 flex items-center justify-center transition-opacity duration-700 ease-in-out ${
-                isActive
-                  ? "opacity-100 z-10"
-                  : "opacity-0 z-0 pointer-events-none"
+                isActive ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none"
               }`}
               aria-hidden={!isActive}
             >
@@ -302,33 +298,29 @@ export default function HeroSlider() {
                 </p>
 
                 {/* CTA Button */}
-                <Link
-                  href={slide.link || "#"}
-                  className={`inline-flex items-center justify-center w-full sm:w-auto px-6 py-3.5 sm:px-8 sm:py-4 rounded-full font-semibold text-white backdrop-blur-md border ${accent.border} ${accent.bg} ${accent.hoverBg} ${accent.glow} transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black min-h-[48px] sm:min-h-[52px] ${
+                <a
+                  href="#register"
+                  className={`inline-flex items-center justify-center w-full sm:w-auto px-6 py-3.5 sm:px-8 sm:py-4 rounded-full font-semibold text-white backdrop-blur-md border ${accent.border} ${accent.bg} ${accent.hoverBg} ${accent.glow} transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black ${accent.text.replace("text", "focus:ring")} min-h-[48px] sm:min-h-[52px] ${
                     prefersReducedMotion
                       ? ""
-                      : `delay-500 ${
-                          isActive
-                            ? "opacity-100 translate-y-0"
-                            : "opacity-0 translate-y-4"
-                        }`
+                      : `delay-500 ${isActive ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`
                   }`}
                 >
                   <span className="truncate">{slide.cta}</span>
                   <ChevronRight className="ml-1 sm:ml-2 w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                </Link>
+                </a>
               </div>
             </article>
           );
         })}
       </div>
 
+       
+
       {/* Navigation Arrows */}
       <div className="absolute top-1/2 -translate-y-1/2 w-full flex justify-between px-3 sm:px-6 z-30 pointer-events-none">
         <button
-          onClick={() =>
-            goToSlide(currentSlide === 0 ? slides.length - 1 : currentSlide - 1)
-          }
+          onClick={() => goToSlide(currentSlide === 0 ? slides.length - 1 : currentSlide - 1)}
           className="pointer-events-auto group p-2.5 sm:p-3 rounded-full bg-white/5 hover:bg-white/10 backdrop-blur-md border border-white/10 text-white transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white/20 min-w-[40px] sm:min-w-[44px] min-h-[40px] sm:min-h-[44px] flex items-center justify-center"
           aria-label="Previous slide"
         >
@@ -352,7 +344,7 @@ export default function HeroSlider() {
         {slides.map((slide, i) => {
           const accent = accentStyles[slide.accentColor || "cyan"];
           const isActive = i === currentSlide;
-
+          
           return (
             <button
               key={slide.id}
