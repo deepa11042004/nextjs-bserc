@@ -1,12 +1,5 @@
-import React from 'react'
+import InternshipApplications from "@/components/admin/internships/InternshipApplications";
 
-const page = () => {
-  return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-semibold text-white">facutly request</h1>
-      
-    </div>
-  )
+export default function InternshipApplicationsPage() {
+  return <InternshipApplications />;
 }
-
-export default page

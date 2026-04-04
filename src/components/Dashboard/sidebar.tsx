@@ -174,20 +174,20 @@ export default function Sidebar() {
                 </div>
                 <div className="space-y-1">                  
                   <NavItem
-                    href="/admin/faculty"
+                    href="/admin/mentors"
                     icon={Shield}
                     onClick={() => setIsMobileMenuOpen(false)}
-                    isActive={normalizedPath === "/admin/faculty"}
+                    isActive={normalizedPath === "/admin/mentors"}
                   >
-                    Faculty List
+                    Mentor List
                   </NavItem>
                   <NavItem
-                    href="/admin/faculty/faculty-requests"
+                    href="/admin/mentors/requests"
                     icon={Users2}
                     onClick={() => setIsMobileMenuOpen(false)}
-                    isActive={normalizedPath === "/admin/faculty/faculty-requests"}
+                    isActive={normalizedPath === "/admin/mentors/requests"}
                   >
-                    Faculty Requests
+                    Mentor Requests
                   </NavItem>
                   <NavItem
                     href="/admin/faculty/staff-requests"
