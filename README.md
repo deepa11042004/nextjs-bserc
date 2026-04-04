@@ -46,7 +46,12 @@ Legacy auth routes are permanently redirected to the canonical routes for compat
 All proxy routes forward requests to API_URL with local fallback hosts for development.
 
 
+
+
+
+
 //testing
+<<<<<<< HEAD
 <<<<<<< HEAD
 test 1 
 test 2
@@ -57,3 +62,5 @@ test 5
 
 
 >>>>>>> f5e3acf (remove unnecessary blank line from README.md)
+=======
+>>>>>>> d5e7ef1 (remove unnecessary blank lines in README.md)
