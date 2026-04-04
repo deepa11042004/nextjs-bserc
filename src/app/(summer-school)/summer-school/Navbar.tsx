@@ -7,11 +7,11 @@ import { Menu, X } from "lucide-react";
 
 const NAV_ITEMS = [
   { label: "HOME", href: "/summer-school" },
-  { label: "ABOUT ", href: "/bsercinternship/about" },
-  { label: "REGISTRATION", href: "/bsercinternship/summer-internship" },
-  { label: "MENTORS", href: "/bsercinternship/mentor-registration" },
-  { label: "REG.MENTOR", href: "/bsercinternship/mentorship" },
-  { label: "CONTACT US", href: "/bsercinternship/attendance" },
+  { label: "ABOUT ", href: "/summer-school/about" },
+  { label: "REGISTRATION", href: "/summer-school/summer-internship" },
+  { label: "MENTORS", href: "/summer-school/mentor-registration" },
+  { label: "REG.MENTOR", href: "/summer-school/mentorship" },
+  { label: "CONTACT US", href: "/summer-school/attendance" },
 ];
 
 export default function Navbar() {
