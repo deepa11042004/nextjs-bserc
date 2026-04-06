@@ -36,7 +36,7 @@ const NAV_ITEMS: { label: string; href?: string; dropdown?: DropdownItem[] }[] =
       label: "Programme",
       dropdown: [
         { type: "link", label: "Workshop", href: "/workshops" },
-        { type: "link", label: "BSERC Internship", href: "/bsercinternship" },
+        { type: "link", label: "Def-Space Summer Internship", href: "/bsercinternship" },
         { type: "link", label: "Summer School", href: "/summer-school" },
       ],
     },
@@ -46,7 +46,7 @@ const NAV_ITEMS: { label: string; href?: string; dropdown?: DropdownItem[] }[] =
       dropdown: [
         {
           type: "link",
-          label: "Summer Internship",
+          label: "Def-Space Summer Internship",
           href: "/bsercinternship/summer-internship",
         },
         {
