@@ -15,7 +15,7 @@ const Hero: React.FC = () => {
           
           {/* Badge */}
           <span className="relative px-6 py-2.5 rounded-full text-sm font-semibold tracking-widest text-cyan-300 border border-cyan-500/50 bg-cyan-950/20 backdrop-blur-sm">
-            NATIONAL SPACE DAY
+            NATIONAL SPACE DAY rohit
           </span>
         </div>
 
