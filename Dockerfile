@@ -10,8 +10,8 @@
     WORKDIR /app
     
     # ✅ ADD THIS (build-time env)
-    ARG NEXT_PUBLIC_API_URL
-    ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+    ARG API_URL
+    ENV API_URL=$API_URL
     
     COPY --from=deps /app/node_modules ./node_modules
     COPY . .
@@ -25,7 +25,7 @@
     ENV NODE_ENV=production
     
     # ✅ ADD THIS (runtime env)
-    ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+    ENV API_URL=$API_URL
     
     # Create non-root user (security fix)
     RUN addgroup -S nodejs && adduser -S nextjs -G nodejs
