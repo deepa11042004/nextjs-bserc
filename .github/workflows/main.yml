@@ -61,3 +61,6 @@ jobs:
             -e API_URL=${{ secrets.API_URL }} \
             --name nextjs-app \
             ${{ secrets.DOCKER_USERNAME }}/nextjs-bserc:${{ github.sha }}
+
+            # CLEANUP UNUSED IMAGES TO SAVE DISK SPACE
+            docker image prune -af || true
