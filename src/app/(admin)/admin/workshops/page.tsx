@@ -7,6 +7,7 @@ import {
   Users,
   Pencil,
   Trash2,
+  Download,
   Rocket,
   GraduationCap,
   Plane,
@@ -51,7 +52,14 @@ interface Program {
 type WorkshopListItem = {
   id?: number | string;
   title?: string;
+  description?: string | null;
   thumbnail_url?: string | null;
+  certificate_url?: string | null;
+  start_time?: string | null;
+  end_time?: string | null;
+  duration?: string | null;
+  certificate?: boolean | number | string | null;
+  fee?: number | string | null;
   mode?: string | null;
   eligibility?: string | null;
   workshop_date?: string | null;
@@ -116,27 +124,79 @@ function resolveProgramStatus(
   return "Active";
 }
 
-function extractWorkshopItems(payload: unknown): WorkshopListItem[] {
+function extractWorkshopRecords(payload: unknown): Record<string, unknown>[] {
+  let items: unknown[] = [];
+
   if (Array.isArray(payload)) {
-    return payload as WorkshopListItem[];
-  }
-
-  if (payload && typeof payload === "object") {
+    items = payload;
+  } else if (payload && typeof payload === "object") {
     const record = payload as Record<string, unknown>;
+
     if (Array.isArray(record.data)) {
-      return record.data as WorkshopListItem[];
-    }
-
-    if (Array.isArray(record.results)) {
-      return record.results as WorkshopListItem[];
-    }
-
-    if (Array.isArray(record.workshops)) {
-      return record.workshops as WorkshopListItem[];
+      items = record.data;
+    } else if (Array.isArray(record.results)) {
+      items = record.results;
+    } else if (Array.isArray(record.workshops)) {
+      items = record.workshops;
     }
   }
 
-  return [];
+  return items.filter(
+    (item): item is Record<string, unknown> =>
+      Boolean(item) && typeof item === "object" && !Array.isArray(item),
+  );
+}
+
+function extractWorkshopItems(payload: unknown): WorkshopListItem[] {
+  return extractWorkshopRecords(payload) as WorkshopListItem[];
+}
+
+function toExportCellValue(value: unknown): string | number | boolean {
+  if (value === null || value === undefined) {
+    return "";
+  }
+
+  if (
+    typeof value === "string"
+    || typeof value === "number"
+    || typeof value === "boolean"
+  ) {
+    return value;
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
+
+function buildDynamicExportRows(records: Record<string, unknown>[]) {
+  const headers: string[] = [];
+
+  records.forEach((record) => {
+    Object.keys(record).forEach((key) => {
+      if (!headers.includes(key)) {
+        headers.push(key);
+      }
+    });
+  });
+
+  const rows = records.map((record) => {
+    const row: Record<string, string | number | boolean> = {};
+
+    headers.forEach((header) => {
+      row[header] = toExportCellValue(record[header]);
+    });
+
+    return row;
+  });
+
+  return { headers, rows };
 }
 
 function normalizeWorkshop(item: WorkshopListItem): Program | null {
@@ -316,8 +376,11 @@ const ProgramsTable: React.FC<{
 // Main Programs Management Component
 export default function ProgramsManagement() {
   const [programs, setPrograms] = useState<Program[]>([]);
+  const [workshopItems, setWorkshopItems] = useState<WorkshopListItem[]>([]);
+  const [workshopRecords, setWorkshopRecords] = useState<Record<string, unknown>[]>([]);
   const [totalPrograms, setTotalPrograms] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
   const [fetchError, setFetchError] = useState("");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [deletingProgramId, setDeletingProgramId] = useState<number | null>(
@@ -373,7 +436,10 @@ export default function ProgramsManagement() {
           throw new Error(message);
         }
 
-        const normalizedPrograms = extractWorkshopItems(payload)
+        const parsedWorkshopRecords = extractWorkshopRecords(payload);
+        const parsedWorkshopItems = parsedWorkshopRecords as WorkshopListItem[];
+
+        const normalizedPrograms = parsedWorkshopItems
           .map(normalizeWorkshop)
           .filter((item): item is Program => Boolean(item));
 
@@ -381,6 +447,8 @@ export default function ProgramsManagement() {
           return;
         }
 
+  setWorkshopRecords(parsedWorkshopRecords);
+        setWorkshopItems(parsedWorkshopItems);
         setPrograms(normalizedPrograms);
         setTotalPrograms(normalizedPrograms.length);
       } catch (error) {
@@ -388,6 +456,8 @@ export default function ProgramsManagement() {
           return;
         }
 
+  setWorkshopRecords([]);
+        setWorkshopItems([]);
         setPrograms([]);
         setTotalPrograms(0);
         setFetchError(
@@ -445,6 +515,28 @@ export default function ProgramsManagement() {
       }
 
       setPrograms((prev) => prev.filter((program) => program.id !== id));
+      setWorkshopRecords((prev) =>
+        prev.filter((record) => {
+          const rawId = record.id;
+          const parsedId =
+            typeof rawId === "number"
+              ? rawId
+              : Number.parseInt(String(rawId ?? ""), 10);
+
+          return parsedId !== id;
+        }),
+      );
+      setWorkshopItems((prev) =>
+        prev.filter((item) => {
+          const rawId = item.id;
+          const parsedId =
+            typeof rawId === "number"
+              ? rawId
+              : Number.parseInt(String(rawId ?? ""), 10);
+
+          return parsedId !== id;
+        }),
+      );
       setTotalPrograms((prev) => (prev > 0 ? prev - 1 : 0));
       setToastMessage(`${title} deleted successfully`);
       setDeleteCandidate(null);
@@ -465,6 +557,57 @@ export default function ProgramsManagement() {
     }
 
     setDeleteCandidate(null);
+  };
+
+  const handleExport = async () => {
+    if (isExporting || isLoading) {
+      return;
+    }
+
+    if (workshopRecords.length === 0) {
+      setToastMessage("No workshop data available to export");
+      return;
+    }
+
+    setFetchError("");
+    setIsExporting(true);
+
+    try {
+      const XLSX = await import("xlsx");
+
+      const { headers, rows } = buildDynamicExportRows(workshopRecords);
+
+      if (rows.length === 0) {
+        setToastMessage("No workshop data available to export");
+        return;
+      }
+
+      const worksheet = XLSX.utils.json_to_sheet(rows, { header: headers });
+      worksheet["!cols"] = headers.map((header) => ({
+        wch: Math.max(16, Math.min(42, header.length + 4)),
+      }));
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Workshops");
+
+      const now = new Date();
+      const filename = `workshops-export-${now.getFullYear()}-${String(
+        now.getMonth() + 1,
+      ).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}_${String(
+        now.getHours(),
+      ).padStart(2, "0")}-${String(now.getMinutes()).padStart(2, "0")}.xlsx`;
+
+      XLSX.writeFile(workbook, filename);
+      setToastMessage(`Exported ${rows.length} workshops to Excel`);
+    } catch (error) {
+      setFetchError(
+        error instanceof Error && error.message
+          ? error.message
+          : "Unable to export workshops",
+      );
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return (
@@ -562,11 +705,23 @@ export default function ProgramsManagement() {
                 Filter
               </Button>
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
-                className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100"
+                onClick={handleExport}
+                disabled={isLoading || isExporting || programs.length === 0}
+                className="text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100"
               >
-                Export
+                {isExporting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Exporting...
+                  </>
+                ) : (
+                  <>
+                    <Download className="mr-2 h-4 w-4" />
+                    Export
+                  </>
+                )}
               </Button>
             </div>
           </div>

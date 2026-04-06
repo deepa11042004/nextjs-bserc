@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, UsersRound } from "lucide-react";
+import { Download, Loader2, UsersRound } from "lucide-react";
 
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -23,9 +23,75 @@ import {
   getStatusBadgeClasses,
 } from "@/components/admin/mentors/mentorUtils";
 
+function extractMentorRecords(payload: unknown): Record<string, unknown>[] {
+  if (!payload || typeof payload !== "object") {
+    return [];
+  }
+
+  const record = payload as Record<string, unknown>;
+  if (!Array.isArray(record.mentors)) {
+    return [];
+  }
+
+  return record.mentors.filter(
+    (mentor): mentor is Record<string, unknown> =>
+      Boolean(mentor) && typeof mentor === "object" && !Array.isArray(mentor),
+  );
+}
+
+function toExportCellValue(value: unknown): string | number | boolean {
+  if (value === null || value === undefined) {
+    return "";
+  }
+
+  if (
+    typeof value === "string"
+    || typeof value === "number"
+    || typeof value === "boolean"
+  ) {
+    return value;
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
+
+function buildDynamicExportRows(records: Record<string, unknown>[]) {
+  const headers: string[] = [];
+
+  records.forEach((record) => {
+    Object.keys(record).forEach((key) => {
+      if (!headers.includes(key)) {
+        headers.push(key);
+      }
+    });
+  });
+
+  const rows = records.map((record) => {
+    const row: Record<string, string | number | boolean> = {};
+
+    headers.forEach((header) => {
+      row[header] = toExportCellValue(record[header]);
+    });
+
+    return row;
+  });
+
+  return { headers, rows };
+}
+
 export default function MentorList() {
   const [mentors, setMentors] = useState<MentorProfile[]>([]);
+  const [mentorRecords, setMentorRecords] = useState<Record<string, unknown>[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -51,12 +117,14 @@ export default function MentorList() {
           return;
         }
 
+        setMentorRecords(extractMentorRecords(payload));
         setMentors(extractMentors(payload));
       } catch (err) {
         if (!isMounted) {
           return;
         }
 
+        setMentorRecords([]);
         setMentors([]);
         setError(
           err instanceof Error && err.message
@@ -78,6 +146,56 @@ export default function MentorList() {
   }, []);
 
   const totalMentors = useMemo(() => mentors.length, [mentors]);
+
+  const handleExport = async () => {
+    if (isExporting || isLoading) {
+      return;
+    }
+
+    if (mentorRecords.length === 0) {
+      setError("No mentors available to export.");
+      return;
+    }
+
+    setError("");
+    setIsExporting(true);
+
+    try {
+      const XLSX = await import("xlsx");
+
+      const { headers, rows } = buildDynamicExportRows(mentorRecords);
+
+      if (rows.length === 0) {
+        setError("No mentors available to export.");
+        return;
+      }
+
+      const worksheet = XLSX.utils.json_to_sheet(rows, { header: headers });
+      worksheet["!cols"] = headers.map((header) => ({
+        wch: Math.max(16, Math.min(42, header.length + 4)),
+      }));
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Mentor List");
+
+      const now = new Date();
+      const filename = `mentor-list-export-${now.getFullYear()}-${String(
+        now.getMonth() + 1,
+      ).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}_${String(
+        now.getHours(),
+      ).padStart(2, "0")}-${String(now.getMinutes()).padStart(2, "0")}.xlsx`;
+
+      XLSX.writeFile(workbook, filename);
+    } catch (err) {
+      setError(
+        err instanceof Error && err.message
+          ? err.message
+          : "Unable to export mentor list.",
+      );
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen container mx-auto max-w-8xl text-zinc-100">
@@ -105,7 +223,28 @@ export default function MentorList() {
               <UsersRound className="h-4 w-4 text-blue-400" />
               Active Mentors
             </CardTitle>
-            <span className="text-sm text-zinc-400">Total: {totalMentors}</span>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleExport}
+                disabled={isLoading || isExporting || mentors.length === 0}
+                className="text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100"
+              >
+                {isExporting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Exporting...
+                  </>
+                ) : (
+                  <>
+                    <Download className="mr-2 h-4 w-4" />
+                    Export
+                  </>
+                )}
+              </Button>
+              <span className="text-sm text-zinc-400">Total: {totalMentors}</span>
+            </div>
           </div>
         </CardHeader>
         <CardContent>

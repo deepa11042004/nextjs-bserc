@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Loader2, Users } from "lucide-react";
+import { ArrowLeft, Download, Loader2, Users } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/Button";
@@ -27,33 +27,79 @@ type Participant = {
   created_at: string | null;
 };
 
-type ParticipantsResponse = {
-  participants?: Participant[];
-  message?: string;
-};
+function extractParticipantRecords(payload: unknown): Record<string, unknown>[] {
+  let items: unknown[] = [];
 
-function extractParticipants(payload: unknown): Participant[] {
   if (Array.isArray(payload)) {
-    return payload as Participant[];
-  }
-
-  if (payload && typeof payload === "object") {
+    items = payload;
+  } else if (payload && typeof payload === "object") {
     const record = payload as Record<string, unknown>;
 
     if (Array.isArray(record.participants)) {
-      return record.participants as Participant[];
-    }
-
-    if (Array.isArray(record.data)) {
-      return record.data as Participant[];
-    }
-
-    if (Array.isArray(record.results)) {
-      return record.results as Participant[];
+      items = record.participants;
+    } else if (Array.isArray(record.data)) {
+      items = record.data;
+    } else if (Array.isArray(record.results)) {
+      items = record.results;
     }
   }
 
-  return [];
+  return items.filter(
+    (item): item is Record<string, unknown> =>
+      Boolean(item) && typeof item === "object" && !Array.isArray(item),
+  );
+}
+
+function extractParticipants(payload: unknown): Participant[] {
+  return extractParticipantRecords(payload) as Participant[];
+}
+
+function toExportCellValue(value: unknown): string | number | boolean {
+  if (value === null || value === undefined) {
+    return "";
+  }
+
+  if (
+    typeof value === "string"
+    || typeof value === "number"
+    || typeof value === "boolean"
+  ) {
+    return value;
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
+
+function buildDynamicExportRows(records: Record<string, unknown>[]) {
+  const headers: string[] = [];
+
+  records.forEach((record) => {
+    Object.keys(record).forEach((key) => {
+      if (!headers.includes(key)) {
+        headers.push(key);
+      }
+    });
+  });
+
+  const rows = records.map((record) => {
+    const row: Record<string, string | number | boolean> = {};
+
+    headers.forEach((header) => {
+      row[header] = toExportCellValue(record[header]);
+    });
+
+    return row;
+  });
+
+  return { headers, rows };
 }
 
 function formatDate(value: string | null): string {
@@ -71,7 +117,9 @@ function formatDate(value: string | null): string {
 
 export default function AdminParticipantsPage() {
   const [participants, setParticipants] = useState<Participant[]>([]);
+  const [participantRecords, setParticipantRecords] = useState<Record<string, unknown>[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -87,22 +135,32 @@ export default function AdminParticipantsPage() {
           cache: "no-store",
         });
 
-        const payload = (await response.json().catch(() => ({}))) as ParticipantsResponse;
+        const payload = (await response.json().catch(() => ({}))) as unknown;
 
         if (!response.ok) {
-          throw new Error(payload.message || "Unable to fetch participants");
+          const message =
+            payload &&
+            typeof payload === "object" &&
+            "message" in payload &&
+            typeof (payload as { message?: unknown }).message === "string"
+              ? (payload as { message: string }).message
+              : "Unable to fetch participants";
+
+          throw new Error(message);
         }
 
         if (!isMounted) {
           return;
         }
 
+        setParticipantRecords(extractParticipantRecords(payload));
         setParticipants(extractParticipants(payload));
       } catch (err) {
         if (!isMounted) {
           return;
         }
 
+        setParticipantRecords([]);
         setParticipants([]);
         setError(
           err instanceof Error && err.message
@@ -124,6 +182,56 @@ export default function AdminParticipantsPage() {
   }, []);
 
   const totalParticipants = useMemo(() => participants.length, [participants]);
+
+  const handleExport = async () => {
+    if (isExporting || isLoading) {
+      return;
+    }
+
+    if (participantRecords.length === 0) {
+      setError("No participants available to export.");
+      return;
+    }
+
+    setError("");
+    setIsExporting(true);
+
+    try {
+      const XLSX = await import("xlsx");
+
+      const { headers, rows } = buildDynamicExportRows(participantRecords);
+
+      if (rows.length === 0) {
+        setError("No participants available to export.");
+        return;
+      }
+
+      const worksheet = XLSX.utils.json_to_sheet(rows, { header: headers });
+      worksheet["!cols"] = headers.map((header) => ({
+        wch: Math.max(16, Math.min(42, header.length + 4)),
+      }));
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "All Participants");
+
+      const now = new Date();
+      const filename = `all-participants-export-${now.getFullYear()}-${String(
+        now.getMonth() + 1,
+      ).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}_${String(
+        now.getHours(),
+      ).padStart(2, "0")}-${String(now.getMinutes()).padStart(2, "0")}.xlsx`;
+
+      XLSX.writeFile(workbook, filename);
+    } catch (err) {
+      setError(
+        err instanceof Error && err.message
+          ? err.message
+          : "Unable to export participants.",
+      );
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen container mx-auto max-w-8xl text-zinc-100">
@@ -152,9 +260,30 @@ export default function AdminParticipantsPage() {
               <Users className="h-4 w-4 text-blue-400" />
               Participants
             </CardTitle>
-            <span className="text-sm text-zinc-400">
-              Total: {totalParticipants}
-            </span>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleExport}
+                disabled={isLoading || isExporting || participants.length === 0}
+                className="text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100"
+              >
+                {isExporting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Exporting...
+                  </>
+                ) : (
+                  <>
+                    <Download className="mr-2 h-4 w-4" />
+                    Export
+                  </>
+                )}
+              </Button>
+              <span className="text-sm text-zinc-400">
+                Total: {totalParticipants}
+              </span>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
