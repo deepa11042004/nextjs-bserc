@@ -180,9 +180,9 @@ export default function Page() {
 
   return (
     <div className="min-h-screen bg-[#0d0d0d] text-zinc-300 py-16 px-4 selection:bg-[#a4cc22] selection:text-black">
-      <main className="max-w-4xl mx-auto">
+      <main className="max-w-5xl mx-auto">
         <form onSubmit={handleSubmit}>
-          <div className="mb-14">
+          <div className="mb-12 md:mb-16">
             <div className="flex items-center gap-4 mb-4">
               <span className="text-orange-500 text-xs font-bold tracking-[0.2em] uppercase">
                 STUDENT PORTAL
