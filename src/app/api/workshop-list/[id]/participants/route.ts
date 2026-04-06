@@ -21,7 +21,12 @@ function getConfiguredApiUrl(): string {
     return apiUrl;
   }
 
-  return process.env.API_URL?.trim() ?? "";
+  const publicApiUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
+  if (publicApiUrl) {
+    return publicApiUrl;
+  }
+
+  return "";
 }
 
 function getCandidateBackendUrls(): string[] {
@@ -65,7 +70,7 @@ export async function GET(
     return NextResponse.json(
       {
         message:
-          "API_URL (or API_URL) is missing on the server. Configure it in environment variables.",
+          "API_URL (or NEXT_PUBLIC_API_URL) is missing on the server. Configure API_URL in deployment environment variables.",
       },
       { status: 500 },
     );

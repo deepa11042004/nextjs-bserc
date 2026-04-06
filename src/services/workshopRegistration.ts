@@ -46,9 +46,10 @@ export interface WorkshopRegistrationPayload {
   full_name: string;
   email: string;
   contact_number: string;
-  alternative_email?: string;
+  alternative_email: string;
   institution: string;
   designation: string;
+  nationality: string;
   agree_recording: boolean;
   agree_terms: boolean;
 }

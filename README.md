@@ -45,6 +45,17 @@ Legacy auth routes are permanently redirected to the canonical routes for compat
 
 All proxy routes forward requests to API_URL with local fallback hosts for development.
 
+## AWS Docker Deployment Note
+
+For production Docker deployments, `API_URL` must be present in the frontend container runtime environment.
+
+- If backend is another container in the same Docker network:
+	- `API_URL=http://auth-backend:5000`
+- If backend is exposed on a public domain:
+	- `API_URL=https://your-backend-domain.com`
+
+If `API_URL` is missing, frontend API routes like `/api/auth/login` will return `500`.
+
 
 //testing
 test 1 

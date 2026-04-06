@@ -45,4 +45,11 @@ jobs:
             # FREE PORT 3000 (important)
             sudo fuser -k 3000/tcp || true
 
-            docker run -d -p 3000:3000 --name nextjs-app ${{ secrets.DOCKER_USERNAME }}/nextjs-bserc:latest
+            if [ -z "${{ secrets.API_URL }}" ]; then
+              echo "Missing required GitHub secret: API_URL"
+              exit 1
+            fi
+
+            docker run -d -p 3000:3000 --name nextjs-app \
+              -e API_URL="${{ secrets.API_URL }}" \
+              ${{ secrets.DOCKER_USERNAME }}/nextjs-bserc:latest

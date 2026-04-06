@@ -68,6 +68,20 @@ function normalizeDesignationForApi(value: string): string {
   if (normalized === "professional") {
     return "Professional";
   }
+  if (normalized === "other" || normalized === "others") {
+    return "Others";
+  }
+  return value.trim();
+}
+
+function normalizeNationalityForApi(value: string): string {
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "indian") {
+    return "Indian";
+  }
+  if (normalized === "other" || normalized === "others") {
+    return "Others";
+  }
   return value.trim();
 }
 
@@ -203,6 +217,10 @@ function FormInput({
   required = false,
   value,
   onChange,
+  inputMode,
+  pattern,
+  title,
+  maxLength,
 }: any) {
   return (
     <div>
@@ -219,6 +237,10 @@ function FormInput({
         value={value}
         onChange={onChange}
         required={required}
+        inputMode={inputMode}
+        pattern={pattern}
+        title={title}
+        maxLength={maxLength}
         className="w-full px-4 py-3 rounded-lg bg-slate-800 border border-slate-700 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
     </div>
@@ -226,13 +248,21 @@ function FormInput({
 }
 
 // Submit Button
-function SubmitButton({ isSubmitting }: { isSubmitting: boolean }) {
+function SubmitButton({
+  isSubmitting,
+  disabled = false,
+}: {
+  isSubmitting: boolean;
+  disabled?: boolean;
+}) {
+  const isDisabled = isSubmitting || disabled;
+
   return (
     <button
       type="submit"
-      disabled={isSubmitting}
+      disabled={isDisabled}
       className={`w-full py-3 rounded-lg font-semibold text-white transition ${
-        isSubmitting
+        isDisabled
           ? "bg-slate-700 cursor-not-allowed"
           : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:opacity-90"
       }`}
@@ -293,6 +323,7 @@ export default function WorkshopRegistrationPageClient({
     institution: "",
     designation: "",
     workshopDate: "",
+    nationality: "",
     content: [] as string[],
     agreeRecord: false,
     agreeTerms: false,
@@ -393,14 +424,34 @@ export default function WorkshopRegistrationPageClient({
     setSubmitStatus(null);
     setIsSubmitting(true);
 
+    if (!formData.agreeRecord || !formData.agreeTerms) {
+      setSubmitStatus({
+        type: "error",
+        message:
+          "Please agree to recording & certification and terms & conditions before registering.",
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (!/^[0-9]{10}$/.test(formData.contact.trim())) {
+      setSubmitStatus({
+        type: "error",
+        message: "Contact number must be exactly 10 digits.",
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
     const registrationPayload: WorkshopRegistrationPayload = {
       workshop_id: workshop.id,
       full_name: formData.name.trim(),
       email: formData.email.trim(),
       contact_number: formData.contact.trim(),
-      alternative_email: formData.altEmail.trim() || undefined,
+      alternative_email: formData.altEmail.trim(),
       institution: formData.institution.trim(),
       designation: normalizeDesignationForApi(formData.designation),
+      nationality: normalizeNationalityForApi(formData.nationality),
       agree_recording: formData.agreeRecord,
       agree_terms: formData.agreeTerms,
     };
@@ -655,6 +706,10 @@ export default function WorkshopRegistrationPageClient({
               required
               value={formData.contact}
               onChange={handleChange}
+              inputMode="numeric"
+              pattern="[0-9]{10}"
+              title="Contact number must be exactly 10 digits"
+              maxLength={10}
             />
 
             <FormInput
@@ -662,7 +717,8 @@ export default function WorkshopRegistrationPageClient({
               name="altEmail"
               label="Alternative Email"
               type="email"
-              placeholder="Optional"
+              placeholder="name@example.com"
+              required
               value={formData.altEmail}
               onChange={handleChange}
             />
@@ -697,29 +753,51 @@ export default function WorkshopRegistrationPageClient({
                 <option value="Student">Student</option>
                 <option value="Faculty">Faculty</option>
                 <option value="Professional">Professional</option>
+                <option value="Others">Others</option>
               </select>
             </div>
           </div>
 
-          {/* Workshop Date Dropdown */}
-          <div>
-            <label className="block text-slate-200 font-medium mb-2">
-              Available Date of the Workshop{" "}
-              <span className="text-red-400">*</span>
-            </label>
+          {/* Workshop Date and Nationality */}
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-slate-200 font-medium mb-2">
+                Available Date of the Workshop{" "}
+                <span className="text-red-400">*</span>
+              </label>
 
-            <select
-              name="workshopDate"
-              value={formData.workshopDate}
-              onChange={handleChange}
-              required
-              className="w-full px-4 py-3 rounded-lg bg-slate-800 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Select Workshop Date</option>
-              {workshopDates.map((date) => (
-                <option key={date}>{date}</option>
-              ))}
-            </select>
+              <select
+                name="workshopDate"
+                value={formData.workshopDate}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-3 rounded-lg bg-slate-800 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Select Workshop Date</option>
+                {workshopDates.map((date) => (
+                  <option key={date}>{date}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-slate-200 font-medium mb-2">
+                Nationality <span className="text-red-400">*</span>
+              </label>
+
+              <select
+                id="nationality"
+                name="nationality"
+                value={formData.nationality}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-3 rounded-lg bg-slate-800 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Select your nationality</option>
+                <option value="Indian">Indian</option>
+                <option value="Others">Others</option>
+              </select>
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -731,7 +809,10 @@ export default function WorkshopRegistrationPageClient({
                 onChange={handleChange}
                 required
               />
-              I agree to recording & certification.
+              <span>
+                I agree to recording & certification.
+                <span className="text-red-400">*</span>
+              </span>
             </label>
 
             <label className="flex gap-2 text-slate-300">
@@ -742,12 +823,18 @@ export default function WorkshopRegistrationPageClient({
                 onChange={handleChange}
                 required
               />
-              I agree to terms & conditions.
+              <span>
+                I agree to terms & conditions.
+                <span className="text-red-400">*</span>
+              </span>
             </label>
           </div>
 
           {/* Submit */}
-          <SubmitButton isSubmitting={isSubmitting} />
+          <SubmitButton
+            isSubmitting={isSubmitting}
+            disabled={!formData.agreeRecord || !formData.agreeTerms}
+          />
         </form>
       </div>
     </div>
