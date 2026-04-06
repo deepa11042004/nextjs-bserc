@@ -19,14 +19,8 @@ import LatestNews from "@/components/new/LatestNews";
 import ISROMissionsSection from "@/components/new/ISROMissionsSection";
 import StatePartnership from "@/components/new/StatePartnership";
 import FeaturedWorkshops from "@/components/new/FeaturedWorkshops";
-import { useLayoutEffect } from "react";
 
 export default function HomePage() {
-  useLayoutEffect(() => {
-    // Keep navigation behavior consistent when landing on home.
-    window.scrollTo({ top: 0, behavior: "auto" });
-  }, []);
-
   return (
     <>
       <Home />
