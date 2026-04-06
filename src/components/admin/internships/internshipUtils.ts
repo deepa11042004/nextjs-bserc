@@ -65,6 +65,7 @@ function toInternshipApplication(value: unknown): InternshipApplication | null {
     institution_name: toNullableString(record.institution_name) || "-",
     educational_qualification:
       toNullableString(record.educational_qualification) || "-",
+    is_lateral: toBoolean(record.is_lateral),
     declaration_accepted: toBoolean(record.declaration_accepted),
     has_passport_photo: toBoolean(record.has_passport_photo),
     passport_photo_mime_type: toNullableString(record.passport_photo_mime_type),

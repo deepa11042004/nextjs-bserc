@@ -9,9 +9,10 @@ type InternshipRegistrationEndpoint =
   | "/api/internship/registration/create-order"
   | "/api/internship/registration/verify-payment"
   | "/api/internship/registration/register"
-  | "/api/internship/registration/list";
+  | "/api/internship/registration/list"
+  | "/api/internship/registration/fee";
 
-type InternshipHttpMethod = "GET" | "POST";
+type InternshipHttpMethod = "GET" | "POST" | "PUT";
 
 function isProductionRuntime(): boolean {
   return process.env.NODE_ENV === "production" || process.env.VERCEL === "1";

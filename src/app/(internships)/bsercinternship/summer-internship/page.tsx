@@ -2,6 +2,7 @@
 
 import { Check, Search, ChevronDown, ArrowRight, Upload } from "lucide-react";
 import React, { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   createInternshipPaymentOrder,
   registerInternshipWithoutPayment,
@@ -283,8 +284,22 @@ function StatusBanner({
 // ─────────────────────────────────────────────────────────────
 
 export default function InternshipApplicationForm() {
+  const searchParams = useSearchParams();
   const internshipName = "Def-Space Summer Internship";
   const internshipDesignation = "Def-Space Tech Intern";
+  const sourceParam = (
+    searchParams.get("source") ||
+    searchParams.get("type") ||
+    ""
+  ).toLowerCase();
+  const isLateralRegistration =
+    sourceParam === "lateral" ||
+    sourceParam === "later" ||
+    searchParams.get("is_lateral") === "true" ||
+    searchParams.get("is_lateral") === "1";
+  const registrationTypeLabel = isLateralRegistration
+    ? "Lateral Registration"
+    : "Regular Registration";
 
   const emptyFormData = {
     fullName: "",
@@ -393,6 +408,7 @@ export default function InternshipApplicationForm() {
     payload.append("pin_code", formData.pinCode.trim());
     payload.append("institution_name", formData.institution.trim());
     payload.append("educational_qualification", formData.qualification.trim());
+    payload.append("is_lateral", String(isLateralRegistration));
     payload.append("declaration_accepted", String(formData.declaration));
 
     if (passportPhoto) {
@@ -434,6 +450,7 @@ export default function InternshipApplicationForm() {
     try {
       const order = await createInternshipPaymentOrder({
         email: formData.email.trim(),
+        is_lateral: isLateralRegistration,
       });
 
       if (order.already_registered) {
@@ -555,6 +572,9 @@ export default function InternshipApplicationForm() {
           <p className="text-zinc-400 text-sm">
             Fill out all required fields to complete your application
           </p>
+          <p className="mt-3 text-xs uppercase tracking-[0.2em] text-zinc-500">
+            {registrationTypeLabel}
+          </p>
         </div>
 
         {submitStatus && (
@@ -580,6 +600,13 @@ export default function InternshipApplicationForm() {
                 name="designation"
                 label="Designation of Internship / इंटर्नशिप का प्रकार"
                 value={internshipDesignation}
+                disabled
+              />
+              <FormField
+                id="registrationType"
+                name="registrationType"
+                label="Registration Type / पंजीकरण प्रकार"
+                value={registrationTypeLabel}
                 disabled
               />
             </div>

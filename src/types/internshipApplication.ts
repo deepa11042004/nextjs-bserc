@@ -15,6 +15,7 @@ export interface InternshipApplication {
   pin_code: string;
   institution_name: string;
   educational_qualification: string;
+  is_lateral: boolean;
   declaration_accepted: boolean;
   has_passport_photo: boolean;
   passport_photo_mime_type: string | null;

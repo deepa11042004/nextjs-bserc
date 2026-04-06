@@ -129,14 +129,13 @@ export default function MentorList() {
                   <TableHead className="text-white">Track</TableHead>
                   <TableHead className="text-white">Experience</TableHead>
                   <TableHead className="text-white">Status</TableHead>
-                  <TableHead className="text-white">Documents</TableHead>
                   <TableHead className="text-white">Registered</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {mentors.length === 0 ? (
                   <TableRow className="border-zinc-800">
-                    <TableCell colSpan={8} className="py-8 text-center text-zinc-500">
+                    <TableCell colSpan={7} className="py-8 text-center text-zinc-500">
                       No active mentors found.
                     </TableCell>
                   </TableRow>
@@ -144,9 +143,23 @@ export default function MentorList() {
                   mentors.map((mentor) => (
                     <TableRow key={mentor.id} className="border-zinc-800">
                       <TableCell>
-                        <div className="flex flex-col">
-                          <span className="text-zinc-100 font-medium">{mentor.full_name}</span>
-                          <span className="text-zinc-400 text-xs">{mentor.email}</span>
+                        <div className="flex items-center gap-3">
+                          {mentor.has_profile_photo ? (
+                            <img
+                              src={`/api/mentor/${mentor.id}/profile-photo`}
+                              alt={`${mentor.full_name} profile photo`}
+                              className="h-10 w-10 rounded-full border border-zinc-700 object-cover bg-zinc-800"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div className="h-10 w-10 rounded-full border border-zinc-700 bg-zinc-800 flex items-center justify-center text-zinc-300 text-sm font-semibold">
+                              {mentor.full_name.trim().charAt(0).toUpperCase() || "M"}
+                            </div>
+                          )}
+                          <div className="flex flex-col">
+                            <span className="text-zinc-100 font-medium">{mentor.full_name}</span>
+                            <span className="text-zinc-400 text-xs">{mentor.email}</span>
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell className="text-zinc-300">{mentor.phone || "-"}</TableCell>
@@ -171,11 +184,6 @@ export default function MentorList() {
                         <Badge className={getStatusBadgeClasses(mentor.status)}>
                           {mentor.status}
                         </Badge>
-                      </TableCell>
-                      <TableCell className="text-zinc-300 text-sm">
-                        {mentor.has_resume ? "Resume" : "No Resume"}
-                        <span className="mx-2 text-zinc-600">•</span>
-                        {mentor.has_profile_photo ? "Photo" : "No Photo"}
                       </TableCell>
                       <TableCell className="text-zinc-300">
                         {formatMentorDate(mentor.created_at)}
