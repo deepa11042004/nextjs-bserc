@@ -8,6 +8,9 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    env:
+      IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/nextjs-bserc
+      IMAGE_TAG: ${{ github.sha }}
 
     steps:
       # 1️⃣ Checkout code
@@ -26,11 +29,14 @@ jobs:
         run: |
           docker build \
           --build-arg API_URL=${{ secrets.API_URL }} \
-          -t ${{ secrets.DOCKER_USERNAME }}/nextjs-bserc:latest .
+          -t $IMAGE_NAME:$IMAGE_TAG \
+          -t $IMAGE_NAME:latest .
 
       # 4️⃣ Push to Docker Hub
       - name: Push Docker image
-        run: docker push ${{ secrets.DOCKER_USERNAME }}/nextjs-bserc:latest
+        run: |
+          docker push $IMAGE_NAME:$IMAGE_TAG
+          docker push $IMAGE_NAME:latest
 
       # 5️⃣ Deploy to EC2
       - name: Deploy to EC2
@@ -40,7 +46,9 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_KEY }}
           script: |
-            docker pull ${{ secrets.DOCKER_USERNAME }}/nextjs-bserc:latest
+            set -e
+            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+            docker pull ${{ secrets.DOCKER_USERNAME }}/nextjs-bserc:${{ github.sha }}
 
             docker stop nextjs-app || true
             docker rm nextjs-app || true
@@ -52,4 +60,4 @@ jobs:
             docker run -d -p 3000:3000 \
             -e API_URL=${{ secrets.API_URL }} \
             --name nextjs-app \
-            ${{ secrets.DOCKER_USERNAME }}/nextjs-bserc:latest
+            ${{ secrets.DOCKER_USERNAME }}/nextjs-bserc:${{ github.sha }}
