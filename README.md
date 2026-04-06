@@ -56,22 +56,5 @@ For production Docker deployments, `API_URL` must be present in the frontend con
 
 If `API_URL` is missing, frontend API routes like `/api/auth/login` will return `500`.
 
-
-
-
-
-
 //testing
-<<<<<<< HEAD
-<<<<<<< HEAD
-test 1 
-test 2
-test 3
-test 4
-test 5
-=======
 
-
->>>>>>> f5e3acf (remove unnecessary blank line from README.md)
-=======
->>>>>>> d5e7ef1 (remove unnecessary blank lines in README.md)
