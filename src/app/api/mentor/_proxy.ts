@@ -135,7 +135,8 @@ async function buildForwardPayload(
     body: rawBody.byteLength > 0 ? rawBody : undefined,
     headers: contentType
       ? {
-          "Content-Type": request.headers.get("content-type") || "application/octet-stream",
+          "Content-Type":
+            request.headers.get("content-type") || "application/octet-stream",
         }
       : undefined,
   };
@@ -169,7 +170,10 @@ export async function forwardMentorRequest(
   const payload = await buildForwardPayload(request, method);
 
   if (payload === null) {
-    return NextResponse.json({ message: "Invalid request body" }, { status: 400 });
+    return NextResponse.json(
+      { message: "Invalid request body" },
+      { status: 400 },
+    );
   }
 
   let lastRetriablePayload: unknown = null;

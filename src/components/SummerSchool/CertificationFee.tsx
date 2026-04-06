@@ -67,7 +67,7 @@ const CertificationFee: React.FC = () => {
                     <span>International Students</span>
                   </div>
                   <span className="font-semibold text-cyan-400 text-sm sm:text-base">
-                    USD 15
+                    USD 150
                   </span>
                 </div>
               </div>

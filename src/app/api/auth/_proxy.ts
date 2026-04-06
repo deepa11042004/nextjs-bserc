@@ -35,12 +35,10 @@ function getAuthBaseUrls(options?: { preferLocal?: boolean }): string[] {
   const raw = isProductionRuntime()
     ? [envUrl]
     : preferLocal
-    ? [...DEV_FALLBACK_AUTH_URLS, envUrl]
-    : [envUrl, ...DEV_FALLBACK_AUTH_URLS];
+      ? [...DEV_FALLBACK_AUTH_URLS, envUrl]
+      : [envUrl, ...DEV_FALLBACK_AUTH_URLS];
 
-  const normalized = raw.filter(
-    (value): value is string => Boolean(value),
-  );
+  const normalized = raw.filter((value): value is string => Boolean(value));
 
   return [...new Set(normalized.map((value) => value.replace(/\/$/, "")))];
 }
@@ -94,7 +92,10 @@ export async function forwardAuthRequest(
   const body = await parseIncomingBody(request);
 
   if (!body || typeof body !== "object") {
-    return NextResponse.json({ message: "Invalid request body" }, { status: 400 });
+    return NextResponse.json(
+      { message: "Invalid request body" },
+      { status: 400 },
+    );
   }
 
   let lastRetriablePayload: unknown = null;
@@ -127,7 +128,9 @@ export async function forwardAuthRequest(
 
   if (lastRetriableStatus !== null) {
     return NextResponse.json(
-      lastRetriablePayload ?? { message: "Authentication service is unavailable" },
+      lastRetriablePayload ?? {
+        message: "Authentication service is unavailable",
+      },
       { status: lastRetriableStatus },
     );
   }
