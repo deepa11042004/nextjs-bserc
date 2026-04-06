@@ -49,7 +49,7 @@ function FormInput({
         required={required}
         className={`
           w-full px-4 py-3 rounded-md bg-[#111111] border text-zinc-100 
-          placeholder-zinc-600 focus:outline-none focus:border-[#a4cc22]/50 
+          placeholder-zinc-600 focus:outline-none focus:border-orange-500/50 
           transition-colors text-sm
           ${
             error
@@ -113,7 +113,7 @@ function FormTextarea({
         maxLength={1000}
         className={`
           w-full px-4 py-3 rounded-md bg-[#111111] border text-zinc-100 
-          placeholder-zinc-600 focus:outline-none focus:border-[#a4cc22]/50 
+          placeholder-zinc-600 focus:outline-none focus:border-orange-500/50 
           transition-colors text-sm resize-none
           ${
             error
@@ -295,7 +295,7 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0d0d0d] text-zinc-300 py-16 px-4 selection:bg-[#a4cc22] selection:text-black">
+    <div className="min-h-screen bg-[#0d0d0d] text-zinc-300 py-16 px-4 selection:bg-orange-500 selection:text-black">
       <div className="max-w-4xl mx-auto">
         
         {/* Page Header */}
@@ -304,7 +304,7 @@ export default function ContactPage() {
             <span className="text-orange-500 text-xs font-bold tracking-[0.2em] uppercase">
              CONTACT US
             </span>
-            <div className="h-px w-16 bg-[#a4cc22]/40"></div>
+            <div className="h-px w-16 bg-orange-500/40"></div>
           </div>
           <h1 className="text-5xl font-serif font-bold text-white mb-5 leading-tight">
             Get in Touch
@@ -326,8 +326,8 @@ export default function ContactPage() {
                 className="mb-6 p-4 bg-[#111111] border border-[#2d3023] rounded-xl text-zinc-100 flex items-start gap-4"
                 role="alert"
               >
-                <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-[#a4cc22]/20 flex items-center justify-center">
-                  <Check className="text-[#a4cc22] w-5 h-5" strokeWidth={2.5} />
+                <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center">
+                  <Check className="text-orange-500 w-5 h-5" strokeWidth={2.5} />
                 </div>
                 <div>
                   <p className="font-semibold text-white">Request Submitted!</p>

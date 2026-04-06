@@ -65,7 +65,7 @@ const InputField: React.FC<InputFieldProps> = ({
       min={min}
       required={required}
       onChange={onChange}
-      className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-[#a4cc22]/50 transition-colors"
+      className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-orange-500/50 transition-colors"
     />
   </div>
 );
@@ -197,14 +197,14 @@ export default function MentorRegistrationForm() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0d0d0d] text-zinc-300 py-16 px-4 selection:bg-[#a4cc22] selection:text-black">
+    <div className="min-h-screen bg-[#0d0d0d] text-zinc-300 py-16 px-4 selection:bg-orange-500 selection:text-black">
       <main className="max-w-4xl mx-auto">
         <div className="mb-14">
           <div className="flex items-center gap-4 mb-4">
             <span className="text-orange-500 text-xs font-bold tracking-[0.2em] uppercase">
               MENTOR PORTAL
             </span>
-            <div className="h-px w-16 bg-[#a4cc22]/40"></div>
+            <div className="h-px w-16 bg-orange-500/40"></div>
           </div>
           <h1 className="text-5xl font-serif font-bold text-white mb-5 leading-tight">
             Register as a <br /> Mentor/Expert
@@ -220,7 +220,7 @@ export default function MentorRegistrationForm() {
           </div>
         )}
         {submitSuccess && (
-          <div className="mb-6 rounded-md border border-[#a4cc22]/40 bg-[#a4cc22]/10 px-4 py-3 text-sm text-[#d7f58b]">
+          <div className="mb-6 rounded-md border border-orange-500/40 bg-orange-500/10 px-4 py-3 text-sm text-[#d7f58b]">
             {submitSuccess}
           </div>
         )}
@@ -456,7 +456,7 @@ export default function MentorRegistrationForm() {
                 name="consultation_fee"
                 min="0"
                 required
-                className="w-full pl-10 pr-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-100 focus:outline-none focus:border-[#a4cc22]/50 transition-colors"
+                className="w-full pl-10 pr-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-100 focus:outline-none focus:border-orange-500/50 transition-colors"
                 placeholder="e.g., 500, 1000, 2500"
               />
             </div>
@@ -544,7 +544,7 @@ export default function MentorRegistrationForm() {
                 Click to upload or drag file (PDF, DOC, DOCX - Max 5MB)
               </p>
               {resumeFileName && (
-                <p className="mt-3 text-xs text-[#a4cc22]">Selected: {resumeFileName}</p>
+                <p className="mt-3 text-xs text-orange-500">Selected: {resumeFileName}</p>
               )}
             </label>
           </div>
@@ -572,7 +572,7 @@ export default function MentorRegistrationForm() {
                 Click to upload or drag file (JPG, PNG - Max 2MB)
               </p>
               {profilePhotoFileName && (
-                <p className="mt-3 text-xs text-[#a4cc22]">Selected: {profilePhotoFileName}</p>
+                <p className="mt-3 text-xs text-orange-500">Selected: {profilePhotoFileName}</p>
               )}
             </label>
           </div>
