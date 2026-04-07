@@ -11,7 +11,7 @@ const NAV_ITEMS = [
   { label: "REGISTRATION", href: "/summer-school/student-registration" },
   { label: "MENTORS", href: "/summer-school/mentors" },
   { label: "REG.MENTOR", href: "/summer-school/mentor-registration" },
-  { label: "REG.SCHOOL", href: "/summer-school/school-registration" },
+  { label: "REG.INSTITUTION", href: "/summer-school/Institution-registration" },
 ];
 
 export default function Navbar() {

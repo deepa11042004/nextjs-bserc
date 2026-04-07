@@ -538,7 +538,7 @@ export default function SchoolRegistrationPage() {
             <div className="h-px w-16 bg-orange-500"></div>
           </div>
           <h1 className="text-4xl md:text-5xl font-serif font-bold text-white mb-5 leading-tight">
-            Register Your School
+            Register Your Institutional
           </h1>
           <p className="text-zinc-400 text-sm md:text-base max-w-7xl leading-relaxed">
             <span className="text-orange-500 font-bold   uppercase">
@@ -826,7 +826,7 @@ export default function SchoolRegistrationPage() {
              
               <SubmitButton
                 isSubmitting={isSubmitting}
-                label=  "Register School"
+                label=  "Register Institution"
               />
             </div>
           </form>

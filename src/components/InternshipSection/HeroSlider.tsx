@@ -29,7 +29,7 @@ const slides: SlideData[] = [
     title: "Def-Space Summer Internship 2026",
     desc: "Build cutting-edge solutions in drone technology, satellite systems, rocketry, and AI while contributing to India's space vision",
     cta: "Register Now",
-    link: "/summer-school/student-registration",
+    link: "/bsercinternship/summer-internship",
     accentColor: "cyan",
   },
   {
@@ -39,7 +39,7 @@ const slides: SlideData[] = [
     title: "Innovation in Defence & Space Technology",
     desc: "Explore Rocketry, Drones, AI, Robotics, and Aircraft Design. Aligned with Viksit Bharat @2047 and Atmanirbhar Bharat vision.",
     cta: "Learn More",
-  link: "/summer-school/student-registration",
+   link: "/bsercinternship/summer-internship",
     accentColor: "emerald",
   },
   {
@@ -49,7 +49,7 @@ const slides: SlideData[] = [
     title: "Career Pathways in - ISRO - DRDO - HAL",
     desc: "Earn BSERC-issued certificates, explore career routes in India's top defence & space organisations, and unlock merit scholarship opportunities.",
     cta: "Apply for Scholarship",
-  link: "/summer-school/student-registration",
+  link: "/bsercinternship/summer-internship",
     accentColor: "violet",
   },
 ];
