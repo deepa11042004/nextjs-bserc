@@ -56,12 +56,12 @@ const contactItems: ContactItem[] = [
   { icon: FiMapPin, label: "New Delhi, India" },
   { icon: FiPhone, label: "+91 7042880241" },
   { icon: FiMail, label: "info@bserc.org" },
-  { icon: FiMail, label: "contact@bserc.org" },
+  { icon: FiMail, label: "outreach@bserc.org" },
 ];
 
 const partnerLogos: PartnerLogo[] = [
    { src: "/img/isro.png", alt: "ISRO" },
-   { src: "/img/drdo.png", alt: "DRDO" },
+   { src: "/img/DOS.svg", alt: "DOF" },
   {
     src: "/img/ministry.png",
     alt: "Ministry of Education",

@@ -53,7 +53,7 @@ export const CompleteTimeline: React.FC = () => {
   return (
     <section className="w-full   bg-black px-4  pt-5">
       <div className=" max-w-6xl mx-auto text-white flex flex-col justify-center items-center  relative overflow-hidden">
-        <div className="flex justify-center text-center items-center text-center gap-2 py-3">
+        <div className="flex justify-center text-center items-center  gap-2 py-3">
           {/* Vertical line accent */}
           <div className="w-1 h-3 bg-orange-400"></div>
           <p className="text-sm font-medium uppercase tracking-widest text-orange-400 ">

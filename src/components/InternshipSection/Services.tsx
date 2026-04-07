@@ -51,7 +51,7 @@ export const Services: React.FC = () => {
   return (
     <section className="w-full py-12 sm:py-16 px-4 bg-black">
       <div className="max-w-6xl mx-auto rounded-xl border border-white/10 bg-gradient-to-br from-[#1E90FF]/10 to-[#FF6B35]/10 p-6 sm:p-8">
-        <div className="flex justify-center text-center items-center text-center gap-2 py-3">
+        <div className="flex justify-center text-center items-center gap-2 py-3">
           {/* Vertical line accent */}
           <div className="w-1 h-3 bg-orange-400"></div>
           <p className="text-sm font-medium uppercase tracking-widest text-orange-400 ">
