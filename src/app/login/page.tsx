@@ -124,7 +124,7 @@ export default function LoginPage() {
 
         <div className="flex flex-col gap-1">
           <label className="text-sm font-medium text-slate-200" htmlFor="password">
-            Password daaal
+            Password
             <span className="ml-1 text-pink-400">*</span>
           </label>
           <div className="relative">
