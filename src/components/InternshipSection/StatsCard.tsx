@@ -6,9 +6,10 @@ interface StatItem {
 }
 
 const stats: StatItem[] = [
-  { value: "500+", label: "Past Interns" },
-  { value: "6", label: "Technical Tracks" },
-  { value: "6 weeks", label: "Intensive Training" },
+  { value: "1000+", label: "Internships" },
+  { value: "50+", label: "Partner Labs" },
+  { value: "100+", label: "Mentors" },
+  { value: "45 Days", label: "Duration" },
 ];
 
 const StatsCard: React.FC = () => {
@@ -21,7 +22,7 @@ const StatsCard: React.FC = () => {
           Program Highlights
         </h2>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-6">
           {stats.map((stat, index) => (
             <div
               key={index}
