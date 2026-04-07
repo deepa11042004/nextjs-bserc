@@ -12,7 +12,7 @@ const NAV_ITEMS = [
   { label: "Lateral", href: "/bsercinternship/registration-lateral" },
   { label: "Mentor", href: "/bsercinternship/mentorship" },
   { label: "Reg.Mentor", href: "/bsercinternship/mentor-registration" },
-  { label: "Inst.Reg", href: "/bsercinternship/mentorship" },
+  { label: "Inst.Reg", href: "/bsercinternship/institutional-registration" },
 ];
 
 export default function Navbar() {
@@ -113,11 +113,11 @@ export default function Navbar() {
               {/* Login Button */}
               <li className="mt-4 px-4">
                 <Link
-                  href="/"
+                   href="/summer-school/contact"
                   onClick={closeMenu}
                   className="block text-center py-3 font-semibold text-white rounded-lg bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 transition"
                 >
-                  Get Started
+                 CONTACT US
                 </Link>
               </li>
             </ul>
