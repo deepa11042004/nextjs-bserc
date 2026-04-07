@@ -1,7 +1,7 @@
 "use client";
 
-import React, { FormEvent, useState } from "react";
-import { Check, Search, ChevronDown, ArrowRight, Upload } from "lucide-react";
+import React, { FormEvent, useState, useRef } from "react";
+import { Check, Search, ChevronDown, ArrowRight, Upload, Sparkles, DollarSign } from "lucide-react";
 import FormResponseOverlay from "@/components/ui/FormResponseOverlay";
 
 interface EngagementPlan {
@@ -19,6 +19,7 @@ interface InputFieldProps {
   name?: string;
   min?: string | number;
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  id?: string;
 }
 
 const SectionCard = ({
@@ -39,11 +40,16 @@ const SectionCard = ({
 const FormLabel = ({
   label,
   required,
+  id,
 }: {
   label: string;
   required?: boolean;
+  id?: string;
 }) => (
-  <label className="block text-zinc-100 text-[13px] font-semibold mb-2.5">
+  <label 
+    htmlFor={id}
+    className="block text-zinc-100 text-[13px] font-semibold mb-2.5"
+  >
     {label} {required && <span className="text-red-500 ml-0.5">*</span>}
   </label>
 );
@@ -56,10 +62,12 @@ const InputField: React.FC<InputFieldProps> = ({
   name,
   min,
   onChange,
+  id,
 }) => (
   <div className="mb-6 w-full">
-    <FormLabel label={label} required={required} />
+    <FormLabel label={label} required={required} id={id} />
     <input
+      id={id}
       type={type}
       name={name}
       placeholder={placeholder}
@@ -71,6 +79,63 @@ const InputField: React.FC<InputFieldProps> = ({
   </div>
 );
 
+interface FormInputProps {
+  id: string;
+  name: string;
+  label: string;
+  type?: string;
+  placeholder?: string;
+  required?: boolean;
+  prefix?: string;
+  suffix?: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  error?: string;
+}
+
+const FormInput: React.FC<FormInputProps> = ({
+  id,
+  name,
+  label,
+  type = "text",
+  placeholder,
+  required,
+  prefix,
+  suffix,
+  value,
+  onChange,
+  error,
+}) => (
+  <div className="mb-6">
+    <FormLabel label={label} required={required} id={id} />
+    <div className="relative">
+      {prefix && (
+        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-orange-500 font-bold">
+          {prefix}
+        </span>
+      )}
+      <input
+        id={id}
+        type={type}
+        name={name}
+        placeholder={placeholder}
+        required={required}
+        value={value}
+        onChange={onChange}
+        className={`w-full px-4 py-3 rounded-md bg-[#111111] border text-zinc-100 placeholder-zinc-600 focus:outline-none transition-colors ${
+          error ? "border-red-500" : "border-[#2a2a2a] focus:border-orange-500/50"
+        } ${prefix ? "pl-10" : ""}`}
+      />
+      {suffix && (
+        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-600 text-sm">
+          {suffix}
+        </span>
+      )}
+    </div>
+    {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
+  </div>
+);
+
 export default function MentorRegistrationForm() {
   const [guidelinesAccepted, setGuidelinesAccepted] = useState<boolean>(false);
   const [conductAccepted, setConductAccepted] = useState<boolean>(false);
@@ -79,8 +144,26 @@ export default function MentorRegistrationForm() {
   const [submitSuccess, setSubmitSuccess] = useState<string>("");
   const [resumeFileName, setResumeFileName] = useState<string>("");
   const [profilePhotoFileName, setProfilePhotoFileName] = useState<string>("");
+  const [formData, setFormData] = useState({
+    currency: "INR",
+    honorariumHourly: "",
+    honorariumDaily: "",
+    honorariumWeekly: "",
+    honorariumProject: "",
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  
+  // Refs for file inputs to enable resetting
+  const resumeInputRef = useRef<HTMLInputElement>(null);
+  const profilePhotoInputRef = useRef<HTMLInputElement>(null);
+
+  const handleChange = (field: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    setErrors((prev) => ({ ...prev, [field]: "" }));
+  };
 
   const isFormReady = guidelinesAccepted && conductAccepted;
+  
   const plans: EngagementPlan[] = [
     {
       name: "price_5_sessions",
@@ -124,6 +207,24 @@ export default function MentorRegistrationForm() {
     }
   };
 
+  const resetForm = (form: HTMLFormElement) => {
+    form.reset();
+    setFormData({
+      currency: "INR",
+      honorariumHourly: "",
+      honorariumDaily: "",
+      honorariumWeekly: "",
+      honorariumProject: "",
+    });
+    setGuidelinesAccepted(false);
+    setConductAccepted(false);
+    setResumeFileName("");
+    setProfilePhotoFileName("");
+    // Reset file inputs
+    if (resumeInputRef.current) resumeInputRef.current.value = "";
+    if (profilePhotoInputRef.current) profilePhotoInputRef.current.value = "";
+  };
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setSubmitError("");
@@ -137,7 +238,11 @@ export default function MentorRegistrationForm() {
     }
 
     const form = event.currentTarget;
-    const formData = new FormData(form);
+    const formDataObj = new FormData(form);
+    
+    // Ensure currency is included in FormData
+    formDataObj.set("currency", formData.currency);
+    
     const modeKeys = [
       "video_call",
       "phone_call",
@@ -145,40 +250,40 @@ export default function MentorRegistrationForm() {
       "email_support",
     ] as const;
 
-    const hasAnyModeSelected = modeKeys.some((key) => formData.has(key));
+    const hasAnyModeSelected = modeKeys.some((key) => formDataObj.has(key));
     if (!hasAnyModeSelected) {
       setSubmitError("Please select at least one mentoring mode.");
       return;
     }
 
     modeKeys.forEach((key) => {
-      formData.set(key, String(formData.has(key)));
+      formDataObj.set(key, String(formDataObj.has(key)));
     });
 
-    formData.set(
+    formDataObj.set(
       "complimentary_session",
-      String(formData.has("complimentary_session")),
+      String(formDataObj.has("complimentary_session")),
     );
 
     const mentoredBeforeValue = String(
-      formData.get("has_mentored_before") ?? "",
+      formDataObj.get("has_mentored_before") ?? "",
     ).trim();
     if (mentoredBeforeValue === "yes" || mentoredBeforeValue === "limited") {
-      formData.set("has_mentored_before", "true");
+      formDataObj.set("has_mentored_before", "true");
     } else if (mentoredBeforeValue === "no") {
-      formData.set("has_mentored_before", "false");
+      formDataObj.set("has_mentored_before", "false");
     } else {
-      formData.delete("has_mentored_before");
+      formDataObj.delete("has_mentored_before");
     }
 
-    formData.set("accepted_guidelines", String(guidelinesAccepted));
-    formData.set("accepted_code_of_conduct", String(conductAccepted));
+    formDataObj.set("accepted_guidelines", String(guidelinesAccepted));
+    formDataObj.set("accepted_code_of_conduct", String(conductAccepted));
 
     setIsSubmitting(true);
     try {
       const response = await fetch("/api/mentor/register", {
         method: "POST",
-        body: formData,
+        body: formDataObj,
       });
 
       const message = await parseApiMessage(response);
@@ -187,11 +292,7 @@ export default function MentorRegistrationForm() {
       }
 
       setSubmitSuccess(message || "Mentor registered successfully.");
-      form.reset();
-      setGuidelinesAccepted(false);
-      setConductAccepted(false);
-      setResumeFileName("");
-      setProfilePhotoFileName("");
+      resetForm(form);
     } catch (error: unknown) {
       const message =
         error instanceof Error
@@ -232,12 +333,33 @@ export default function MentorRegistrationForm() {
           </p>
         </div>
 
+        <div
+          className="flex flex-col justify-center bg-gradient-to-r from-[#111111] to-[#0f0f0f] border
+         border-[#2a2a2a] rounded-xl p-5 mb-8"
+        >
+          <p className="text-gray-300 text-sm sm:text-base leading-relaxed">
+            {""}
+            <span className="text-blue-400 font-semibold">
+              Join BSERC's Mentor Network
+            </span>
+            {""} – Bharat Space Education Research Centre (BSERC) invites
+            experienced professionals, educators, researchers, and practitioners
+            from Defence, Space Science, Engineering, Computing, and Emerging
+            Technologies to join as mentors for the {""}
+            <span className="text-orange-400 font-semibold">
+              Def-Space Summer School 2026.
+            </span>
+            {""}
+          </p>
+        </div>
+
         <form onSubmit={handleSubmit}>
         <SectionCard title="1. PERSONAL INFORMATION / व्यक्तिगत जानकारी">
           <InputField
             label="Full Name / पूरा नाम "
             placeholder="Dr./Prof./Your Name"
             name="full_name"
+            id="full_name"
             required
           />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
@@ -246,6 +368,7 @@ export default function MentorRegistrationForm() {
               placeholder="yourname@domain.com"
               type="email"
               name="email"
+              id="email"
               required
             />
             <InputField
@@ -253,6 +376,7 @@ export default function MentorRegistrationForm() {
               label="Phone Number / फोन नंबर "
               placeholder="+91 XXXXX XXXXX"
               name="phone"
+              id="phone"
               required
             />
           </div>
@@ -260,6 +384,7 @@ export default function MentorRegistrationForm() {
             label="Date of Birth / जन्म दिनांक"
             type="date"
             name="dob"
+            id="dob"
             required
           />
         </SectionCard>
@@ -269,12 +394,14 @@ export default function MentorRegistrationForm() {
             label="Current Position / वर्तमान पद"
             placeholder="e.g., Senior Engineer, Professor, Scientist"
             name="current_position"
+            id="current_position"
             required
           />
           <InputField
             label="Organization / संगठन"
             placeholder="Company/University/Institute name"
             name="organization"
+            id="organization"
             required
           />
           <InputField
@@ -283,19 +410,21 @@ export default function MentorRegistrationForm() {
             label="Years of Experience / अनुभव के वर्ष"
             placeholder="e.g., 5, 10, 15"
             name="years_experience"
+            id="years_experience"
             required
           />
           <div className="mb-6">
             <FormLabel
               label="Professional Bio / व्यावसायिक जीवन परिचय"
               required
+              id="professional_bio"
             />
-
             <textarea
+              id="professional_bio"
               name="professional_bio"
               required
               rows={4}
-              className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-500  "
+              className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-orange-500/50 transition-colors"
               placeholder="Brief description of your expertise and achievements..."
             />
           </div>
@@ -306,15 +435,17 @@ export default function MentorRegistrationForm() {
             <FormLabel
               label="Primary Technical Track / प्राथमिक तकनीकी ट्रैक"
               required
+              id="primary_track"
             />
             <div className="relative">
               <select
+                id="primary_track"
                 name="primary_track"
                 required
                 defaultValue=""
-                className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-400 text-sm focus:outline-none appearance-none"
+                className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-100 text-sm focus:outline-none appearance-none"
               >
-                <option value="">--Select Primary Track--</option>
+                <option value="" disabled>--Select Primary Track--</option>
                 <option value="Advanced Drone Technology (AIR Taxi)">Advanced Drone Technology (AIR Taxi)</option>
                 <option value="Defence Drone Technology">Defence Drone Technology</option>
                 <option value="Aircraft Design Technology">Aircraft Design Technology</option>
@@ -329,11 +460,12 @@ export default function MentorRegistrationForm() {
             </div>
           </div>
           <div className="mb-6">
-            <FormLabel label="Secondary/Additional Skills / माध्यमिक/अतिरिक्त कौशल" />
+            <FormLabel label="Secondary/Additional Skills / माध्यमिक/अतिरिक्त कौशल" id="secondary_skills"/>
             <textarea
+              id="secondary_skills"
               name="secondary_skills"
               rows={3}
-              className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-100 focus:outline-none"
+              className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-100 focus:outline-none focus:border-orange-500/50 transition-colors"
               placeholder="List any other relevant skills, certifications, or areas of expertise..."
             />
           </div>
@@ -341,6 +473,7 @@ export default function MentorRegistrationForm() {
             label="Key Competencies / मुख्य योग्यताएं"
             placeholder="e.g., CAD Design, Aerodynamics, Control Systems, Machine Learning, Project Management..."
             name="key_competencies"
+            id="key_competencies"
             required
           />
         </SectionCard>
@@ -360,11 +493,13 @@ export default function MentorRegistrationForm() {
               ].map((mode) => (
                 <label
                   key={mode.id}
+                  htmlFor={mode.id}
                   className="flex items-center gap-3 cursor-pointer group"
                 >
                   <div className="relative flex items-center justify-center">
                     <input
                       type="checkbox"
+                      id={mode.id}
                       name={mode.id}
                       value="true"
                       className="peer h-5 w-5 cursor-pointer appearance-none rounded border-2 border-zinc-600 bg-transparent checked:bg-white checked:border-white transition-all"
@@ -383,17 +518,18 @@ export default function MentorRegistrationForm() {
           </div>
 
           <div className="mb-8">
-            <label className="block text-zinc-100 text-[13px] font-semibold mb-2.5">
+            <label className="block text-zinc-100 text-[13px] font-semibold mb-2.5" htmlFor="availability">
               Availability / उपलब्धता <span className="text-red-500">*</span>
             </label>
             <div className="relative">
               <select
+                id="availability"
                 name="availability"
                 required
                 defaultValue=""
-                className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-400 text-sm focus:outline-none focus:border-zinc-500 appearance-none transition-colors"
+                className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-100 text-sm focus:outline-none focus:border-orange-500/50 appearance-none transition-colors"
               >
-                <option value="">--Select Availability--</option>
+                <option value="" disabled>--Select Availability--</option>
                 <option value="Full-time (Can dedicate significant hours)">Full-time (Can dedicate significant hours)</option>
                 <option value="Part-time (Few hours per week)">Part-time (Few hours per week)</option>
                 <option value="Flexible (Available as needed)">Flexible (Available as needed)</option>
@@ -407,33 +543,35 @@ export default function MentorRegistrationForm() {
           </div>
 
           <div className="mb-8">
-            <label className="block text-zinc-100 text-[13px] font-semibold mb-2.5">
+            <label className="block text-zinc-100 text-[13px] font-semibold mb-2.5" htmlFor="max_students">
               Maximum Students / अधिकतम छात्र{" "}
               <span className="text-red-500">*</span>
             </label>
             <input
+              id="max_students"
               type="number"
               min="1"
               name="max_students"
               required
               placeholder="How many students can you mentor simultaneously?"
-              className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-500 transition-colors"
+              className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-orange-500/50 transition-colors"
             />
           </div>
 
           <div className="mb-2">
-            <label className="block text-zinc-100 text-[13px] font-semibold mb-2.5">
+            <label className="block text-zinc-100 text-[13px] font-semibold mb-2.5" htmlFor="session_duration">
               Session Duration Preference / सत्र की अवधि{" "}
               <span className="text-red-500">*</span>
             </label>
             <div className="relative">
               <select
+                id="session_duration"
                 name="session_duration"
                 required
                 defaultValue=""
-                className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-400 text-sm focus:outline-none focus:border-zinc-500 appearance-none transition-colors"
+                className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-100 text-sm focus:outline-none focus:border-orange-500/50 appearance-none transition-colors"
               >
-                <option value="">--Select Duration--</option>
+                <option value="" disabled>--Select Duration--</option>
                 <option value="30 Minutes">30 Minutes</option>
                 <option value="45 Minutes">45 Minutes</option>
                 <option value="1 hour">1 hour</option>
@@ -448,9 +586,170 @@ export default function MentorRegistrationForm() {
           </div>
         </SectionCard>
 
+        {/* Mentorship Compensation */}
+          <SectionCard title="Mentorship Compensation & Expectations">
+            {/* Currency Selector */}
+            <div className="mb-6">
+              <label className="block text-zinc-100 text-[13px] font-semibold mb-2.5">
+                Preferred Currency{" "}
+                <span className="text-red-500 ml-0.5">*</span>
+              </label>
+              <div className="flex gap-3">
+                {["INR", "USD"].map((curr) => (
+                  <button
+                    key={curr}
+                    type="button"
+                    onClick={() => handleChange("currency", curr)}
+                    className={`
+            flex-1 py-2.5 px-4 rounded-md border text-sm font-medium transition-all
+            ${
+              formData.currency === curr
+                ? "bg-orange-500 border-orange-500 text-black"
+                : "bg-[#111111] border-[#2a2a2a] text-zinc-400 hover:border-[#a4cc22]/50 hover:text-zinc-200"
+            }
+          `}
+                  >
+                    {curr === "INR" ? "₹ Indian Rupee" : "$ US Dollar"}
+                  </button>
+                ))}
+              </div>
+              {/* Hidden input to ensure currency is submitted with FormData */}
+              <input type="hidden" name="currency" value={formData.currency} />
+            </div>
+
+            {/* Honorarium Guidelines */}
+            <div className="bg-[#111111] border border-[#262620] rounded-xl p-5 mb-6 shadow-sm">
+              <div className="flex items-start gap-3">
+                <div className="bg-[#1a1a1a] p-2 rounded-lg">
+                  <Sparkles className="w-4 h-4 text-orange-500" />
+                </div>
+
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-zinc-200 mb-3">
+                    Honorarium Guidelines
+                  </p>
+
+                  <ul className="space-y-2 text-sm text-zinc-400">
+                    <li className="flex gap-2">
+                      <span className="text-orange-500">•</span>
+                      <span>
+                        <strong className="text-zinc-200">
+                          Honorarium per Hour:
+                        </strong>{" "}
+                        Your hourly consulting honorarium for one-on-one
+                        mentorship sessions
+                      </span>
+                    </li>
+
+                    <li className="flex gap-2">
+                      <span className="text-orange-500">•</span>
+                      <span>
+                        <strong className="text-zinc-200">
+                          Honorarium per Day:
+                        </strong>{" "}
+                        Full-day intensive mentorship (6 hours of guidance)
+                      </span>
+                    </li>
+
+                    <li className="flex gap-2">
+                      <span className="text-orange-500">•</span>
+                      <span>
+                        <strong className="text-zinc-200">
+                          Honorarium per Week:
+                        </strong>{" "}
+                        Weekly recurring sessions (typically 10–25% discount
+                        from hourly honorarium)
+                      </span>
+                    </li>
+
+                    <li className="flex gap-2">
+                      <span className="text-orange-500">•</span>
+                      <span>
+                        <strong className="text-zinc-200">
+                          Project-Based Honorarium:
+                        </strong>{" "}
+                        Flat fee for complete project guidance (4–8 weeks) Flat
+                        honorarium for guiding a complete student project (4–8
+                        weeks)
+                      </span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Honorarium Inputs */}
+            <div className="grid md:grid-cols-2 gap-4">
+              <FormInput
+                id="honorariumHourly"
+                name="honorariumHourly"
+                label="Honorarium per Hour (₹ or USD) "
+                type="number"
+                placeholder={
+                  formData.currency === "INR" ? "e.g., 500" : "e.g., 10"
+                }
+                required
+                prefix={formData.currency === "INR" ? "₹" : "$"}
+                suffix={formData.currency}
+                value={formData.honorariumHourly}
+                onChange={(e) =>
+                  handleChange("honorariumHourly", e.target.value)
+                }
+                error={errors.honorariumHourly}
+              />
+              <FormInput
+                id="honorariumDaily"
+                name="honorariumDaily"
+                label="Honorarium per Day (Full Day - 6 hrs)"
+                type="number"
+                placeholder={
+                  formData.currency === "INR" ? "e.g., 2500" : "e.g., 50"
+                }
+                required
+                prefix={formData.currency === "INR" ? "₹" : "$"}
+                suffix={formData.currency}
+                value={formData.honorariumDaily}
+                onChange={(e) =>
+                  handleChange("honorariumDaily", e.target.value)
+                }
+                error={errors.honorariumDaily}
+              />
+              <FormInput
+                id="honorariumWeekly"
+                name="honorariumWeekly"
+                label="Honorarium per Week (5 sessions × 2 hrs) (Optional)"
+                type="number"
+                placeholder={
+                  formData.currency === "INR" ? "e.g., 4000" : "e.g., 80"
+                }
+                prefix={formData.currency === "INR" ? "₹" : "$"}
+                suffix={formData.currency}
+                value={formData.honorariumWeekly}
+                onChange={(e) =>
+                  handleChange("honorariumWeekly", e.target.value)
+                }
+              />
+              <FormInput
+                id="honorariumProject"
+                name="honorariumProject"
+                label="Project-Based Honorarium (Optional)"
+                type="number"
+                placeholder={
+                  formData.currency === "INR" ? "e.g., 5000" : "e.g., 100"
+                }
+                prefix={formData.currency === "INR" ? "₹" : "$"}
+                suffix={formData.currency}
+                value={formData.honorariumProject}
+                onChange={(e) =>
+                  handleChange("honorariumProject", e.target.value)
+                }
+              />
+            </div>
+          </SectionCard>
+
         <SectionCard title="5. PROFESSIONAL COMPENSATION STRUCTURE / व्यावसायिक मुआवजा संरचना">
           <div className="mb-8">
-            <label className="block text-zinc-100 text-[13px] font-semibold mb-2.5">
+            <label className="block text-zinc-100 text-[13px] font-semibold mb-2.5" htmlFor="consultation_fee">
               Consultation Fee (Per Session) / परामर्श शुल्क{" "}
               <span className="text-red-500">*</span>
             </label>
@@ -459,6 +758,7 @@ export default function MentorRegistrationForm() {
                 ₹
               </span>
               <input
+                id="consultation_fee"
                 type="number"
                 name="consultation_fee"
                 min="0"
@@ -486,7 +786,7 @@ export default function MentorRegistrationForm() {
                     {plan.titleHi}
                   </h4>
 
-                  {/* NOW WORKING: Total Investment Input */}
+                  {/* Total Investment Input */}
                   <div className="relative mb-4">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-orange-500 text-xs font-bold">
                       ₹
@@ -495,7 +795,7 @@ export default function MentorRegistrationForm() {
                       type="number"
                       name={plan.name}
                       placeholder="Total investment"
-                      className="w-full bg-[#111111] border border-[#2a2a2a] rounded px-8 py-2 text-[12px] text-zinc-200 focus:outline-none focus:border-zinc-500 placeholder:text-zinc-600 placeholder:italic"
+                      className="w-full bg-[#111111] border border-[#2a2a2a] rounded px-8 py-2 text-[12px] text-zinc-200 focus:outline-none focus:border-orange-500/50 placeholder:text-zinc-600 placeholder:italic transition-colors"
                     />
                   </div>
 
@@ -507,10 +807,11 @@ export default function MentorRegistrationForm() {
             </div>
           </div>
 
-          <label className="flex items-center gap-4 cursor-pointer group">
+          <label className="flex items-center gap-4 cursor-pointer group" htmlFor="complimentary_session">
             <div className="relative flex items-center justify-center">
               <input
                 type="checkbox"
+                id="complimentary_session"
                 name="complimentary_session"
                 value="true"
                 className="peer h-5 w-5 cursor-pointer appearance-none rounded border-2 border-zinc-600 bg-transparent checked:bg-white checked:border-white transition-all"
@@ -537,8 +838,10 @@ export default function MentorRegistrationForm() {
               <input
                 type="file"
                 name="resume"
+                id="resume"
                 accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                 required
+                ref={resumeInputRef}
                 onChange={(event) =>
                   setResumeFileName(event.target.files?.[0]?.name ?? "")
                 }
@@ -565,8 +868,10 @@ export default function MentorRegistrationForm() {
               <input
                 type="file"
                 name="profile_photo"
+                id="profile_photo"
                 accept="image/jpeg,image/jpg,image/png,image/webp"
                 required
+                ref={profilePhotoInputRef}
                 onChange={(event) =>
                   setProfilePhotoFileName(event.target.files?.[0]?.name ?? "")
                 }
@@ -585,26 +890,28 @@ export default function MentorRegistrationForm() {
           </div>
 
           <div className="mb-6">
-            <label className="block text-zinc-100 text-[13px] font-semibold mb-2.5">
+            <label className="block text-zinc-100 text-[13px] font-semibold mb-2.5" htmlFor="linkedin_url">
               LinkedIn Profile / लिंक्डइन प्रोफाइल
             </label>
             <input
+              id="linkedin_url"
               type="url"
               name="linkedin_url"
               placeholder="https://linkedin.com/in/yourprofile"
-              className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-500 transition-colors"
+              className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-orange-500/50 transition-colors"
             />
           </div>
 
           <div className="mb-2">
-            <label className="block text-zinc-100 text-[13px] font-semibold mb-2.5">
+            <label className="block text-zinc-100 text-[13px] font-semibold mb-2.5" htmlFor="portfolio_url">
               Portfolio / Website / पोर्टफोलियो / वेबसाइट
             </label>
             <input
+              id="portfolio_url"
               type="url"
               name="portfolio_url"
               placeholder="https://yourportfolio.com"
-              className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-500 transition-colors"
+              className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-orange-500/50 transition-colors"
             />
           </div>
         </SectionCard>
@@ -614,15 +921,17 @@ export default function MentorRegistrationForm() {
             <FormLabel
               label="Have you mentored students/interns before? / क्या आपने पहले छात्रों/इंटर्न को मार्गदर्शन दिया है? "
               required
+              id="has_mentored_before"
             />
             <div className="relative">
               <select
+                id="has_mentored_before"
                 name="has_mentored_before"
                 required
                 defaultValue=""
-                className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-400 text-sm focus:outline-none focus:border-zinc-500 appearance-none transition-colors"
+                className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-100 text-sm focus:outline-none focus:border-orange-500/50 appearance-none transition-colors"
               >
-                <option value="">--Select--</option>
+                <option value="" disabled>--Select--</option>
                 <option value="yes">Yes, I have mentored students</option>
                 <option value="limited">Limited experience</option>
                 <option value="no">No, but I'm eager to mentor</option>
@@ -633,15 +942,63 @@ export default function MentorRegistrationForm() {
             </div>
           </div>
           <div className="mb-2">
-            <FormLabel label="Tell us about your mentoring experience / अपने सलाह देने के अनुभव के बारे में बताएं" />
+            <FormLabel label="Tell us about your mentoring experience / अपने सलाह देने के अनुभव के बारे में बताएं" id="mentoring_experience"/>
             <textarea
+              id="mentoring_experience"
               name="mentoring_experience"
               rows={4}
-              className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-100 placeholder-zinc-600 focus:outline-none resize-none"
+              className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-orange-500/50 transition-colors resize-none"
               placeholder="Number of students mentored, outcomes, success stories, etc..."
             />
           </div>
         </SectionCard>
+
+           <div className="bg-[#181818] border border-[#262626] rounded-xl p-6 md:p-8 mb-8">
+            <h3 className="text-orange-500 font-semibold mb-6 text-sm uppercase tracking-wide">
+              Mentorship Programme Fee
+            </h3>
+
+            {/* Fee Cards */}
+            <div className="grid md:grid-cols-2 gap-4 mb-6">
+              {/* Indian Participants */}
+              <div className="bg-[#5f380e] border border-[#2a2a2a] rounded-lg p-6 text-center hover:border-orange-500/30 transition-colors">
+                <p className="text-zinc-400 text-xs font-semibold uppercase tracking-wider mb-3">
+                  Indian Participants
+                </p>
+                <p className="text-orange-500 text-3xl font-bold mb-2">
+                  ₹ 1,000
+                </p>
+                <p className="text-zinc-400 text-xs">
+                  One-time participation fee
+                </p>
+              </div>
+
+              {/* International Participants */}
+              <div className="bg-[#0f1f2e] border border-[#1e3a4a] rounded-lg p-6 text-center hover:border-cyan-500/30 transition-colors">
+                <p className="text-zinc-400 text-xs font-semibold uppercase tracking-wider mb-3">
+                  International Participants
+                </p>
+                <p className="text-cyan-400 text-3xl font-bold mb-2">US$ 150</p>
+                <p className="text-zinc-400 text-xs">
+                  One-time participation fee
+                </p>
+              </div>
+            </div>
+
+            {/* What's Included */}
+            <div className="bg-[#111111] border border-[#262620] rounded-lg p-4">
+              <p className="text-zinc-400 text-sm">
+                <span className="text-cyan-400 font-semibold">
+                  What the fee includes:
+                </span>{" "}
+                <span className="text-zinc-500">
+                  Mentor onboarding & training, access to BSERC's digital
+                  mentorship platform, coordination support, certificate of
+                  mentorship, and year-round BSERC community engagement.
+                </span>
+              </p>
+            </div>
+          </div>
 
         <SectionCard title="8. GUIDELINES & FINAL DECLARATION / दिशानिर्देश और अंतिम घोषणा">
           {/* Registration Guidelines Box */}
@@ -689,6 +1046,7 @@ export default function MentorRegistrationForm() {
               <div className="relative flex items-center mt-1">
                 <input
                   type="checkbox"
+                  id="guidelinesAccepted"
                   checked={guidelinesAccepted}
                   onChange={() => setGuidelinesAccepted(!guidelinesAccepted)}
                   className="peer h-6 w-6 cursor-pointer appearance-none rounded border-2 border-gray-500 bg-transparent checked:bg-white checked:border-white transition-all"
@@ -699,13 +1057,15 @@ export default function MentorRegistrationForm() {
                 />
               </div>
               <div className="text-gray-200 text-xs md:text-sm">
-                I understand and accept the guidelines. I agree to pay the
-                ₹1,000 registration fee for 2-year tenure /
-                <span className="block text-gray-400 mt-1">
-                  मैं दिशानिर्देशों को समझता/समझती हूँ और स्वीकार करता/करती हूँ।
-                  मैं 2 साल की अवधि के लिए ₹1,000 पंजीकरण शुल्क का भुगतान करने
-                  के लिए सहमत हूँ
-                </span>
+                <label htmlFor="guidelinesAccepted" className="cursor-pointer">
+                  I understand and accept the guidelines. I agree to pay the
+                  ₹1,000 registration fee for 2-year tenure /
+                  <span className="block text-gray-400 mt-1">
+                    मैं दिशानिर्देशों को समझता/समझती हूँ और स्वीकार करता/करती हूँ।
+                    मैं 2 साल की अवधि के लिए ₹1,000 पंजीकरण शुल्क का भुगतान करने
+                    के लिए सहमत हूँ
+                  </span>
+                </label>
               </div>
             </label>
           </div>
@@ -736,6 +1096,7 @@ export default function MentorRegistrationForm() {
               <div className="relative flex items-center mt-1">
                 <input
                   type="checkbox"
+                  id="conductAccepted"
                   checked={conductAccepted}
                   onChange={() => setConductAccepted(!conductAccepted)}
                   className="peer h-5 w-5 cursor-pointer appearance-none rounded border-2 border-zinc-600 bg-transparent checked:bg-white checked:border-white transition-all"
@@ -748,12 +1109,14 @@ export default function MentorRegistrationForm() {
 
               {/* Text */}
               <div className="text-white text-sm font-medium leading-relaxed">
-                I declare that the information provided is accurate and I agree
-                to the mentoring guidelines and code of conduct /
-                <span className="block text-zinc-400 mt-1 text-xs">
-                  मैं घोषणा करता हूँ कि प्रदान की गई जानकारी सटीक है और मैं सलाह
-                  देने के दिशानिर्देशों और आचरण संहिता से सहमत हूँ
-                </span>
+                <label htmlFor="conductAccepted" className="cursor-pointer">
+                  I declare that the information provided is accurate and I agree
+                  to the mentoring guidelines and code of conduct /
+                  <span className="block text-zinc-400 mt-1 text-xs">
+                    मैं घोषणा करता हूँ कि प्रदान की गई जानकारी सटीक है और मैं सलाह
+                    देने के दिशानिर्देशों और आचरण संहिता से सहमत हूँ
+                  </span>
+                </label>
               </div>
             </label>
           </div>

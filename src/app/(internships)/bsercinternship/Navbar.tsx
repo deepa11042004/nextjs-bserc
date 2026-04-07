@@ -9,10 +9,10 @@ const NAV_ITEMS = [
   { label: "Home", href: "/bsercinternship" },
   { label: "About", href: "/bsercinternship/about" },
   { label: "Registration", href: "/bsercinternship/summer-internship" },
-   { label: "Lateral", href: "/bsercinternship/registration-lateral" },
-  { label: "Register as Mentor", href: "/bsercinternship/mentor-registration" },
-  { label: "Mentorship", href: "/bsercinternship/mentorship" },
-  { label: "Attendance", href: "/bsercinternship/attendance" },
+  { label: "Lateral", href: "/bsercinternship/registration-lateral" },
+  { label: "Mentor", href: "/bsercinternship/mentorship" },
+  { label: "Reg.Mentor", href: "/bsercinternship/mentor-registration" },
+  { label: "Inst.Reg", href: "/bsercinternship/mentorship" },
 ];
 
 export default function Navbar() {
@@ -65,14 +65,14 @@ export default function Navbar() {
             ))}
           </ul>
 
-          {/* Desktop Right */}
+           {/* Desktop Right */}
           <div className="hidden lg:flex items-center">
             <Link
-              href="/"
+              href="/summer-school/contact"
               className="relative px-6 py-2 font-semibold text-white rounded-lg overflow-hidden group"
             >
               <span className="absolute inset-0 bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 opacity-80 group-hover:opacity-100 transition-opacity duration-300 rounded-lg"></span>
-              <span className="relative z-10">Get Started</span>
+              <span className="relative z-10">CONTACT US</span>
             </Link>
           </div>
 
