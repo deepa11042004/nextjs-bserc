@@ -44,11 +44,7 @@ const NAV_ITEMS: { label: string; href?: string; dropdown?: DropdownItem[] }[] =
     {
       label: "Career",
       dropdown: [
-        {
-          type: "link",
-          label: "Def-Space Summer Internship",
-          href: "/bsercinternship/summer-internship",
-        },
+        
         {
           type: "link",
           label: "Winter Internship",

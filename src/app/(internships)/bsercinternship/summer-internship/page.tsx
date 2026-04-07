@@ -561,7 +561,7 @@ export default function InternshipApplicationForm() {
             <span className="text-orange-500 text-xs font-bold tracking-widest uppercase">
               APPLICATION PORTAL
             </span>
-            <div className="h-px w-16 bg-[#a4cc22]/40"></div>
+            <div className="h-px w-16 bg-orange-500/40"></div>
           </div>
           <h1 className="text-4xl md:text-5xl font-serif font-bold text-white leading-tight mb-4">
             DEF-SPACE SUMMER

@@ -60,7 +60,7 @@ function FormInput({
         required={required}
         className={`
           w-full px-4 py-3 rounded-md bg-[#111111] border text-zinc-100 
-          placeholder-zinc-600 focus:outline-none focus:border-[#a4cc22]/50 
+          placeholder-zinc-600 focus:outline-none focus:border-orange-500/50 
           transition-colors text-sm
           ${
             error
@@ -125,7 +125,7 @@ function FormSelect({
           required={required}
           className={`
             w-full px-4 py-3 rounded-md bg-[#111111] border text-zinc-100 
-            focus:outline-none focus:border-[#a4cc22]/50 transition-colors text-sm appearance-none
+            focus:outline-none focus:border-orange-500/50 transition-colors text-sm appearance-none
             ${
               error
                 ? "border-red-500 focus:border-red-500/50"
@@ -216,7 +216,7 @@ function FormTextarea({
         maxLength={500}
         className={`
           w-full px-4 py-3 rounded-md bg-[#111111] border text-zinc-100 
-          placeholder-zinc-600 focus:outline-none focus:border-[#a4cc22]/50 
+          placeholder-zinc-600 focus:outline-none focus:border-orange-500/50 
           transition-colors text-sm resize-none
           ${
             error
@@ -281,8 +281,8 @@ const BenefitCard = ({
   title: string;
   description: string;
 }) => (
-  <div className="bg-[#111111] border border-[#2a2a2a] rounded-lg p-5 hover:border-[#a4cc22]/30 transition-colors">
-    <div className="w-10 h-10 rounded-lg bg-[#a4cc22]/10 flex items-center justify-center mb-4">
+  <div className="bg-[#111111] border border-[#2a2a2a] rounded-lg p-5 hover:border-orange-500/30 transition-colors">
+    <div className="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center mb-4">
       <Icon className="w-5 h-5 text-orange-500" />
     </div>
     <h4 className="text-zinc-100 font-semibold mb-2">{title}</h4>
@@ -303,9 +303,9 @@ const PartnershipModeCard = ({
   idealFor: string[];
   icon: React.ElementType;
 }) => (
-  <div className="bg-[#111111] border border-[#2a2a2a] rounded-xl p-6 hover:border-[#a4cc22]/40 transition-all group">
+  <div className="bg-[#111111] border border-[#2a2a2a] rounded-xl p-6 hover:border-orange-500/40 transition-all group">
     <div className="flex items-start gap-4">
-      <div className="w-12 h-12 rounded-xl bg-[#a4cc22]/10 flex items-center justify-center flex-shrink-0 group-hover:bg-[#a4cc22]/20 transition-colors">
+      <div className="w-12 h-12 rounded-xl bg-orange-500/10 flex items-center justify-center flex-shrink-0 group-hover:bg-orange-500/20 transition-colors">
         <Icon className="w-6 h-6 text-orange-500" />
       </div>
       <div>
@@ -354,7 +354,7 @@ function SubmitButton({
     primary:
       "bg-orange-500 hover:bg-orange-600 text-black shadow-lg shadow-[#ccf15a]/10 hover:shadow-[#ccf15a]/20 disabled:bg-zinc-800 disabled:text-zinc-500",
     secondary:
-      "bg-[#111111] border border-[#2a2a2a] hover:border-[#a4cc22]/50 text-zinc-100 disabled:opacity-50",
+      "bg-[#111111] border border-[#2a2a2a] hover:border-orange-500/50 text-zinc-100 disabled:opacity-50",
   };
 
   return (
@@ -527,8 +527,8 @@ export default function SchoolRegistrationPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0d0d0d] text-zinc-300 py-12 md:py-16 px-4 selection:bg-[#a4cc22] selection:text-black">
-      <div className="max-w-5xl mx-auto">
+    <div className="min-h-screen bg-[#0d0d0d] text-zinc-300 py-12 md:py-16 px-4 selection:bg-orange-500 selection:text-black">
+      <div className="max-w-6xl mx-auto">
         {/* Page Header */}
         <div className="mb-12 md:mb-16">
           <div className="flex items-center gap-4 mb-4">
@@ -614,8 +614,8 @@ export default function SchoolRegistrationPage() {
             {/* Status Messages */}
             {submitStatus === "success" && !showPayment && (
               <div className="mb-6 p-4 bg-[#111111] border border-[#2d3023] rounded-xl flex items-start gap-4">
-                <div className="w-10 h-10 rounded-lg bg-[#a4cc22]/20 flex items-center justify-center flex-shrink-0">
-                  <Check className="text-[#a4cc22] w-5 h-5" strokeWidth={2.5} />
+                <div className="w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center flex-shrink-0">
+                  <Check className="text-orange-500 w-5 h-5" strokeWidth={2.5} />
                 </div>
                 <div>
                   <p className="font-semibold text-white">
@@ -841,8 +841,8 @@ export default function SchoolRegistrationPage() {
           >
             <div className="bg-gradient-to-br from-[#111111] to-[#0f0f0f] border border-[#2a2a2a] rounded-xl p-6 mb-6">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-lg bg-[#a4cc22]/10 flex items-center justify-center">
-                  <Sparkles className="w-5 h-5 text-[#a4cc22]" />
+                <div className="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center">
+                  <Sparkles className="w-5 h-5 text-orange-500" />
                 </div>
                 <div>
                   <h4 className="text-white font-semibold">
@@ -925,8 +925,6 @@ export default function SchoolRegistrationPage() {
             </div>
           </SectionCard>
         )}
-
-        
       </div>
     </div>
   );

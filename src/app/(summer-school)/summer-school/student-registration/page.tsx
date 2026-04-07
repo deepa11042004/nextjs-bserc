@@ -76,7 +76,7 @@ const InputField: React.FC<InputFieldProps> = ({
       placeholder={placeholder}
       min={min}
       onChange={onChange}
-      className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-[#a4cc22]/50 transition-colors"
+      className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-orange-500/50 transition-colors"
     />
   </div>
 );
@@ -95,7 +95,7 @@ const SelectField: React.FC<SelectFieldProps> = ({
       <select
         value={value}
         onChange={onChange}
-        className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-100 text-sm focus:outline-none appearance-none focus:border-[#a4cc22]/50 transition-colors"
+        className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-100 text-sm focus:outline-none appearance-none focus:border-orange-500/50 transition-colors"
       >
         <option value="" disabled>{placeholder}</option>
         {options.map((opt) => (
@@ -179,15 +179,15 @@ export default function Page() {
   const batchOptions = ["Batch 1: 15th May - 30th June", "Batch 2: 19th June - 30th July"];
 
   return (
-    <div className="min-h-screen bg-[#0d0d0d] text-zinc-300 py-16 px-4 selection:bg-[#a4cc22] selection:text-black">
-      <main className="max-w-5xl mx-auto">
+    <div className="min-h-screen bg-[#0d0d0d] text-zinc-300 py-16 px-4 selection:bg-orange-500 selection:text-black">
+      <main className="max-w-6xl mx-auto">
         <form onSubmit={handleSubmit}>
           <div className="mb-12 md:mb-16">
             <div className="flex items-center gap-4 mb-4">
               <span className="text-orange-500 text-xs font-bold tracking-[0.2em] uppercase">
                 STUDENT PORTAL
               </span>
-              <div className="h-px w-16 bg-[#a4cc22]/40"></div>
+              <div className="h-px w-16 bg-orange-500/40"></div>
             </div>
             <h1 className="text-5xl font-serif font-bold text-white mb-5 leading-tight">
               Register as a Student
@@ -362,7 +362,7 @@ export default function Page() {
                 onChange={handleInputChange}
                 rows={4}
                 maxLength={500}
-                className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-[#a4cc22]/50 transition-colors resize-none"
+                className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-orange-500/50 transition-colors resize-none"
                 placeholder="Share your STEM experience and expectations..."
               />
             </div>

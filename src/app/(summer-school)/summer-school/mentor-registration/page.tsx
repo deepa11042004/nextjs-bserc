@@ -7,12 +7,7 @@ import {
   ArrowRight,
   AlertCircle,
   User,
-  Mail,
-  Phone,
-  Briefcase,
-  Building2,
   Clock,
-  Calendar,
   DollarSign,
   Sparkles,
   GraduationCap,
@@ -609,7 +604,7 @@ export default function MentorRegistrationPage() {
 
   return (
     <div className="min-h-screen bg-[#0d0d0d] text-zinc-300 py-12 md:py-16 px-4 selection:bg-orange-500 selection:text-black">
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         {/* Page Header */}
         <div className="mb-8">
           <div className="flex items-center gap-4 mb-4">
@@ -647,7 +642,6 @@ export default function MentorRegistrationPage() {
           </p>
         </div>
 
-         
         <form onSubmit={handleSubmit} noValidate>
           {/* Status Messages */}
           {submitStatus === "success" && (
@@ -1057,40 +1051,85 @@ export default function MentorRegistrationPage() {
 
           {/* Additional Information */}
           <SectionCard title="Additional Information" icon={FileText}>
-
             <div className="bg-[#111111] border border-[#262620] rounded-xl p-5">
-               <div className="space-y-4">
-              <FormCheckbox
-                id="guestSpeakerInterest"
-                name="guestSpeakerInterest"
-                label="I am interested in participating as a Guest Speaker or Workshop Instructor"
-                checked={formData.guestSpeakerInterest}
-                onChange={(checked) =>
-                  handleChange("guestSpeakerInterest", checked)
-                }
-              />
-              <div>
+              <div className="space-y-4">
                 <FormCheckbox
-                  id="bioConsent"
-                  name="bioConsent"
-                  label="I am willing to provide a short professional profile/bio for BSERC communications and the Def-Space Summer School website"
-                  checked={formData.bioConsent}
-                  onChange={(checked) => handleChange("bioConsent", checked)}
+                  id="guestSpeakerInterest"
+                  name="guestSpeakerInterest"
+                  label="I am interested in participating as a Guest Speaker or Workshop Instructor"
+                  checked={formData.guestSpeakerInterest}
+                  onChange={(checked) =>
+                    handleChange("guestSpeakerInterest", checked)
+                  }
                 />
-                {errors.bioConsent && (
-                  <p
-                    className="mt-2 text-xs text-red-400 flex items-center gap-1.5"
-                    role="alert"
-                  >
-                    <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
-                    {errors.bioConsent}
-                  </p>
-                )}
+                <div>
+                  <FormCheckbox
+                    id="bioConsent"
+                    name="bioConsent"
+                    label="I am willing to provide a short professional profile/bio for BSERC communications and the Def-Space Summer School website"
+                    checked={formData.bioConsent}
+                    onChange={(checked) => handleChange("bioConsent", checked)}
+                  />
+                  {errors.bioConsent && (
+                    <p
+                      className="mt-2 text-xs text-red-400 flex items-center gap-1.5"
+                      role="alert"
+                    >
+                      <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                      {errors.bioConsent}
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
-            </div>
-            
           </SectionCard>
+
+          <div className="bg-[#181818] border border-[#262626] rounded-xl p-6 md:p-8 mb-8">
+            <h3 className="text-orange-500 font-semibold mb-6 text-sm uppercase tracking-wide">
+              Mentorship Programme Fee
+            </h3>
+
+            {/* Fee Cards */}
+            <div className="grid md:grid-cols-2 gap-4 mb-6">
+              {/* Indian Participants */}
+              <div className="bg-[#5f380e] border border-[#2a2a2a] rounded-lg p-6 text-center hover:border-orange-500/30 transition-colors">
+                <p className="text-zinc-400 text-xs font-semibold uppercase tracking-wider mb-3">
+                  Indian Participants
+                </p>
+                <p className="text-orange-500 text-3xl font-bold mb-2">
+                  ₹ 1,000
+                </p>
+                <p className="text-zinc-400 text-xs">
+                  One-time participation fee
+                </p>
+              </div>
+
+              {/* International Participants */}
+              <div className="bg-[#0f1f2e] border border-[#1e3a4a] rounded-lg p-6 text-center hover:border-cyan-500/30 transition-colors">
+                <p className="text-zinc-400 text-xs font-semibold uppercase tracking-wider mb-3">
+                  International Participants
+                </p>
+                <p className="text-cyan-400 text-3xl font-bold mb-2">US$ 150</p>
+                <p className="text-zinc-400 text-xs">
+                  One-time participation fee
+                </p>
+              </div>
+            </div>
+
+            {/* What's Included */}
+            <div className="bg-[#111111] border border-[#262620] rounded-lg p-4">
+              <p className="text-zinc-400 text-sm">
+                <span className="text-cyan-400 font-semibold">
+                  What the fee includes:
+                </span>{" "}
+                <span className="text-zinc-500">
+                  Mentor onboarding & training, access to BSERC's digital
+                  mentorship platform, coordination support, certificate of
+                  mentorship, and year-round BSERC community engagement.
+                </span>
+              </p>
+            </div>
+          </div>
 
           {/* Declaration */}
           <SectionCard title="Declaration" icon={Shield}>
@@ -1125,7 +1164,6 @@ export default function MentorRegistrationPage() {
 
           {/* Submit Button */}
           <div className="flex flex-col justify-center md:flex-row items-center gap-6 pt-4">
-           
             <SubmitButton
               isSubmitting={isSubmitting}
               label={
@@ -1148,12 +1186,10 @@ export default function MentorRegistrationPage() {
                 ℹ️ What Happens Next
               </h4>
               <p className="text-zinc-400 text-sm leading-relaxed">
-                By submitting this form, I confirm that all the information
-                provided is true and accurate. I understand that shortlisted
-                mentors will be contacted with onboarding details and a formal
-                Letter of Mentorship. I agree to abide by BSERC's mentor
-                guidelines and code of conduct. I consent to being contacted via
-                email and phone for mentorship coordination.  
+                After submission, your application will be reviewed by the BSERC
+                team. Shortlisted candidates will receive an email with
+                onboarding details, mentor handbook, platform access, and a
+                formal Letter of Mentorship within 5–7 working days.
               </p>
             </div>
           </div>
