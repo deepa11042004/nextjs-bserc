@@ -7,7 +7,7 @@ import { Menu, X } from "lucide-react";
 
 const NAV_ITEMS = [
   { label: "Home", href: "/bsercinternship" },
-  { label: "About Internship", href: "/bsercinternship/about" },
+  { label: "About", href: "/bsercinternship/about" },
   { label: "Internship Registration", href: "/bsercinternship/summer-internship" },
   { label: "Register as Mentor", href: "/bsercinternship/mentor-registration" },
   { label: "Mentorship", href: "/bsercinternship/mentorship" },
