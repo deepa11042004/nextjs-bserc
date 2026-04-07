@@ -2,6 +2,7 @@
 
 import React, { FormEvent, useState } from "react";
 import { Check, Search, ChevronDown, ArrowRight, Upload } from "lucide-react";
+import FormResponseOverlay from "@/components/ui/FormResponseOverlay";
 
 interface EngagementPlan {
   titleEn: string;
@@ -101,6 +102,12 @@ export default function MentorRegistrationForm() {
     },
   ];
 
+  const activeResponse = submitError
+    ? { type: "error" as const, message: submitError }
+    : submitSuccess
+      ? { type: "success" as const, message: submitSuccess }
+      : null;
+
   const parseApiMessage = async (response: Response): Promise<string> => {
     const text = await response.text();
     if (!text) {
@@ -198,6 +205,16 @@ export default function MentorRegistrationForm() {
 
   return (
     <div className="min-h-screen bg-[#0d0d0d] text-zinc-300 py-16 px-4 selection:bg-orange-500 selection:text-black">
+      <FormResponseOverlay
+        visible={Boolean(activeResponse)}
+        type={activeResponse?.type ?? "info"}
+        message={activeResponse?.message ?? ""}
+        onClose={() => {
+          setSubmitError("");
+          setSubmitSuccess("");
+        }}
+      />
+
       <main className="max-w-4xl mx-auto">
         <div className="mb-14">
           <div className="flex items-center gap-4 mb-4">
@@ -214,16 +231,6 @@ export default function MentorRegistrationForm() {
             innovators. Join our mentorship program.
           </p>
         </div>
-        {submitError && (
-          <div className="mb-6 rounded-md border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-            {submitError}
-          </div>
-        )}
-        {submitSuccess && (
-          <div className="mb-6 rounded-md border border-orange-500/40 bg-orange-500/10 px-4 py-3 text-sm text-[#d7f58b]">
-            {submitSuccess}
-          </div>
-        )}
 
         <form onSubmit={handleSubmit}>
         <SectionCard title="1. PERSONAL INFORMATION / व्यक्तिगत जानकारी">

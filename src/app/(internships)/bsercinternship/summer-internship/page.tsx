@@ -8,6 +8,7 @@ import {
   registerInternshipWithoutPayment,
   verifyInternshipPaymentAndRegister,
 } from "@/services/internshipRegistration";
+import FormResponseOverlay from "@/components/ui/FormResponseOverlay";
 
 type RazorpaySuccessResponse = {
   razorpay_order_id: string;
@@ -249,36 +250,6 @@ function CardSection({
   );
 }
 
-function StatusBanner({
-  status,
-  onDismiss,
-}: {
-  status: SubmitStatus;
-  onDismiss: () => void;
-}) {
-  const classesByType: Record<SubmitStatus["type"], string> = {
-    success: "border-emerald-500/60 bg-emerald-500/10 text-emerald-200",
-    info: "border-sky-500/60 bg-sky-500/10 text-sky-200",
-    error: "border-rose-500/60 bg-rose-500/10 text-rose-200",
-  };
-
-  return (
-    <div
-      role={status.type === "error" ? "alert" : "status"}
-      className={`mb-6 flex items-start justify-between gap-4 rounded-lg border px-4 py-3 text-sm ${classesByType[status.type]}`}
-    >
-      <p>{status.message}</p>
-      <button
-        type="button"
-        onClick={onDismiss}
-        className="rounded px-2 py-1 text-xs font-semibold uppercase tracking-wide text-white/80 transition hover:text-white"
-      >
-        Close
-      </button>
-    </div>
-  );
-}
-
 // ─────────────────────────────────────────────────────────────
 // Main Application Form Component
 // ─────────────────────────────────────────────────────────────
@@ -324,6 +295,13 @@ export default function InternshipApplicationForm() {
   const [photoInputKey, setPhotoInputKey] = useState<number>(0);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [submitStatus, setSubmitStatus] = useState<SubmitStatus | null>(null);
+
+  const activeResponse = submitStatus
+    ? {
+        type: submitStatus.type,
+        message: submitStatus.message,
+      }
+    : null;
 
   const clearForm = () => {
     setFormData(emptyFormData);
@@ -554,6 +532,13 @@ export default function InternshipApplicationForm() {
 
   return (
     <div className="min-h-screen bg-[#0d0d0d] text-zinc-300 font-sans selection:bg-[#d4ff33] selection:text-black py-12 px-4 sm:px-6 lg:px-8">
+      <FormResponseOverlay
+        visible={Boolean(activeResponse)}
+        type={activeResponse?.type ?? "info"}
+        message={activeResponse?.message ?? ""}
+        onClose={() => setSubmitStatus(null)}
+      />
+
       <main className="max-w-4xl mx-auto">
         {/* Header Title Section */}
         <div className="mb-12">
@@ -576,13 +561,6 @@ export default function InternshipApplicationForm() {
             {registrationTypeLabel}
           </p>
         </div>
-
-        {submitStatus && (
-          <StatusBanner
-            status={submitStatus}
-            onDismiss={() => setSubmitStatus(null)}
-          />
-        )}
 
         <form onSubmit={handleSubmit}>
           {/* Section 1 */}

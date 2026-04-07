@@ -9,6 +9,7 @@ import {
   verifyWorkshopPaymentAndRegister,
   type WorkshopRegistrationPayload,
 } from "@/services/workshopRegistration";
+import FormResponseOverlay from "@/components/ui/FormResponseOverlay";
 
 type RazorpaySuccessResponse = {
   razorpay_order_id: string;
@@ -277,36 +278,6 @@ type SubmitStatus = {
   message: string;
 };
 
-function StatusBanner({
-  status,
-  onDismiss,
-}: {
-  status: SubmitStatus;
-  onDismiss: () => void;
-}) {
-  const classesByType: Record<SubmitStatus["type"], string> = {
-    success: "border-emerald-500/70 bg-emerald-950/40 text-emerald-200",
-    info: "border-sky-500/70 bg-sky-950/40 text-sky-200",
-    error: "border-rose-500/70 bg-rose-950/40 text-rose-200",
-  };
-
-  return (
-    <div
-      role={status.type === "error" ? "alert" : "status"}
-      className={`flex items-start justify-between gap-4 rounded-lg border px-4 py-3 text-sm ${classesByType[status.type]}`}
-    >
-      <p>{status.message}</p>
-      <button
-        type="button"
-        onClick={onDismiss}
-        className="rounded px-2 py-1 text-xs font-semibold uppercase tracking-wide text-white/80 transition hover:text-white"
-      >
-        Close
-      </button>
-    </div>
-  );
-}
-
 export default function WorkshopRegistrationPageClient({
   workshop,
 }: {
@@ -372,6 +343,13 @@ export default function WorkshopRegistrationPageClient({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<SubmitStatus | null>(null);
+
+  const activeResponse = submitStatus
+    ? {
+        type: submitStatus.type,
+        message: submitStatus.message,
+      }
+    : null;
 
   const contentOptions = [
     "Drone Design Basics",
@@ -586,6 +564,13 @@ export default function WorkshopRegistrationPageClient({
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
+      <FormResponseOverlay
+        visible={Boolean(activeResponse)}
+        type={activeResponse?.type ?? "info"}
+        message={activeResponse?.message ?? ""}
+        onClose={() => setSubmitStatus(null)}
+      />
+
       {/* Banner */}
       <div className="bg-gradient-to-r from-blue-700 to-indigo-700 text-center py-16 shadow-lg">
         <h1 className="mx-auto max-w-4xl break-words px-4 text-3xl font-bold uppercase tracking-wide md:text-4xl">
@@ -663,13 +648,6 @@ export default function WorkshopRegistrationPageClient({
           <h2 className="text-2xl font-semibold text-blue-400">
             Participant Information
           </h2>
-
-          {submitStatus && (
-            <StatusBanner
-              status={submitStatus}
-              onDismiss={() => setSubmitStatus(null)}
-            />
-          )}
 
           {/* Row 1 */}
           <div className="grid md:grid-cols-2 gap-4">

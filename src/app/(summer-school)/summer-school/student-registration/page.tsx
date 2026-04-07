@@ -2,6 +2,7 @@
 
 import React, { useState, FormEvent } from "react";
 import { Check, ChevronDown, ArrowRight } from "lucide-react";
+import FormResponseOverlay from "@/components/ui/FormResponseOverlay";
 
 interface EngagementPlan {
   titleEn: string;
@@ -24,10 +25,31 @@ interface InputFieldProps {
 interface SelectFieldProps {
   label: string;
   required?: boolean;
+  name?: string;
   options: string[];
   value?: string;
   onChange?: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   placeholder?: string;
+}
+
+function createInitialFormData() {
+  return {
+    fullName: "",
+    dob: "",
+    email: "",
+    grade: "",
+    school: "",
+    board: "",
+    nationality: "",
+    gender: "",
+    guardianName: "",
+    relationship: "",
+    guardianEmail: "",
+    guardianPhone: "",
+    altPhone: "",
+    batch: "",
+    experience: "",
+  };
 }
 
 const SectionCard = ({
@@ -84,6 +106,7 @@ const InputField: React.FC<InputFieldProps> = ({
 const SelectField: React.FC<SelectFieldProps> = ({
   label,
   required,
+  name,
   options,
   value,
   onChange,
@@ -93,6 +116,7 @@ const SelectField: React.FC<SelectFieldProps> = ({
     <FormLabel label={label} required={required} />
     <div className="relative">
       <select
+        name={name}
         value={value}
         onChange={onChange}
         className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-100 text-sm focus:outline-none appearance-none focus:border-orange-500/50 transition-colors"
@@ -114,24 +138,12 @@ const SelectField: React.FC<SelectFieldProps> = ({
 export default function Page() {
   const [guidelinesAccepted, setGuidelinesAccepted] = useState<boolean>(false);
   const [conductAccepted, setConductAccepted] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [submitError, setSubmitError] = useState<string>("");
+  const [submitMessage, setSubmitMessage] = useState<string>("");
   
   // Form state
-  const [formData, setFormData] = useState({
-    fullName: "",
-    dob: "",
-    email: "",
-    grade: "",
-    school: "",
-    board: "",
-    gender: "",
-    guardianName: "",
-    relationship: "",
-    guardianEmail: "",
-    guardianPhone: "",
-    altPhone: "",
-    batch: "",
-    experience: "",
-  });
+  const [formData, setFormData] = useState(createInitialFormData());
 
   const isFormReady = guidelinesAccepted && conductAccepted;
   
@@ -163,23 +175,116 @@ export default function Page() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!isFormReady) return;
-    
-    // Handle form submission here
-    console.log("Form submitted:", { ...formData, guidelinesAccepted, conductAccepted });
-    alert("Application submitted successfully!");
+
+    if (!isFormReady || isSubmitting) {
+      return;
+    }
+
+    const requiredFields: Array<[keyof typeof formData, string]> = [
+      ["fullName", "Full Name"],
+      ["dob", "Date of Birth"],
+      ["email", "Email Address"],
+      ["grade", "Current Class / Grade"],
+      ["school", "School / Institution Name"],
+      ["board", "Board of Education"],
+      ["nationality", "Nationality"],
+      ["guardianName", "Parent / Guardian Full Name"],
+      ["relationship", "Relationship with Student"],
+      ["guardianEmail", "Parent / Guardian Email Address"],
+      ["guardianPhone", "Parent / Guardian Mobile Number"],
+      ["batch", "Batch"],
+    ];
+
+    const missingField = requiredFields.find(([key]) => !formData[key].trim());
+    if (missingField) {
+      setSubmitMessage("");
+      setSubmitError(`${missingField[1]} is required.`);
+      return;
+    }
+
+    setSubmitError("");
+    setSubmitMessage("");
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch("/api/summer-school/student-registration", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          fullName: formData.fullName,
+          dob: formData.dob,
+          email: formData.email,
+          grade: formData.grade,
+          school: formData.school,
+          board: formData.board,
+          nationality: formData.nationality,
+          gender: formData.gender,
+          guardianName: formData.guardianName,
+          relationship: formData.relationship,
+          guardianEmail: formData.guardianEmail,
+          guardianPhone: formData.guardianPhone,
+          altPhone: formData.altPhone,
+          batch: formData.batch,
+          experience: formData.experience,
+          guidelinesAccepted,
+          conductAccepted,
+        }),
+      });
+
+      const responsePayload = (await response.json().catch(() => ({}))) as {
+        message?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(
+          responsePayload.message || "Unable to submit student registration.",
+        );
+      }
+
+      setSubmitMessage("Application submitted successfully!");
+      setFormData(createInitialFormData());
+      setGuidelinesAccepted(false);
+      setConductAccepted(false);
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error && error.message
+          ? error.message
+          : "Unable to submit student registration.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const gradeOptions = ["Class VI", "Class VII", "Class VIII", "Class IX", "Class X", "Class XI", "Class XII"];
   const boardOptions = ["CBSE", "ICSE", "State Board", "International", "Other"];
+  const nationalityOptions = ["Indian", "Other"];
   const genderOptions = ["Male", "Female", "Other", "Prefer not to say"];
   const relationshipOptions = ["Father", "Mother", "Guardian", "Other"];
   const batchOptions = ["Batch 1: 15th May - 30th June", "Batch 2: 19th June - 30th July"];
 
+  const activeResponse = submitError
+    ? { type: "error" as const, message: submitError }
+    : submitMessage
+      ? { type: "success" as const, message: submitMessage }
+      : null;
+
   return (
     <div className="min-h-screen bg-[#0d0d0d] text-zinc-300 py-16 px-4 selection:bg-orange-500 selection:text-black">
+      <FormResponseOverlay
+        visible={Boolean(activeResponse)}
+        type={activeResponse?.type ?? "info"}
+        message={activeResponse?.message ?? ""}
+        onClose={() => {
+          setSubmitError("");
+          setSubmitMessage("");
+        }}
+      />
+
       <main className="max-w-6xl mx-auto">
         <form onSubmit={handleSubmit}>
           <div className="mb-12 md:mb-16">
@@ -254,6 +359,7 @@ export default function Page() {
               <SelectField
                 label={`Current Class / Grade (2026-27) / वर्तमान कक्षा / ग्रेड (2026-27)`}
                 required
+                name="grade"
                 options={gradeOptions}
                 value={formData.grade}
                 onChange={handleInputChange}
@@ -270,10 +376,11 @@ export default function Page() {
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <SelectField
                 label="Board of Education"
                 required
+                name="board"
                 options={boardOptions}
                 value={formData.board}
                 onChange={handleInputChange}
@@ -281,7 +388,18 @@ export default function Page() {
               />
 
               <SelectField
+                label="Nationality"
+                required
+                name="nationality"
+                options={nationalityOptions}
+                value={formData.nationality}
+                onChange={handleInputChange}
+                placeholder="--Select Nationality--"
+              />
+
+              <SelectField
                 label="Gender (Optional)"
+                name="gender"
                 options={genderOptions}
                 value={formData.gender}
                 onChange={handleInputChange}
@@ -304,6 +422,7 @@ export default function Page() {
               <SelectField
                 label="Relationship with Student"
                 required
+                name="relationship"
                 options={relationshipOptions}
                 value={formData.relationship}
                 onChange={handleInputChange}
@@ -346,6 +465,7 @@ export default function Page() {
             <SelectField
               label="Batch"
               required
+              name="batch"
               options={batchOptions}
               value={formData.batch}
               onChange={handleInputChange}
@@ -425,17 +545,17 @@ export default function Page() {
               <div className="w-full h-px bg-zinc-800/50 mb-12"></div>
               <button
                 type="submit"
-                disabled={!isFormReady}
+                disabled={!isFormReady || isSubmitting}
                 className={`
                   flex items-center gap-2 px-10 py-4 rounded-full font-bold transition-all active:scale-95
                   ${
-                    isFormReady
+                    isFormReady && !isSubmitting
                       ? "bg-orange-500 hover:bg-orange-600 text-black shadow-lg shadow-[#ccf15a]/10"
                       : "bg-zinc-800 text-zinc-500 cursor-not-allowed"
                   }
                 `}
               >
-                Submit Application
+                {isSubmitting ? "Submitting..." : "Submit Application"}
                 <ArrowRight className="w-5 h-5" />
               </button>
             </div>
