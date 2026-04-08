@@ -414,19 +414,22 @@ const PartnershipOptionCard = ({
   <div className="bg-[#111111] border border-[#2a2a2a] rounded-xl p-6 md:p-8 hover:border-orange-500/40 transition-all">
     <h3 className="text-orange-400 font-bold text-lg mb-4">{title}</h3>
     <p className="text-zinc-300 text-sm leading-relaxed mb-6">{description}</p>
-    
+
     <div className="mb-6">
       <p className="text-zinc-100 font-semibold text-sm mb-3">Ideal for:</p>
       <ul className="space-y-2">
         {idealFor.map((item, i) => (
           <li key={i} className="flex items-start gap-2 text-zinc-300 text-sm">
-            <Check className="w-3.5 h-3.5 text-orange-500 flex-shrink-0 mt-0.5" strokeWidth={3} />
+            <Check
+              className="w-3.5 h-3.5 text-orange-500 flex-shrink-0 mt-0.5"
+              strokeWidth={3}
+            />
             <span>{item}</span>
           </li>
         ))}
       </ul>
     </div>
-    
+
     <div className="bg-[#181818] rounded-lg p-4 border border-[#262626]">
       <p className="text-orange-400 text-xs font-semibold mb-1">{feeLabel}</p>
       <p className="text-white text-2xl font-bold">{feeAmount}</p>
@@ -451,11 +454,7 @@ const WhyPartnerCard = ({
 
 // ─────────────────────────────────────────────────────────────
 
-const AnnualFeePaymentCard = ({
-  onPayment,
-}: {
-  onPayment: () => void;
-}) => (
+const AnnualFeePaymentCard = ({ onPayment }: { onPayment: () => void }) => (
   <div className="bg-[#111111] border border-[#2a2a2a] rounded-xl p-6 md:p-8">
     <div className="grid md:grid-cols-2 gap-6">
       {/* Left: Fee Details */}
@@ -471,7 +470,7 @@ const AnnualFeePaymentCard = ({
           year-round access to mentorship and career guidance resources for your
           students.
         </p>
-        
+
         <div>
           <p className="text-zinc-400 text-xs font-semibold uppercase tracking-wide mb-3">
             What's Included:
@@ -479,43 +478,49 @@ const AnnualFeePaymentCard = ({
           <ul className="space-y-2">
             {[
               'Official "Def-Space Partner Institution" certification',
-              'Co-branding rights and institutional recognition',
-              'Priority student batch placement and coordination',
-              'Sustained mentorship and career pathways support',
+              "Co-branding rights and institutional recognition",
+              "Priority student batch placement and coordination",
+              "Sustained mentorship and career pathways support",
             ].map((item, i) => (
-              <li key={i} className="flex items-start gap-2 text-zinc-300 text-sm">
-                <Check className="w-4 h-4 text-orange-500 flex-shrink-0 mt-0.5" strokeWidth={3} />
+              <li
+                key={i}
+                className="flex items-start gap-2 text-zinc-300 text-sm"
+              >
+                <Check
+                  className="w-4 h-4 text-orange-500 flex-shrink-0 mt-0.5"
+                  strokeWidth={3}
+                />
                 {item}
               </li>
             ))}
           </ul>
         </div>
       </div>
-      
+
       {/* Right: Payment Breakdown */}
       <div className="bg-[#181818] rounded-xl p-6 border border-[#262626]">
         <p className="text-zinc-400 text-xs font-semibold uppercase tracking-wide mb-4">
           Payment Breakdown
         </p>
-        
+
         <div className="flex justify-between items-center mb-4">
           <span className="text-zinc-300 text-sm">Annual Partnership Fee</span>
           <span className="text-white font-semibold">₹ 2,500</span>
         </div>
-        
+
         <div className="bg-[#111111] rounded-lg p-4 mb-6 border border-orange-500/20">
           <div className="flex justify-between items-center">
             <span className="text-zinc-300 font-medium">Total Amount</span>
             <span className="text-orange-400 text-xl font-bold">₹ 2,500</span>
           </div>
         </div>
-        
+
         <p className="text-zinc-400 text-xs leading-relaxed mb-6">
           After submission of your school registration form above, you will
           receive a secure payment link via email. Multiple payment methods
           accepted including bank transfer, card payments, and digital wallets.
         </p>
-        
+
         <button
           onClick={onPayment}
           className="w-full py-3.5 rounded-lg bg-orange-500/20 border border-orange-500/30 text-orange-400 font-semibold hover:bg-orange-500/30 transition-all"
@@ -524,7 +529,7 @@ const AnnualFeePaymentCard = ({
         </button>
       </div>
     </div>
-    
+
     {/* Security Note */}
     <div className="mt-6 pt-6 border-t border-[#2a2a2a]">
       <p className="text-zinc-400 text-xs text-center">
@@ -709,23 +714,19 @@ export default function SchoolRegistrationPage() {
               feeLabel="Registration Fee"
               feeAmount="₹ 1,000"
             />
-            
-            {/* <PartnershipOptionCard
+
+            <PartnershipOptionCard
               title="Institutional Partnership"
-              description='Establish formal "Def-Space Partner Institution" status with official branding rights, collaborative promotion, institutional certificate, and sustained engagement with BSERC\'s ecosystem.'
-               
+              description={` Establish formal "Def-Space Partner Institution" status with official branding rights, collaborative promotion, institutional certificate, and sustained engagement with BSERC's ecosystem.
+                 `}
               idealFor={[
                 "Strategic institutional positioning",
                 "Long-term academic alignment",
                 "Sustained visibility and engagement",
               ]}
-
               feeLabel="Annual Partnership Fee"
               feeAmount="₹ 2,500/year"
-             
-            /> */}
-        
-            
+            />
           </div>
         </div>
 
@@ -817,7 +818,10 @@ export default function SchoolRegistrationPage() {
             {submitStatus === "success" && !showPayment && (
               <div className="mb-6 p-4 bg-[#111111] border border-[#2d3023] rounded-xl flex items-start gap-4">
                 <div className="w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center flex-shrink-0">
-                  <Check className="text-orange-500 w-5 h-5" strokeWidth={2.5} />
+                  <Check
+                    className="text-orange-500 w-5 h-5"
+                    strokeWidth={2.5}
+                  />
                 </div>
                 <div>
                   <p className="font-semibold text-white">
@@ -972,7 +976,7 @@ export default function SchoolRegistrationPage() {
                 <Users className="w-4 h-4 text-orange-500" />
                 Institution Head Details
               </h4>
-              
+
               <div className="grid md:grid-cols-2 gap-4">
                 <FormInput
                   id="headName"
