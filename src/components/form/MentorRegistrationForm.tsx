@@ -1,8 +1,95 @@
 "use client";
 
 import React, { FormEvent, useState, useRef } from "react";
-import { Check, Search, ChevronDown, ArrowRight, Upload, Sparkles, DollarSign } from "lucide-react";
+import { Check, Search, ChevronDown, ArrowRight, Upload, Sparkles } from "lucide-react";
 import FormResponseOverlay from "@/components/ui/FormResponseOverlay";
+
+type RazorpaySuccessResponse = {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+};
+
+type RazorpayFailureResponse = {
+  error?: {
+    description?: string;
+  };
+};
+
+type RazorpayOptions = {
+  key: string;
+  amount: number;
+  currency: string;
+  name: string;
+  description?: string;
+  order_id: string;
+  prefill?: {
+    name?: string;
+    email?: string;
+    contact?: string;
+  };
+  theme?: {
+    color?: string;
+  };
+  handler: (response: RazorpaySuccessResponse) => void | Promise<void>;
+  modal?: {
+    ondismiss?: () => void;
+  };
+};
+
+type RazorpayInstance = {
+  open: () => void;
+  on: (
+    event: "payment.failed",
+    handler: (response: RazorpayFailureResponse) => void,
+  ) => void;
+};
+
+type CreateMentorOrderResponse = {
+  requires_payment: boolean;
+  already_registered?: boolean;
+  key_id?: string;
+  order_id?: string;
+  amount: number;
+  currency: string;
+  registration_fee?: number;
+  message?: string;
+};
+
+declare global {
+  interface Window {
+    Razorpay?: new (options: RazorpayOptions) => RazorpayInstance;
+  }
+}
+
+function loadRazorpayScript(): Promise<boolean> {
+  if (typeof window === "undefined") {
+    return Promise.resolve(false);
+  }
+
+  if (window.Razorpay) {
+    return Promise.resolve(true);
+  }
+
+  return new Promise((resolve) => {
+    const existing = document.querySelector(
+      'script[src="https://checkout.razorpay.com/v1/checkout.js"]',
+    );
+
+    if (existing) {
+      existing.addEventListener("load", () => resolve(true), { once: true });
+      existing.addEventListener("error", () => resolve(false), { once: true });
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+}
 
 interface EngagementPlan {
   titleEn: string;
@@ -207,6 +294,100 @@ export default function MentorRegistrationForm() {
     }
   };
 
+  const getErrorMessage = (error: unknown): string => {
+    if (error instanceof Error && error.message.trim()) {
+      return error.message;
+    }
+
+    return "Unable to submit mentor registration.";
+  };
+
+  const cloneFormData = (source: FormData): FormData => {
+    const cloned = new FormData();
+    source.forEach((value, key) => {
+      cloned.append(key, value);
+    });
+
+    return cloned;
+  };
+
+  const getFirstTextValue = (data: FormData, keys: string[]): string => {
+    for (const key of keys) {
+      const candidate = data.get(key);
+      if (typeof candidate !== "string") {
+        continue;
+      }
+
+      const cleaned = candidate.trim();
+      if (cleaned) {
+        return cleaned;
+      }
+    }
+
+    return "";
+  };
+
+  const setTextValueIfMissing = (data: FormData, key: string, value: string) => {
+    if (!value) {
+      return;
+    }
+
+    const existing = data.get(key);
+    if (typeof existing === "string" && existing.trim()) {
+      return;
+    }
+
+    data.set(key, value);
+  };
+
+  const normalizeCompensationFields = (data: FormData) => {
+    const hourly = getFirstTextValue(data, [
+      "honorarium_hourly",
+      "honorariumHourly",
+      "consultation_fee",
+    ]);
+    const daily = getFirstTextValue(data, [
+      "honorarium_daily",
+      "honorariumDaily",
+      "price_5_sessions",
+    ]);
+    const weekly = getFirstTextValue(data, [
+      "honorarium_weekly",
+      "honorariumWeekly",
+      "price_10_sessions",
+    ]);
+    const project = getFirstTextValue(data, [
+      "honorarium_project",
+      "honorariumProject",
+      "price_extended",
+    ]);
+
+    if (hourly) {
+      data.set("honorarium_hourly", hourly);
+      setTextValueIfMissing(data, "consultation_fee", hourly);
+    }
+
+    if (daily) {
+      data.set("honorarium_daily", daily);
+      setTextValueIfMissing(data, "price_5_sessions", daily);
+    }
+
+    if (weekly) {
+      data.set("honorarium_weekly", weekly);
+      setTextValueIfMissing(data, "price_10_sessions", weekly);
+    }
+
+    if (project) {
+      data.set("honorarium_project", project);
+      setTextValueIfMissing(data, "price_extended", project);
+    }
+
+    const currency = getFirstTextValue(data, ["currency"]);
+    if (currency) {
+      data.set("currency", currency.toUpperCase());
+    }
+  };
+
   const resetForm = (form: HTMLFormElement) => {
     form.reset();
     setFormData({
@@ -242,6 +423,7 @@ export default function MentorRegistrationForm() {
     
     // Ensure currency is included in FormData
     formDataObj.set("currency", formData.currency);
+    normalizeCompensationFields(formDataObj);
     
     const modeKeys = [
       "video_call",
@@ -279,27 +461,138 @@ export default function MentorRegistrationForm() {
     formDataObj.set("accepted_guidelines", String(guidelinesAccepted));
     formDataObj.set("accepted_code_of_conduct", String(conductAccepted));
 
+    const email = getFirstTextValue(formDataObj, ["email"]);
+    const nationality = getFirstTextValue(formDataObj, ["nationality"]);
+
+    if (!email) {
+      setSubmitError("Email is required to initialize payment.");
+      return;
+    }
+
+    if (!nationality) {
+      setSubmitError("Nationality is required to determine registration fee.");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      const response = await fetch("/api/mentor/register", {
+      const createOrderResponse = await fetch("/api/mentor/create-order", {
         method: "POST",
-        body: formDataObj,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        cache: "no-store",
+        body: JSON.stringify({
+          email,
+          nationality,
+        }),
       });
 
-      const message = await parseApiMessage(response);
-      if (!response.ok) {
-        throw new Error(message || "Unable to submit mentor registration.");
+      const orderPayload = (await createOrderResponse
+        .json()
+        .catch(() => ({}))) as CreateMentorOrderResponse & {
+        error?: string;
+      };
+
+      if (!createOrderResponse.ok) {
+        throw new Error(
+          orderPayload.message
+            || orderPayload.error
+            || "Unable to initialize payment.",
+        );
       }
 
-      setSubmitSuccess(message || "Mentor registered successfully.");
-      resetForm(form);
+      if (orderPayload.already_registered) {
+        setSubmitSuccess(
+          orderPayload.message || "Email already registered as mentor.",
+        );
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (
+        !orderPayload.requires_payment
+        || !orderPayload.key_id
+        || !orderPayload.order_id
+        || !orderPayload.amount
+      ) {
+        throw new Error(
+          orderPayload.message
+            || "Payment initialization failed. Please try again.",
+        );
+      }
+
+      const loaded = await loadRazorpayScript();
+      if (!loaded || !window.Razorpay) {
+        throw new Error("Unable to load Razorpay checkout. Please try again.");
+      }
+
+      const amountDisplayCurrency =
+        orderPayload.currency === "USD" ? "$" : "₹";
+      const amountDisplay =
+        orderPayload.registration_fee !== undefined
+          ? `${amountDisplayCurrency}${orderPayload.registration_fee}`
+          : `${amountDisplayCurrency}${(orderPayload.amount / 100).toFixed(2)}`;
+
+      const razorpay = new window.Razorpay({
+        key: orderPayload.key_id,
+        amount: orderPayload.amount,
+        currency: orderPayload.currency,
+        name: "BSERC",
+        description: `Mentor Registration Fee (${amountDisplay})`,
+        order_id: orderPayload.order_id,
+        prefill: {
+          name: getFirstTextValue(formDataObj, ["full_name"]),
+          email,
+          contact: getFirstTextValue(formDataObj, ["phone"]),
+        },
+        theme: {
+          color: "#f97316",
+        },
+        handler: async (response) => {
+          try {
+            const payload = cloneFormData(formDataObj);
+            payload.set("razorpay_order_id", response.razorpay_order_id);
+            payload.set("razorpay_payment_id", response.razorpay_payment_id);
+            payload.set("razorpay_signature", response.razorpay_signature);
+
+            const registerResponse = await fetch("/api/mentor/register", {
+              method: "POST",
+              body: payload,
+            });
+
+            const message = await parseApiMessage(registerResponse);
+            if (!registerResponse.ok) {
+              throw new Error(message || "Unable to submit mentor registration.");
+            }
+
+            setSubmitSuccess(
+              message || "Payment successful and mentor registration completed.",
+            );
+            resetForm(form);
+          } catch (error: unknown) {
+            setSubmitError(getErrorMessage(error));
+          } finally {
+            setIsSubmitting(false);
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            setIsSubmitting(false);
+          },
+        },
+      });
+
+      razorpay.on("payment.failed", (response) => {
+        setSubmitError(
+          response.error?.description || "Payment failed. Please try again.",
+        );
+        setIsSubmitting(false);
+      });
+
+      razorpay.open();
     } catch (error: unknown) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Unable to submit mentor registration.";
-      setSubmitError(message);
-    } finally {
+      setSubmitError(getErrorMessage(error));
       setIsSubmitting(false);
     }
   };
@@ -380,13 +673,37 @@ export default function MentorRegistrationForm() {
               required
             />
           </div>
-          <InputField
-            label="Date of Birth / जन्म दिनांक"
-            type="date"
-            name="dob"
-            id="dob"
-            required
-          />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
+            <InputField
+              label="Date of Birth / जन्म दिनांक"
+              type="date"
+              name="dob"
+              id="dob"
+              required
+            />
+            <div className="mb-6 w-full">
+              <FormLabel
+                label="Nationality / राष्ट्रीयता"
+                required
+                id="nationality"
+              />
+              <div className="relative">
+                <select
+                  id="nationality"
+                  name="nationality"
+                  required
+                  defaultValue="Indian"
+                  className="w-full px-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-100 text-sm focus:outline-none appearance-none"
+                >
+                  <option value="Indian">Indian</option>
+                  <option value="Others">Others</option>
+                </select>
+                <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500">
+                  <ChevronDown className="h-4 w-4" />
+                </div>
+              </div>
+            </div>
+          </div>
         </SectionCard>
 
         <SectionCard title="2. PROFESSIONAL DETAILS / व्यावसायिक विवरण">
@@ -750,8 +1067,7 @@ export default function MentorRegistrationForm() {
         <SectionCard title="5. PROFESSIONAL COMPENSATION STRUCTURE / व्यावसायिक मुआवजा संरचना">
           <div className="mb-8">
             <label className="block text-zinc-100 text-[13px] font-semibold mb-2.5" htmlFor="consultation_fee">
-              Consultation Fee (Per Session) / परामर्श शुल्क{" "}
-              <span className="text-red-500">*</span>
+              Consultation Fee (Per Session) / परामर्श शुल्क
             </label>
             <div className="relative group">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-orange-500 font-bold text-lg">
@@ -762,7 +1078,6 @@ export default function MentorRegistrationForm() {
                 type="number"
                 name="consultation_fee"
                 min="0"
-                required
                 className="w-full pl-10 pr-4 py-3 rounded-md bg-[#111111] border border-[#2a2a2a] text-zinc-100 focus:outline-none focus:border-orange-500/50 transition-colors"
                 placeholder="e.g., 500, 1000, 2500"
               />
