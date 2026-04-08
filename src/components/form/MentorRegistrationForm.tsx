@@ -56,6 +56,10 @@ type CreateMentorOrderResponse = {
   message?: string;
 };
 
+const MAX_RESUME_BYTES = 5 * 1024 * 1024;
+const MAX_PROFILE_PHOTO_BYTES = 2 * 1024 * 1024;
+const MAX_PROXY_UPLOAD_BYTES = 4 * 1024 * 1024;
+
 declare global {
   interface Window {
     Razorpay?: new (options: RazorpayOptions) => RazorpayInstance;
@@ -89,6 +93,33 @@ function loadRazorpayScript(): Promise<boolean> {
     script.onerror = () => resolve(false);
     document.body.appendChild(script);
   });
+}
+
+function getMentorRegisterEndpoint(): string {
+  const publicApiBase = (
+    process.env.NEXT_PUBLIC_MENTOR_API_URL
+    || process.env.NEXT_PUBLIC_API_URL
+    || ""
+  ).trim();
+
+  if (!publicApiBase) {
+    return "/api/mentor/register";
+  }
+
+  return `${publicApiBase.replace(/\/$/, "")}/api/mentor/register`;
+}
+
+function getFileFromFormData(data: FormData, key: string): File | null {
+  const value = data.get(key);
+  if (!(value instanceof File)) {
+    return null;
+  }
+
+  if (!value.name || value.size <= 0) {
+    return null;
+  }
+
+  return value;
 }
 
 interface EngagementPlan {
@@ -296,6 +327,14 @@ export default function MentorRegistrationForm() {
 
   const getErrorMessage = (error: unknown): string => {
     if (error instanceof Error && error.message.trim()) {
+      if (
+        /FUNCTION_PAYLOAD_TOO_LARGE|Request Entity Too Large/i.test(
+          error.message,
+        )
+      ) {
+        return "Uploaded files are too large for this deployment route. Keep resume <= 5MB and profile photo <= 2MB, or configure NEXT_PUBLIC_API_URL to send uploads directly to backend.";
+      }
+
       return error.message;
     }
 
@@ -461,6 +500,33 @@ export default function MentorRegistrationForm() {
     formDataObj.set("accepted_guidelines", String(guidelinesAccepted));
     formDataObj.set("accepted_code_of_conduct", String(conductAccepted));
 
+    const registerEndpoint = getMentorRegisterEndpoint();
+    const resumeFile = getFileFromFormData(formDataObj, "resume");
+    const profilePhotoFile = getFileFromFormData(formDataObj, "profile_photo");
+
+    if (resumeFile && resumeFile.size > MAX_RESUME_BYTES) {
+      setSubmitError("Resume file is too large. Maximum allowed size is 5MB.");
+      return;
+    }
+
+    if (profilePhotoFile && profilePhotoFile.size > MAX_PROFILE_PHOTO_BYTES) {
+      setSubmitError("Profile photo is too large. Maximum allowed size is 2MB.");
+      return;
+    }
+
+    // Serverless API routes may reject larger multipart payloads before reaching backend.
+    if (registerEndpoint.startsWith("/")) {
+      const estimatedUploadBytes =
+        (resumeFile?.size || 0) + (profilePhotoFile?.size || 0);
+
+      if (estimatedUploadBytes > MAX_PROXY_UPLOAD_BYTES) {
+        setSubmitError(
+          "Selected files are too large for current upload route. Please reduce file sizes or configure NEXT_PUBLIC_API_URL so uploads go directly to backend.",
+        );
+        return;
+      }
+    }
+
     const email = getFirstTextValue(formDataObj, ["email"]);
     const nationality = getFirstTextValue(formDataObj, ["nationality"]);
 
@@ -556,7 +622,7 @@ export default function MentorRegistrationForm() {
             payload.set("razorpay_payment_id", response.razorpay_payment_id);
             payload.set("razorpay_signature", response.razorpay_signature);
 
-            const registerResponse = await fetch("/api/mentor/register", {
+            const registerResponse = await fetch(registerEndpoint, {
               method: "POST",
               body: payload,
             });
