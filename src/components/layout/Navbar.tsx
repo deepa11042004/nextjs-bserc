@@ -9,35 +9,36 @@ import StudentLoginButton from "./StudentLoginButton";
 import StudentProfile from "@/components/layout/studentProfile";
 
 type DropdownItem =
-  | { type: "link"; label: string; href: string }
+  | { type: "link"; label: string; href: string; external?: boolean}
   | {
       type: "nested";
       label: string;
-      children: { label: string; href: string }[];
+      children: { label: string; href: string; external?: boolean }[];
     }
   | { type: "divider" };
 
-const NAV_ITEMS: { label: string; href?: string; dropdown?: DropdownItem[] }[] =
+const NAV_ITEMS: { label: string; href?: string; dropdown?: DropdownItem[]; external?: boolean }[] =
   [
-    { label: "Home", href: "/" },
-    { label: "About Us", href: "/about" },
+    { label: "Home", href: "/", external: false },
+    { label: "About Us", href: "/about",  external: false },
     {
       label: "Institutions",
       dropdown: [
-        { type: "link", label: "MoU", href: "/institutions/mou-form" },
+        { type: "link", label: "MoU", href: "/institutions/mou-form",  external: false },
         {
           type: "link",
           label: "Collaboration",
           href: "/institutions/collaboration",
+          external: false
         },
       ],
     },
     {
       label: "Programme",
       dropdown: [
-        { type: "link", label: "Workshop", href: "/workshops" },
-        { type: "link", label: "Def-Space Summer Internship", href: "/bsercinternship" },
-        { type: "link", label: "Def-Space Summer School", href: "/summer-school" },
+        { type: "link", label: "Workshop", href: "/workshops", external: false },
+        { type: "link", label: "Def-Space Summer Internship", href: "/bsercinternship", external: true },
+        { type: "link", label: "Def-Space Summer School", href: "/summer-school", external: true },
       ],
     },
 
@@ -49,18 +50,21 @@ const NAV_ITEMS: { label: string; href?: string; dropdown?: DropdownItem[] }[] =
           type: "link",
           label: "Winter Internship",
           href: "/careers/winter-internship",
+          external: false,
         },
         {
           type: "link",
           label: "Internship Results",
           href: "/careers/winter-internship-results",
+          external: false,
         },
         {
           type: "link",
           label: "Apprenticeship",
           href: "/careers/apprenticeship",
+          external: false
         },
-        { type: "link", label: "Job Vacancy", href: "/careers/job-vacancy" },
+        { type: "link", label: "Job Vacancy", href: "/careers/job-vacancy", external: false },
       ],
     },
     {
@@ -71,52 +75,53 @@ const NAV_ITEMS: { label: string; href?: string; dropdown?: DropdownItem[] }[] =
           label: "Administration",
           type: "nested",
           children: [
-            { label: "Chairman", href: "/" },
-            { label: "Secretary", href: "/" },
-            { label: "Director General", href: "/" },
-            { label: "Director", href: "/" },
-            { label: "Staff", href: "/" },
-            { label: "Coordinator", href: "/" },
-            { label: "Committee", href: "/" },
+            { label: "Chairman", href: "/", external: false },
+            { label: "Secretary", href: "/", external: false },
+            { label: "Director General", href: "/", external: false },
+            { label: "Director", href: "/", external: false },
+            { label: "Staff", href: "/", external: false },
+            { label: "Coordinator", href: "/", external: false },
+            { label: "Committee", href: "/", external: false },
           ],
         },
         {
           type: "nested",
           label: "People",
           children: [
-            { label: "Faculty/Guest faculty", href: "/people/faculty" },
-            { label: "Research Scholar", href: "/people/research-scholar" },
-            { label: "Staff", href: "/people/staff" },
-            { label: "Speaker", href: "/people/speaker" },
-            { label: "FDP Members", href: "/people/fdp-members" },
+            { label: "Faculty/Guest faculty", href: "/people/faculty" ,external: false},
+            { label: "Research Scholar", href: "/people/research-scholar", external: false },
+            { label: "Staff", href: "/people/staff", external: false },
+            { label: "Speaker", href: "/people/speaker", external: false },
+            { label: "FDP Members", href: "/people/fdp-members", external: false },
           ],
         },
         {
           type: "nested",
           label: "Technology Partner",
           children: [
-            { label: "ISRO", href: "/tech-partner#isro" },
-            { label: "ESA", href: "/tech-partner#esa" },
-            { label: "KAT", href: "/tech-partner#kat" },
-            { label: "JAXA", href: "/tech-partner#jaxa" },
-            { label: "NASA", href: "/tech-partner#nasa" },
-            { label: "UN-GGIM", href: "/tech-partner#un-ggim" },
+            { label: "ISRO", href: "/tech-partner#isro", external: false },
+            { label: "ESA", href: "/tech-partner#esa", external: false },
+            { label: "KAT", href: "/tech-partner#kat", external: false },
+            { label: "JAXA", href: "/tech-partner#jaxa", external: false },
+            { label: "NASA", href: "/tech-partner#nasa", external: false },
+            { label: "UN-GGIM", href: "/tech-partner#un-ggim", external: false },
           ],
         },
         { type: "divider" },
-        { type: "link", label: "Membership", href: "/membership" },
+        { type: "link", label: "Membership", href: "/membership" ,external: false},
         {
           type: "link",
           label: "Knowledge Hub (Learn)",
           href: "/knowledge-hub",
+          external: false,
         },
-        { type: "link", label: "Missions", href: "/missions" },
-        { type: "link", label: "Space Quiz", href: "/space-quiz" },
-        { type: "link", label: "Glossary", href: "/glossary" },
-        { type: "link", label: "FAQ", href: "/faq" },
+        { type: "link", label: "Missions", href: "/missions", external: false },
+        { type: "link", label: "Space Quiz", href: "/space-quiz", external: false },
+        { type: "link", label: "Glossary", href: "/glossary", external: false },
+        { type: "link", label: "FAQ", href: "/faq", external: false },
       ],
     },
-    { label: "Contact Us", href: "/contact" },
+    { label: "Contact Us", href: "/contact", external: false },
   ];
 
 export default function Navbar() {
@@ -176,6 +181,7 @@ export default function Navbar() {
                 <li key={item.label}>
                   <Link
                     href={item.href}
+                     {...(item.external && { target: "_blank", rel: "noopener noreferrer" })}
                     className="px-3 py-2 hover:text-white transition-colors whitespace-nowrap"
                   >
                     {item.label}
@@ -220,6 +226,7 @@ export default function Navbar() {
                   <li key={item.label} className="border-b border-white/5">
                     <Link
                       href={item.href}
+                       {...(item.external && { target: "_blank", rel: "noopener noreferrer" })}
                       className="block px-5 py-4 hover:text-white hover:bg-white/5 transition-colors"
                       onClick={closeAll}
                     >
@@ -264,9 +271,11 @@ export default function Navbar() {
 function DesktopDropdown({
   title,
   items,
+  external,
 }: {
   title: string;
   items: DropdownItem[];
+  external?: boolean;
 }) {
   return (
     <li className="relative group py-[22px]">
@@ -293,6 +302,7 @@ function DesktopDropdown({
               <li key={item.label}>
                 <Link
                   href={item.href}
+                   {...(item.external && { target: "_blank", rel: "noopener noreferrer" })}
                   className="block px-4 py-2 hover:bg-white/5 hover:text-white transition-colors whitespace-nowrap"
                 >
                   {item.label}
@@ -320,6 +330,7 @@ function DesktopDropdown({
                   <li key={child.label}>
                     <Link
                       href={child.href}
+                       {...(child.external && { target: "_blank", rel: "noopener noreferrer" })}
                       className="block px-4 py-2 hover:bg-white/5 hover:text-white transition-colors whitespace-nowrap"
                     >
                       {child.label}
@@ -378,6 +389,7 @@ function MobileDropdown({
                 <li key={item.label}>
                   <Link
                     href={item.href}
+                     {...(item.external && { target: "_blank", rel: "noopener noreferrer" })}
                     className="block px-8 py-3 text-[13px] hover:text-white hover:bg-white/5 transition-colors"
                     onClick={onClose}
                   >
@@ -406,6 +418,7 @@ function MobileDropdown({
                       <li key={child.label}>
                         <Link
                           href={child.href}
+                           {...(child.external && { target: "_blank", rel: "noopener noreferrer" })}
                           className="block px-12 py-2.5 text-[12.5px] text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
                           onClick={onClose}
                         >

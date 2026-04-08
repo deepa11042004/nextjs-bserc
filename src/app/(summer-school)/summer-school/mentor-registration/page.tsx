@@ -1,5 +1,12 @@
-import { redirect } from "next/navigation";
+import MentorRegistrationForm from '@/components/form/MentorRegistrationForm'
+import React from 'react'
 
-export default function page() {
-  return redirect("/bsercinternship/mentor-registration");
+const page = () => {
+  return (
+    <>
+    <MentorRegistrationForm/>
+    </>
+  )
 }
+
+export default page
