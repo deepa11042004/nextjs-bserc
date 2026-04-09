@@ -12,7 +12,7 @@ const NAV_ITEMS = [
   { label: "Lateral", href: "/bsercinternship/registration-lateral" },
   { label: "Mentor", href: "/bsercinternship/mentorship" },
   { label: "Reg.Mentor", href: "/bsercinternship/mentor-registration" },
-  { label: "Inst.Reg", href: "/bsercinternship/institutional-registration" },
+  { label: "REG.INSTITUTION", href: "/bsercinternship/institutional-registration" },
 ];
 
 export default function Navbar() {
@@ -57,7 +57,7 @@ export default function Navbar() {
               <li key={item.label}>
                 <Link
                   href={item.href}
-                  className="hover:text-gray-400  transition-colors"
+                  className="hover:text-gray-400  transition-colors uppercase"
                 >
                   {item.label}
                 </Link>
@@ -68,7 +68,7 @@ export default function Navbar() {
            {/* Desktop Right */}
           <div className="hidden lg:flex items-center">
             <Link
-              href="/summer-school/contact"
+              href="/bsercinternship/contact"
               className="relative px-6 py-2 font-semibold text-white rounded-lg overflow-hidden group"
             >
               <span className="absolute inset-0 bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 opacity-80 group-hover:opacity-100 transition-opacity duration-300 rounded-lg"></span>
@@ -103,7 +103,7 @@ export default function Navbar() {
                   <Link
                     href={item.href}
                     onClick={closeMenu}
-                    className="block px-5 py-4 hover:text-white hover:bg-white/5 transition"
+                    className="block px-5 py-4 hover:text-white hover:bg-white/5 uppercase transition"
                   >
                     {item.label}
                   </Link>
@@ -113,7 +113,7 @@ export default function Navbar() {
               {/* Login Button */}
               <li className="mt-4 px-4">
                 <Link
-                   href="/summer-school/contact"
+                  href="/bsercinternship/contact"
                   onClick={closeMenu}
                   className="block text-center py-3 font-semibold text-white rounded-lg bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 transition"
                 >

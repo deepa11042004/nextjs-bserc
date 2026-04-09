@@ -810,7 +810,7 @@ export default function InstitutionalRegistrationPage() {
 
         {/* Registration Form */}
         <SectionCard
-          title="School Registration Form"
+          title="School / Institutional Registration Form"
           subtitle="Complete the details below to initiate your partnership"
         >
           <form onSubmit={handleSubmit} noValidate className="space-y-1">
@@ -850,13 +850,13 @@ export default function InstitutionalRegistrationPage() {
             <div className="mb-8 pb-6 border-b border-[#2a2a2a]">
               <h4 className="text-zinc-100 font-semibold mb-4 flex items-center gap-2">
                 <Building2 className="w-4 h-4 text-orange-500" />
-                School Information
+                Institutional / School Information
               </h4>
               <div className="grid md:grid-cols-2 gap-4">
                 <FormInput
                   id="schoolName"
                   name="schoolName"
-                  label="School Name"
+                  label=" Institutional / School Name"
                   placeholder="Enter full school name"
                   required
                   value={formData.schoolName}
@@ -866,7 +866,7 @@ export default function InstitutionalRegistrationPage() {
                 <FormSelect
                   id="board"
                   name="board"
-                  label="Board Affiliation"
+                  label="University / Board Affiliation"
                   options={boardOptions}
                   placeholder="Select Board"
                   required={true}
@@ -974,14 +974,14 @@ export default function InstitutionalRegistrationPage() {
             <div className="mb-8 pb-6 border-b border-[#2a2a2a]">
               <h4 className="text-zinc-100 font-semibold mb-4 pt-5 flex items-center gap-2">
                 <Users className="w-4 h-4 text-orange-500" />
-                Institution Head Details
+                Institutional / School Head Details
               </h4>
 
               <div className="grid md:grid-cols-2 gap-4">
                 <FormInput
                   id="headName"
                   name="headName"
-                  label="Institution Head Name"
+                  label="Institutional / School Head Name"
                   placeholder="Principal/Director name"
                   required
                   value={formData.headName}
@@ -991,7 +991,7 @@ export default function InstitutionalRegistrationPage() {
                 <FormInput
                   id="headEmail"
                   name="headEmail"
-                  label="Institution Head Email"
+                  label="Institutional / School Head Email"
                   type="email"
                   placeholder="principal@school.edu.in"
                   required
@@ -1002,7 +1002,7 @@ export default function InstitutionalRegistrationPage() {
                 <FormInput
                   id="headPhone"
                   name="headPhone"
-                  label="Institution Head Phone"
+                  label="Institutional / School Head Phone"
                   type="tel"
                   placeholder="+91 XXXXX XXXXX"
                   value={formData.headPhone}
@@ -1029,7 +1029,7 @@ export default function InstitutionalRegistrationPage() {
             <div className="pt-4 flex flex-col md:flex-row justify-center items-center gap-6">
               <SubmitButton
                 isSubmitting={isSubmitting}
-                label="Register Institution"
+                label="Register"
               />
             </div>
           </form>
