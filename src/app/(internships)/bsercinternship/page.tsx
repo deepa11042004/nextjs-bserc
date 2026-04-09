@@ -17,8 +17,8 @@ import ProgramDetails from "@/components/InternshipSection/ProgramDetails";
 import Meritorious from "@/components/InternshipSection/Meritorious";
 import ProgrammeTimeline from "@/components/InternshipSection/ProgrammeTimeline";
 import PricingFees from "@/components/InternshipSection/PricingFees";
-import CoreTechnologyDomains from "@/components/InternshipSection/CoreTechnologyDomains";
-
+import { CoreTech } from "@/components/global/CoreTech";
+import InternshipHighlights from "@/components/InternshipSection/InternshipHighlights";
 const page = () => {
   return (
     <div className="bg-black">
@@ -30,7 +30,8 @@ const page = () => {
      <Meritorious />
      <ProgrammeTimeline />
      <PricingFees/>
-     <CoreTechnologyDomains/>
+     <CoreTech/>
+     <InternshipHighlights/>
       {/* <Hero/>
       <Paragraphs />
       <StatsCard />

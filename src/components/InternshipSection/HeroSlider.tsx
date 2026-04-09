@@ -35,7 +35,7 @@ const slides: SlideData[] = [
   {
     id: 2,
     icon: <Shield size={18} />,
-    badge: "Classes VI–XII",
+    badge: "Future Technology",
     title: "Innovation in Defence & Space Technology",
     desc: "Explore Rocketry, Drones, AI, Robotics, and Aircraft Design. Aligned with Viksit Bharat @2047 and Atmanirbhar Bharat vision.",
     cta: "Learn More",

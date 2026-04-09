@@ -26,7 +26,7 @@ const slides: SlideData[] = [
     id: 1,
     icon: <Rocket size={18} />,
     badge: "Programme 2026",
-    title: "Bharat Def-Space Summer School 2026",
+    title: "Def-Space Summer School 2026",
     desc: "A flagship 6-week intensive online initiative under Def-Space Education & Innovation — shaping India's future in Space, Defence, and Technology.",
     cta: "Register Now",
     link: "/summer-school/student-registration",
