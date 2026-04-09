@@ -106,7 +106,20 @@ function getMentorRegisterEndpoint(): string {
     return "/api/mentor/register";
   }
 
-  return `${publicApiBase.replace(/\/$/, "")}/api/mentor/register`;
+  const normalizedBase = publicApiBase.replace(/\/+$/, "");
+
+  if (
+    /\/api\/mentor\/register$/i.test(normalizedBase)
+    || /\/mentor\/register$/i.test(normalizedBase)
+  ) {
+    return normalizedBase;
+  }
+
+  if (/\/api$/i.test(normalizedBase)) {
+    return `${normalizedBase}/mentor/register`;
+  }
+
+  return `${normalizedBase}/api/mentor/register`;
 }
 
 function getFileFromFormData(data: FormData, key: string): File | null {
@@ -617,15 +630,29 @@ export default function MentorRegistrationForm() {
         },
         handler: async (response) => {
           try {
-            const payload = cloneFormData(formDataObj);
-            payload.set("razorpay_order_id", response.razorpay_order_id);
-            payload.set("razorpay_payment_id", response.razorpay_payment_id);
-            payload.set("razorpay_signature", response.razorpay_signature);
+            const buildRegisterPayload = () => {
+              const payload = cloneFormData(formDataObj);
+              payload.set("razorpay_order_id", response.razorpay_order_id);
+              payload.set("razorpay_payment_id", response.razorpay_payment_id);
+              payload.set("razorpay_signature", response.razorpay_signature);
+              return payload;
+            };
 
-            const registerResponse = await fetch(registerEndpoint, {
+            let registerResponse = await fetch(registerEndpoint, {
               method: "POST",
-              body: payload,
+              body: buildRegisterPayload(),
             });
+
+            if (
+              !registerResponse.ok
+              && registerResponse.status === 404
+              && registerEndpoint !== "/api/mentor/register"
+            ) {
+              registerResponse = await fetch("/api/mentor/register", {
+                method: "POST",
+                body: buildRegisterPayload(),
+              });
+            }
 
             const message = await parseApiMessage(registerResponse);
             if (!registerResponse.ok) {
