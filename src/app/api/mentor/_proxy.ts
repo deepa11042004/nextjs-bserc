@@ -5,6 +5,8 @@ const DEV_FALLBACK_BACKEND_URLS = [
   "http://localhost:5000",
 ];
 
+const RETRIABLE_UPSTREAM_STATUSES = new Set([500, 502, 503, 504, 521, 522, 523, 524]);
+
 type MentorEndpoint = `/api/mentor/${string}`;
 type MentorHttpMethod = "GET" | "POST" | "PATCH" | "DELETE";
 
@@ -19,17 +21,28 @@ function isLocalHostname(hostname: string): boolean {
 }
 
 function getConfiguredApiUrl(): string {
-  const apiUrl = process.env.API_URL?.trim();
-  if (apiUrl) {
-    return apiUrl;
+  const configured = [
+    process.env.MENTOR_API_URL,
+    process.env.API_URL,
+    process.env.NEXT_PUBLIC_API_URL,
+    process.env.API_URL_FALLBACK,
+    process.env.MENTOR_API_FALLBACK_URL,
+  ]
+    .map((value) => value?.trim() ?? "")
+    .filter((value) => Boolean(value));
+
+  return configured.join(",");
+}
+
+function splitConfiguredApiUrls(configuredValue: string): string[] {
+  if (!configuredValue) {
+    return [];
   }
 
-  const publicApiUrl = process.env.API_URL?.trim();
-  if (publicApiUrl) {
-    return publicApiUrl;
-  }
-
-  return "";
+  return configuredValue
+    .split(",")
+    .map((value) => value.trim())
+    .filter((value) => Boolean(value));
 }
 
 function isLoopbackUrl(value: string): boolean {
@@ -50,15 +63,17 @@ function isLoopbackUrl(value: string): boolean {
 }
 
 function getBackendBaseUrls(options?: { preferLocal?: boolean }): string[] {
-  const envUrl = getConfiguredApiUrl();
+  const envUrls = splitConfiguredApiUrls(getConfiguredApiUrl());
   const preferLocal = Boolean(options?.preferLocal);
   const shouldIncludeDevFallback = !isProductionRuntime() || preferLocal;
 
   const raw = shouldIncludeDevFallback
-    ? isLoopbackUrl(envUrl)
-      ? [envUrl, ...DEV_FALLBACK_BACKEND_URLS]
-      : [...DEV_FALLBACK_BACKEND_URLS, envUrl]
-    : [envUrl];
+    ? [
+        ...envUrls.filter((value) => isLoopbackUrl(value)),
+        ...DEV_FALLBACK_BACKEND_URLS,
+        ...envUrls.filter((value) => !isLoopbackUrl(value)),
+      ]
+    : envUrls;
 
   const normalized = raw.filter((value): value is string => Boolean(value));
   return [...new Set(normalized.map((value) => value.replace(/\/$/, "")))];
@@ -89,6 +104,15 @@ function isJsonContentType(contentType: string | null): boolean {
   }
 
   return contentType.toLowerCase().includes("application/json");
+}
+
+function looksLikeCloudflareErrorPage(bodyText: string): boolean {
+  const content = bodyText.toLowerCase();
+  return (
+    content.includes("error code: 521")
+    || content.includes("web server is down")
+    || content.includes("cloudflare")
+  );
 }
 
 async function parseIncomingJson(request: Request): Promise<unknown> {
@@ -191,7 +215,19 @@ export async function forwardMentorRequest(
       const contentType = response.headers.get("content-type");
 
       if (!isJsonContentType(contentType)) {
-        const bodyBuffer = await response.arrayBuffer();
+        const textBody = await response.text();
+
+        if (RETRIABLE_UPSTREAM_STATUSES.has(response.status)) {
+          lastRetriablePayload = {
+            message: looksLikeCloudflareErrorPage(textBody)
+              ? "Upstream backend is unavailable (Cloudflare 52x)."
+              : "Upstream backend temporarily unavailable.",
+          };
+          lastRetriableStatus = response.status;
+          continue;
+        }
+
+        const bodyBuffer = new TextEncoder().encode(textBody);
 
         return new NextResponse(bodyBuffer, {
           status: response.status,
@@ -204,7 +240,7 @@ export async function forwardMentorRequest(
 
       const upstreamPayload = await parseUpstreamBody(response);
 
-      if ([500, 502, 503, 504].includes(response.status)) {
+      if (RETRIABLE_UPSTREAM_STATUSES.has(response.status)) {
         lastRetriablePayload = upstreamPayload;
         lastRetriableStatus = response.status;
         continue;
