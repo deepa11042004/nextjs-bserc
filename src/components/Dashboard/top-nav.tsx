@@ -27,6 +27,7 @@ const routeLabels: Record<string, string> = {
   "speaker-requests": "Speaker Requests",
   "fdp-requests": "FDP Requests",
   "internship-applications": "Internship Applications",
+  "institutional-applications": "Institutional Applications",
   "summer-school": "Summer School",
   "registration": "Registration",
   "admin-users": "Admin Users",

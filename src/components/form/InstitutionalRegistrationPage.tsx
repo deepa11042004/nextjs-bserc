@@ -14,6 +14,27 @@ import {
   Sparkles,
 } from "lucide-react";
 
+function getApiMessage(payload: unknown): string {
+  if (!payload || typeof payload !== "object") {
+    return "";
+  }
+
+  const typedPayload = payload as {
+    message?: unknown;
+    error?: unknown;
+  };
+
+  if (typeof typedPayload.message === "string" && typedPayload.message.trim()) {
+    return typedPayload.message.trim();
+  }
+
+  if (typeof typedPayload.error === "string" && typedPayload.error.trim()) {
+    return typedPayload.error.trim();
+  }
+
+  return "";
+}
+
 // ─────────────────────────────────────────────────────────────
 // UI Components - Def-Space Design System
 // ─────────────────────────────────────────────────────────────
@@ -465,7 +486,7 @@ const AnnualFeePaymentCard = ({ onPayment }: { onPayment: () => void }) => (
           <span className="text-zinc-500 text-sm">₹ 2,500 per year</span>
         </div>
         <p className="text-zinc-300 text-sm leading-relaxed mb-6">
-          Become an official Def-Space Partner School with full institutional
+          Become an official Def-Space Partner institute with full institutional
           branding, co-promotional visibility across BSERC's ecosystem, and
           year-round access to mentorship and career guidance resources for your
           students.
@@ -516,7 +537,7 @@ const AnnualFeePaymentCard = ({ onPayment }: { onPayment: () => void }) => (
         </div>
 
         <p className="text-zinc-400 text-xs leading-relaxed mb-6">
-          After submission of your school registration form above, you will
+          After submission of your institute registration form above, you will
           receive a secure payment link via email. Multiple payment methods
           accepted including bank transfer, card payments, and digital wallets.
         </p>
@@ -545,8 +566,25 @@ const AnnualFeePaymentCard = ({ onPayment }: { onPayment: () => void }) => (
 // MAIN PAGE COMPONENT
 // ─────────────────────────────────────────────────────────────
 
-export default function InstitutionalRegistrationPage() {
-  const [formData, setFormData] = useState({
+type InstitutionalFormData = {
+  schoolName: string;
+  board: string;
+  city: string;
+  state: string;
+  pinCode: string;
+  contactName: string;
+  designation: string;
+  email: string;
+  phone: string;
+  studentCount: string;
+  headName: string;
+  headEmail: string;
+  headPhone: string;
+  message: string;
+};
+
+function createInitialFormData(): InstitutionalFormData {
+  return {
     schoolName: "",
     board: "",
     city: "",
@@ -561,14 +599,29 @@ export default function InstitutionalRegistrationPage() {
     headEmail: "",
     headPhone: "",
     message: "",
-  });
+  };
+}
+
+export default function InstitutionalRegistrationPage() {
+  const [formData, setFormData] = useState<InstitutionalFormData>(
+    createInitialFormData(),
+  );
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<
     "idle" | "success" | "error" | null
   >(null);
-  const [showPayment, setShowPayment] = useState(false);
+  const [submitErrorMessage, setSubmitErrorMessage] = useState("");
+  const [successSnapshot, setSuccessSnapshot] = useState<{
+    contactName: string;
+    instituteName: string;
+  } | null>(null);
+
+  const closeSuccessNotification = () => {
+    setSubmitStatus(null);
+    setSuccessSnapshot(null);
+  };
 
   const boardOptions = [
     { value: "cbse", label: "CBSE" },
@@ -580,15 +633,26 @@ export default function InstitutionalRegistrationPage() {
   ];
 
   const studentRangeOptions = [
-    { value: "1-25", label: "1-25 students" },
-    { value: "26-50", label: "26-50 students" },
-    { value: "51-100", label: "51-100 students" },
-    { value: "101-250", label: "101-250 students" },
-    { value: "250+", label: "250+ students" },
+    { value: "1-100", label: "1-100 students" },
+    { value: "101-200", label: "101-200 students" },
+    { value: "201-300", label: "201-300 students" },
+    { value: "301-400", label: "301-400 students" },
+    { value: "401-500", label: "401-500 students" },
+    { value: "500+", label: "500+ students" },
   ];
 
   const handleChange = (name: string, value: string) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
+
+    if (submitStatus === "success") {
+      setSubmitStatus(null);
+      setSuccessSnapshot(null);
+    }
+
+    if (submitStatus === "error" && submitErrorMessage) {
+      setSubmitErrorMessage("");
+    }
+
     if (errors[name]) {
       setErrors((prev) => {
         const n = { ...prev };
@@ -602,7 +666,7 @@ export default function InstitutionalRegistrationPage() {
     const newErrors: Record<string, string> = {};
 
     if (!formData.schoolName.trim())
-      newErrors.schoolName = "School name is required";
+      newErrors.schoolName = "Institute name is required";
     if (!formData.board) newErrors.board = "Please select a board";
     if (!formData.city.trim()) newErrors.city = "City is required";
     if (!formData.state.trim()) newErrors.state = "State is required";
@@ -637,43 +701,98 @@ export default function InstitutionalRegistrationPage() {
     return newErrors;
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
     const newErrors = validateForm();
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       setSubmitStatus("error");
+      setSuccessSnapshot(null);
+      setSubmitErrorMessage("Please fix the highlighted errors before submitting.");
       return;
     }
 
     setIsSubmitting(true);
     setSubmitStatus(null);
+    setSuccessSnapshot(null);
+    setSubmitErrorMessage("");
     setErrors({});
 
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      const response = await fetch("/api/institutional-registration", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const payload = (await response.json().catch(() => ({}))) as unknown;
+
+      if (!response.ok) {
+        throw new Error(
+          getApiMessage(payload)
+            || "Unable to submit institutional registration. Please try again.",
+        );
+      }
+
+      setSuccessSnapshot({
+        contactName: formData.contactName,
+        instituteName: formData.schoolName,
+      });
+      setFormData(createInitialFormData());
+      setErrors({});
       setSubmitStatus("success");
-      setShowPayment(true);
-
-      setTimeout(() => {
-        document
-          .getElementById("payment-section")
-          ?.scrollIntoView({ behavior: "smooth" });
-      }, 100);
-    }, 1500);
-  };
-
-  const handlePaymentProceed = () => {
-    alert(
-      "🔐 Secure payment link sent to " +
-        formData.email +
-        "\n\nIn a production environment, this would redirect to a PCI-DSS compliant payment gateway.",
-    );
+    } catch (err) {
+      setSubmitStatus("error");
+      setSuccessSnapshot(null);
+      setSubmitErrorMessage(
+        err instanceof Error && err.message
+          ? err.message
+          : "Unable to submit institutional registration. Please try again.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-[#0d0d0d] text-zinc-300 py-12 md:py-16 px-4 selection:bg-orange-500 selection:text-black">
+      {submitStatus === "success" && successSnapshot && (
+        <div className="fixed left-1/2 top-5 z-[80] w-[calc(100%-2rem)] max-w-2xl -translate-x-1/2">
+          <div className="rounded-xl border border-[#2d3023] bg-[#111111] p-4 shadow-2xl shadow-black/50 flex items-start justify-between gap-4">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center flex-shrink-0">
+                <Check
+                  className="text-orange-500 w-5 h-5"
+                  strokeWidth={2.5}
+                />
+              </div>
+              <div>
+                <p className="font-semibold text-white">
+                  Registration Submitted!
+                </p>
+                <p className="text-zinc-400 text-sm mt-1">
+                  Thank you, {successSnapshot.contactName}. We have received your
+                  application for{" "}
+                  <span className="text-zinc-200">{successSnapshot.instituteName}</span>
+                  . Your registration details have been saved successfully.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={closeSuccessNotification}
+              className="ml-auto rounded-full p-2 text-zinc-400 hover:bg-zinc-900 hover:text-white transition-colors"
+              aria-label="Close notification"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-6xl mx-auto">
         {/* Page Header */}
         <div className="mb-12 md:mb-16">
@@ -692,7 +811,7 @@ export default function InstitutionalRegistrationPage() {
               Partner with BSERC{" "}
             </span>{" "}
             to bring premium defence and space education to your institution.
-            Establish your school as a leader in emerging technology education
+            Establish your institute as a leader in emerging technology education
             while providing students with direct exposure to India's space and
             defence sector careers.
           </p>
@@ -742,7 +861,7 @@ export default function InstitutionalRegistrationPage() {
             <BenefitCard
               icon={GraduationCap}
               title="Strengthen STEM Profile"
-              description="Position your school as a forward-looking institution at the forefront of innovation in defence and space technology education."
+              description="Position your institute as a forward-looking institution at the forefront of innovation in defence and space technology education."
             />
             <BenefitCard
               icon={BadgeCheck}
@@ -759,54 +878,32 @@ export default function InstitutionalRegistrationPage() {
 
         {/* Registration Form */}
         <SectionCard
-          title="School / Institutional Registration Form"
+          title="Institutional Registration Form"
           subtitle="Complete the details below to initiate your partnership"
         >
           <form onSubmit={handleSubmit} noValidate className="space-y-1">
             {/* Status Messages */}
-            {submitStatus === "success" && !showPayment && (
-              <div className="mb-6 p-4 bg-[#111111] border border-[#2d3023] rounded-xl flex items-start gap-4">
-                <div className="w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center flex-shrink-0">
-                  <Check
-                    className="text-orange-500 w-5 h-5"
-                    strokeWidth={2.5}
-                  />
-                </div>
-                <div>
-                  <p className="font-semibold text-white">
-                    Registration Submitted!
-                  </p>
-                  <p className="text-zinc-400 text-sm mt-1">
-                    Thank you, {formData.contactName}. We've received your
-                    application for{" "}
-                    <span className="text-zinc-200">{formData.schoolName}</span>
-                    . Please review the partnership details below to proceed.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {submitStatus === "error" && Object.keys(errors).length > 0 && (
+            {submitStatus === "error" && (
               <div className="mb-6 p-4 bg-[#111111] border border-red-900/30 rounded-xl flex items-start gap-3">
                 <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
                 <p className="text-sm text-red-300">
-                  Please fix the highlighted errors before submitting.
+                  {submitErrorMessage || "Please fix the highlighted errors before submitting."}
                 </p>
               </div>
             )}
 
-            {/* School Details */}
+            {/* Institute Details */}
             <div className="mb-8 pb-6 border-b border-[#2a2a2a]">
               <h4 className="text-zinc-100 font-semibold mb-4 flex items-center gap-2">
                 <Building2 className="w-4 h-4 text-orange-500" />
-                Institutional / School Information
+                Institutional Information
               </h4>
               <div className="grid md:grid-cols-2 gap-4">
                 <FormInput
                   id="schoolName"
                   name="schoolName"
-                  label=" Institutional / School Name"
-                  placeholder="Enter full school name"
+                  label="Institute Name"
+                  placeholder="Enter full institute name"
                   required
                   value={formData.schoolName}
                   onChange={(e) => handleChange("schoolName", e.target.value)}
@@ -815,7 +912,7 @@ export default function InstitutionalRegistrationPage() {
                 <FormSelect
                   id="board"
                   name="board"
-                  label="University / Board Affiliation"
+                  label="University/Board Affiliation"
                   options={boardOptions}
                   placeholder="Select Board"
                   required={true}
@@ -877,7 +974,7 @@ export default function InstitutionalRegistrationPage() {
                   id="contactName"
                   name="contactName"
                   label="Contact Person Name"
-                  placeholder="Principal / Coordinator name"
+                  placeholder="Principal/Coordinator name"
                   type="text"
                   required
                   value={formData.contactName}
@@ -888,7 +985,7 @@ export default function InstitutionalRegistrationPage() {
                   id="designation"
                   name="designation"
                   label="Designation"
-                  placeholder="Principal / Science Coordinator..."
+                  placeholder="Principal/Science Coordinator..."
                   required
                   value={formData.designation}
                   onChange={(e) => handleChange("designation", e.target.value)}
@@ -899,7 +996,7 @@ export default function InstitutionalRegistrationPage() {
                   name="email"
                   label="Official Email"
                   type="email"
-                  placeholder="contact@school.edu.in"
+                  placeholder="contact@institute.edu.in"
                   required
                   value={formData.email}
                   onChange={(e) => handleChange("email", e.target.value)}
@@ -923,14 +1020,14 @@ export default function InstitutionalRegistrationPage() {
             <div className="mb-8 pb-6 border-b border-[#2a2a2a]">
               <h4 className="text-zinc-100 font-semibold mb-4 pt-5 flex items-center gap-2">
                 <Users className="w-4 h-4 text-orange-500" />
-                Institutional / School Head Details
+                Institutional Head Details
               </h4>
 
               <div className="grid md:grid-cols-2 gap-4">
                 <FormInput
                   id="headName"
                   name="headName"
-                  label="Institutional / School Head Name"
+                  label="Institutional Head Name"
                   placeholder="Principal/Director name"
                   required
                   value={formData.headName}
@@ -940,9 +1037,9 @@ export default function InstitutionalRegistrationPage() {
                 <FormInput
                   id="headEmail"
                   name="headEmail"
-                  label="Institutional / School Head Email"
+                  label="Institutional Head Email"
                   type="email"
-                  placeholder="principal@school.edu.in"
+                  placeholder="principal@institute.edu.in"
                   required
                   value={formData.headEmail}
                   onChange={(e) => handleChange("headEmail", e.target.value)}
@@ -951,7 +1048,7 @@ export default function InstitutionalRegistrationPage() {
                 <FormInput
                   id="headPhone"
                   name="headPhone"
-                  label="Institutional / School Head Phone"
+                  label="Institutional Head Phone"
                   type="tel"
                   placeholder="+91 XXXXX XXXXX"
                   value={formData.headPhone}
@@ -983,16 +1080,6 @@ export default function InstitutionalRegistrationPage() {
             </div>
           </form>
         </SectionCard>
-
-        {/* Payment Section - Shows after form submission */}
-        {showPayment && (
-          <div id="payment-section" className="mt-12">
-            <h2 className="text-2xl md:text-3xl font-bold text-orange-400 font-serif mb-8">
-              Annual Partnership Fee
-            </h2>
-            <AnnualFeePaymentCard onPayment={handlePaymentProceed} />
-          </div>
-        )}
       </div>
     </div>
   );
