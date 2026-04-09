@@ -1,0 +1,666 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { Download, Filter, Loader2, NotebookPen } from "lucide-react";
+
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+
+type SummerSchoolStudentRegistration = {
+  id: number;
+  full_name: string;
+  email: string;
+  dob: string | null;
+  grade: string;
+  school: string;
+  board: string;
+  nationality: string;
+  gender: string | null;
+  guardian_name: string;
+  relationship: string;
+  guardian_email: string;
+  guardian_phone: string;
+  alt_phone: string | null;
+  batch: string;
+  experience: string | null;
+  payment_amount: number | null;
+  payment_currency: string | null;
+  razorpay_order_id: string | null;
+  razorpay_payment_id: string | null;
+  payment_status: string | null;
+  payment_mode: string | null;
+  created_at: string | null;
+};
+
+function getApiMessage(payload: unknown): string {
+  if (!payload || typeof payload !== "object") {
+    return "";
+  }
+
+  const typedPayload = payload as { message?: unknown; error?: unknown };
+
+  if (typeof typedPayload.message === "string" && typedPayload.message.trim()) {
+    return typedPayload.message.trim();
+  }
+
+  if (typeof typedPayload.error === "string" && typedPayload.error.trim()) {
+    return typedPayload.error.trim();
+  }
+
+  return "";
+}
+
+function toText(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function toNullableText(value: unknown): string | null {
+  const cleaned = toText(value);
+  return cleaned || null;
+}
+
+function toNumberOrNull(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  return null;
+}
+
+function toPositiveInt(value: unknown): number {
+  const numeric = toNumberOrNull(value);
+  if (numeric === null || !Number.isInteger(numeric) || numeric < 0) {
+    return 0;
+  }
+
+  return numeric;
+}
+
+function formatDate(value: string | null): string {
+  if (!value) {
+    return "-";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleDateString("en-IN", {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+  });
+}
+
+function formatTime(value: string | null): string {
+  if (!value) {
+    return "-";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "-";
+  }
+
+  return date.toLocaleTimeString("en-IN", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function formatPayment(amount: number | null, currency: string | null): string {
+  if (amount === null) {
+    return "-";
+  }
+
+  if (currency === "USD") {
+    return `$${amount.toFixed(2)}`;
+  }
+
+  if (currency === "INR") {
+    return `Rs. ${amount.toFixed(2)}`;
+  }
+
+  return `${amount.toFixed(2)}${currency ? ` ${currency}` : ""}`;
+}
+
+function getPaymentBadgeClass(status: string | null): string {
+  const normalized = (status || "").toLowerCase();
+
+  if (normalized === "captured" || normalized === "authorized") {
+    return "bg-emerald-500/15 text-emerald-300 border-emerald-500/50";
+  }
+
+  if (normalized === "pending" || normalized === "created") {
+    return "bg-amber-500/15 text-amber-300 border-amber-500/50";
+  }
+
+  if (normalized === "failed") {
+    return "bg-rose-500/15 text-rose-300 border-rose-500/50";
+  }
+
+  return "bg-zinc-700/50 text-zinc-200 border-zinc-600";
+}
+
+function mapRegistration(record: Record<string, unknown>): SummerSchoolStudentRegistration {
+  return {
+    id: toPositiveInt(record.id),
+    full_name: toText(record.full_name),
+    email: toText(record.email),
+    dob: toNullableText(record.dob),
+    grade: toText(record.grade),
+    school: toText(record.school),
+    board: toText(record.board),
+    nationality: toText(record.nationality),
+    gender: toNullableText(record.gender),
+    guardian_name: toText(record.guardian_name),
+    relationship: toText(record.relationship),
+    guardian_email: toText(record.guardian_email),
+    guardian_phone: toText(record.guardian_phone),
+    alt_phone: toNullableText(record.alt_phone),
+    batch: toText(record.batch),
+    experience: toNullableText(record.experience),
+    payment_amount: toNumberOrNull(record.payment_amount),
+    payment_currency: toNullableText(record.payment_currency),
+    razorpay_order_id: toNullableText(record.razorpay_order_id),
+    razorpay_payment_id: toNullableText(record.razorpay_payment_id),
+    payment_status: toNullableText(record.payment_status),
+    payment_mode: toNullableText(record.payment_mode),
+    created_at: toNullableText(record.created_at),
+  };
+}
+
+function extractRegistrations(payload: unknown): SummerSchoolStudentRegistration[] {
+  if (!payload || typeof payload !== "object") {
+    return [];
+  }
+
+  const root = payload as Record<string, unknown>;
+  if (!Array.isArray(root.data)) {
+    return [];
+  }
+
+  return root.data
+    .filter(
+      (item): item is Record<string, unknown> =>
+        Boolean(item) && typeof item === "object" && !Array.isArray(item),
+    )
+    .map(mapRegistration);
+}
+
+function extractRegistrationRecords(payload: unknown): Record<string, unknown>[] {
+  if (!payload || typeof payload !== "object") {
+    return [];
+  }
+
+  const root = payload as Record<string, unknown>;
+  if (!Array.isArray(root.data)) {
+    return [];
+  }
+
+  return root.data.filter(
+    (item): item is Record<string, unknown> =>
+      Boolean(item) && typeof item === "object" && !Array.isArray(item),
+  );
+}
+
+function toExportCellValue(value: unknown): string | number | boolean {
+  if (value === null || value === undefined) {
+    return "";
+  }
+
+  if (
+    typeof value === "string"
+    || typeof value === "number"
+    || typeof value === "boolean"
+  ) {
+    return value;
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
+
+function buildDynamicExportRows(records: Record<string, unknown>[]) {
+  const headers: string[] = [];
+
+  records.forEach((record) => {
+    Object.keys(record).forEach((key) => {
+      if (!headers.includes(key)) {
+        headers.push(key);
+      }
+    });
+  });
+
+  const rows = records.map((record) => {
+    const row: Record<string, string | number | boolean> = {};
+
+    headers.forEach((header) => {
+      row[header] = toExportCellValue(record[header]);
+    });
+
+    return row;
+  });
+
+  return { headers, rows };
+}
+
+export default function SummerSchoolRegistrations() {
+  const [registrations, setRegistrations] =
+    useState<SummerSchoolStudentRegistration[]>([]);
+  const [registrationRecords, setRegistrationRecords] =
+    useState<Record<string, unknown>[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [selectedClassFilter, setSelectedClassFilter] = useState("");
+  const [selectedNationalityFilter, setSelectedNationalityFilter] = useState("");
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadRegistrations = async () => {
+      setIsLoading(true);
+      setError("");
+
+      try {
+        const response = await fetch("/api/summer-school/student-registration", {
+          method: "GET",
+          cache: "no-store",
+        });
+
+        const payload = (await response.json().catch(() => ({}))) as unknown;
+
+        if (!response.ok) {
+          throw new Error(
+            getApiMessage(payload)
+              || "Unable to fetch summer school student registrations.",
+          );
+        }
+
+        if (!isMounted) {
+          return;
+        }
+
+        setRegistrationRecords(extractRegistrationRecords(payload));
+        setRegistrations(extractRegistrations(payload));
+      } catch (err) {
+        if (!isMounted) {
+          return;
+        }
+
+        setRegistrationRecords([]);
+        setRegistrations([]);
+        setError(
+          err instanceof Error && err.message
+            ? err.message
+            : "Unable to fetch summer school student registrations.",
+        );
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadRegistrations();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const totalRegistrations = useMemo(() => registrations.length, [registrations]);
+
+  const classOptions = useMemo(() => {
+    const uniqueClasses = new Set<string>();
+
+    registrations.forEach((registration) => {
+      const classValue = registration.grade.trim();
+      if (classValue) {
+        uniqueClasses.add(classValue);
+      }
+    });
+
+    return Array.from(uniqueClasses).sort((a, b) =>
+      a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" }),
+    );
+  }, [registrations]);
+
+  const nationalityOptions = useMemo(() => {
+    const uniqueNationalities = new Set<string>();
+
+    registrations.forEach((registration) => {
+      const nationalityValue = registration.nationality.trim();
+      if (nationalityValue) {
+        uniqueNationalities.add(nationalityValue);
+      }
+    });
+
+    return Array.from(uniqueNationalities).sort((a, b) =>
+      a.localeCompare(b, undefined, { sensitivity: "base" }),
+    );
+  }, [registrations]);
+
+  const filteredRegistrations = useMemo(() => {
+    if (!selectedClassFilter && !selectedNationalityFilter) {
+      return registrations;
+    }
+
+    return registrations.filter((registration) => {
+      const matchesClass =
+        !selectedClassFilter || registration.grade.trim() === selectedClassFilter;
+      const matchesNationality =
+        !selectedNationalityFilter
+        || registration.nationality.trim() === selectedNationalityFilter;
+
+      return matchesClass && matchesNationality;
+    });
+  }, [registrations, selectedClassFilter, selectedNationalityFilter]);
+
+  const handleExport = async () => {
+    if (isExporting || isLoading) {
+      return;
+    }
+
+    if (registrationRecords.length === 0) {
+      setError("No registrations available to export.");
+      return;
+    }
+
+    setError("");
+    setIsExporting(true);
+
+    try {
+      const XLSX = await import("xlsx");
+
+      const { headers, rows } = buildDynamicExportRows(registrationRecords);
+
+      if (rows.length === 0) {
+        setError("No registrations available to export.");
+        return;
+      }
+
+      const worksheet = XLSX.utils.json_to_sheet(rows, { header: headers });
+      worksheet["!cols"] = headers.map((header) => ({
+        wch: Math.max(16, Math.min(42, header.length + 4)),
+      }));
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Student Registrations");
+
+      const now = new Date();
+      const filename = `summer-school-student-registrations-${now.getFullYear()}-${String(
+        now.getMonth() + 1,
+      ).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}_${String(
+        now.getHours(),
+      ).padStart(2, "0")}-${String(now.getMinutes()).padStart(2, "0")}.xlsx`;
+
+      XLSX.writeFile(workbook, filename);
+    } catch (err) {
+      setError(
+        err instanceof Error && err.message
+          ? err.message
+          : "Unable to export student registrations.",
+      );
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen container mx-auto max-w-8xl text-zinc-100">
+      <div className="flex flex-col gap-4 pt-3 pb-5 mb-6 border-b border-zinc-800 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-4xl font-bold tracking-tight text-white">
+            Summer School Registration
+          </h1>
+          <p className="mt-1 text-sm text-zinc-400">
+            Student applications submitted for Def-Space Summer School.
+          </p>
+        </div>
+      </div>
+
+      <Card className="bg-zinc-900 border-zinc-800">
+        <CardHeader>
+          <div className="flex items-center justify-between gap-3">
+            <CardTitle className="text-zinc-100 text-lg flex items-center gap-2">
+              <NotebookPen className="h-4 w-4 text-blue-400" />
+              Student Registrations
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsFilterOpen((prev) => !prev)}
+                className="text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100"
+              >
+                <Filter className="mr-2 h-4 w-4" />
+                Filter
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleExport}
+                disabled={isLoading || isExporting || registrationRecords.length === 0}
+                className="text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100"
+              >
+                {isExporting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Exporting...
+                  </>
+                ) : (
+                  <>
+                    <Download className="mr-2 h-4 w-4" />
+                    Export
+                  </>
+                )}
+              </Button>
+              <span className="text-sm text-zinc-400">
+                Total: {filteredRegistrations.length}/{totalRegistrations}
+              </span>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {isFilterOpen && (
+            <div className="mb-4 rounded-md border border-zinc-700 bg-zinc-950/40 p-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+                <div className="w-full sm:w-72">
+                  <label
+                    htmlFor="classFilter"
+                    className="mb-1 block text-xs font-medium uppercase tracking-wide text-zinc-400"
+                  >
+                    Filter by Class
+                  </label>
+                  <select
+                    id="classFilter"
+                    value={selectedClassFilter}
+                    onChange={(event) => setSelectedClassFilter(event.target.value)}
+                    className="h-9 w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 text-sm text-zinc-100 outline-none focus:border-blue-500"
+                  >
+                    <option value="">All Classes</option>
+                    {classOptions.map((classOption) => (
+                      <option key={classOption} value={classOption}>
+                        {classOption}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="w-full sm:w-72">
+                  <label
+                    htmlFor="nationalityFilter"
+                    className="mb-1 block text-xs font-medium uppercase tracking-wide text-zinc-400"
+                  >
+                    Filter by Nationality
+                  </label>
+                  <select
+                    id="nationalityFilter"
+                    value={selectedNationalityFilter}
+                    onChange={(event) => setSelectedNationalityFilter(event.target.value)}
+                    className="h-9 w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 text-sm text-zinc-100 outline-none focus:border-blue-500"
+                  >
+                    <option value="">All Nationalities</option>
+                    {nationalityOptions.map((nationalityOption) => (
+                      <option key={nationalityOption} value={nationalityOption}>
+                        {nationalityOption}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedClassFilter("");
+                    setSelectedNationalityFilter("");
+                  }}
+                  disabled={!selectedClassFilter && !selectedNationalityFilter}
+                  className="text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100"
+                >
+                  Clear
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {error && (
+            <div className="mb-4 rounded-md border border-rose-500/40 bg-rose-950/30 px-3 py-2 text-sm text-rose-200">
+              {error}
+            </div>
+          )}
+
+          {isLoading ? (
+            <div className="flex h-40 items-center justify-center">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <div className="w-full overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-zinc-800">
+                    <TableHead className="text-white min-w-[220px]">Student</TableHead>
+                    <TableHead className="text-white min-w-[240px]">Academic</TableHead>
+                    <TableHead className="text-white min-w-[200px]">Batch / Nationality</TableHead>
+                    <TableHead className="text-white min-w-[260px]">Payment</TableHead>
+                    <TableHead className="text-white min-w-[170px]">Submitted</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredRegistrations.length === 0 ? (
+                    <TableRow className="border-zinc-800">
+                      <TableCell
+                        colSpan={5}
+                        className="text-center text-zinc-400 py-8"
+                      >
+                        {selectedClassFilter || selectedNationalityFilter
+                          ? "No registrations found for the selected filters."
+                          : "No summer school student registrations found."}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredRegistrations.map((registration) => (
+                      <TableRow
+                        key={`${registration.id}-${registration.email}`}
+                        className="border-zinc-800"
+                      >
+                        <TableCell className="align-top">
+                          <div className="flex flex-col">
+                            <span className="text-zinc-100 font-medium">
+                              {registration.full_name || "-"}
+                            </span>
+                            <span className="text-zinc-400 text-xs">
+                              {registration.email || "-"}
+                            </span>
+                            <span className="text-zinc-500 text-xs mt-1">
+                              DOB: {registration.dob || "-"}
+                              {registration.gender ? ` | ${registration.gender}` : ""}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="align-top">
+                          <div className="flex flex-col text-zinc-300 text-sm">
+                            <span>{registration.grade || "-"}</span>
+                            <span>{registration.school || "-"}</span>
+                            <span className="text-zinc-500">
+                              Board: {registration.board || "-"}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="align-top">
+                          <div className="flex flex-col text-zinc-300 text-sm">
+                            <span>{registration.batch || "-"}</span>
+                            <span className="text-zinc-500">
+                              {registration.nationality || "-"}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="align-top">
+                          <div className="flex flex-col gap-1 text-zinc-300 text-sm">
+                            <span>
+                              Amount: {formatPayment(registration.payment_amount, registration.payment_currency)}
+                            </span>
+                            <div>
+                              <Badge className={getPaymentBadgeClass(registration.payment_status)}>
+                                {(registration.payment_status || "not available").toUpperCase()}
+                              </Badge>
+                            </div>
+                            <span className="text-zinc-500 text-xs">
+                              Mode: {registration.payment_mode || "-"}
+                            </span>
+                            <span className="text-zinc-500 text-xs break-all">
+                              Order: {registration.razorpay_order_id || "-"}
+                            </span>
+                            <span className="text-zinc-500 text-xs break-all">
+                              Payment: {registration.razorpay_payment_id || "-"}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-zinc-400 align-top">
+                          <div className="flex flex-col text-sm">
+                            <span>{formatDate(registration.created_at)}</span>
+                            <span className="text-zinc-500">
+                              {formatTime(registration.created_at)}
+                            </span>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
