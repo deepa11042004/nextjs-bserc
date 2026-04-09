@@ -9,7 +9,7 @@ import StudentLoginButton from "./StudentLoginButton";
 import StudentProfile from "@/components/layout/studentProfile";
 
 type DropdownItem =
-  | { type: "link"; label: string; href: string; external?: boolean}
+  | { type: "link"; label: string; href: string; external?: boolean }
   | {
       type: "nested";
       label: string;
@@ -17,112 +17,255 @@ type DropdownItem =
     }
   | { type: "divider" };
 
-const NAV_ITEMS: { label: string; href?: string; dropdown?: DropdownItem[]; external?: boolean }[] =
-  [
-    { label: "Home", href: "/", external: false },
-    { label: "About Us", href: "/about",  external: false },
-    {
-      label: "Institutions",
-      dropdown: [
-        { type: "link", label: "MoU", href: "/institutions/mou-form",  external: false },
-        {
-          type: "link",
-          label: "Collaboration",
-          href: "/institutions/collaboration",
-          external: false
-        },
-      ],
-    },
-    {
-      label: "Programme",
-      dropdown: [
-        { type: "link", label: "Workshop", href: "/workshops", external: false },
-        { type: "link", label: "Def-Space Summer Internship", href: "/bsercinternship", external: true },
-        { type: "link", label: "Def-Space Summer School", href: "/summer-school", external: true },
-      ],
-    },
+const NAV_ITEMS: {
+  label: string;
+  href?: string;
+  dropdown?: DropdownItem[];
+  external?: boolean;
+}[] = [
+  { label: "Home", href: "/", external: false },
 
-    {
-      label: "Career",
-      dropdown: [
-        
-        {
-          type: "link",
-          label: "Winter Internship",
-          href: "/careers/winter-internship",
-          external: false,
-        },
-        {
-          type: "link",
-          label: "Internship Results",
-          href: "/careers/winter-internship-results",
-          external: false,
-        },
-        {
-          type: "link",
-          label: "Apprenticeship",
-          href: "/careers/apprenticeship",
-          external: false
-        },
-        { type: "link", label: "Job Vacancy", href: "/careers/job-vacancy", external: false },
-      ],
-    },
-    {
-      label: "More",
-      dropdown: [
-        { type: "link", label: "Advisory Body", href: "/advisory-board" },
-        {
-          label: "Administration",
-          type: "nested",
-          children: [
-            { label: "Chairman", href: "/", external: false },
-            { label: "Secretary", href: "/", external: false },
-            { label: "Director General", href: "/", external: false },
-            { label: "Director", href: "/", external: false },
-            { label: "Staff", href: "/", external: false },
-            { label: "Coordinator", href: "/", external: false },
-            { label: "Committee", href: "/", external: false },
-          ],
-        },
-        {
-          type: "nested",
-          label: "People",
-          children: [
-            { label: "Faculty/Guest faculty", href: "/people/faculty" ,external: false},
-            { label: "Research Scholar", href: "/people/research-scholar", external: false },
-            { label: "Staff", href: "/people/staff", external: false },
-            { label: "Speaker", href: "/people/speaker", external: false },
-            { label: "FDP Members", href: "/people/fdp-members", external: false },
-          ],
-        },
-        {
-          type: "nested",
-          label: "Technology Partner",
-          children: [
-            { label: "ISRO", href: "/tech-partner#isro", external: false },
-            { label: "ESA", href: "/tech-partner#esa", external: false },
-            { label: "KAT", href: "/tech-partner#kat", external: false },
-            { label: "JAXA", href: "/tech-partner#jaxa", external: false },
-            { label: "NASA", href: "/tech-partner#nasa", external: false },
-            { label: "UN-GGIM", href: "/tech-partner#un-ggim", external: false },
-          ],
-        },
-        { type: "divider" },
-        { type: "link", label: "Membership", href: "/membership" ,external: false},
-        {
-          type: "link",
-          label: "Knowledge Hub (Learn)",
-          href: "/knowledge-hub",
-          external: false,
-        },
-        { type: "link", label: "Missions", href: "/missions", external: false },
-        { type: "link", label: "Space Quiz", href: "/space-quiz", external: false },
-        { type: "link", label: "Glossary", href: "/glossary", external: false },
-        { type: "link", label: "FAQ", href: "/faq", external: false },
-      ],
-    },
-    { label: "Contact Us", href: "/contact", external: false },
-  ];
+  {
+    label: "About Us",
+    dropdown: [
+      {
+        type: "link",
+        label: "Vision",
+        href: "/about",
+        external: false,
+      },
+      {
+        type: "link",
+        label: "Goals",
+        href: "/about",
+        external: false,
+      },
+    ],
+  },
+
+  {
+    label: "Institutions",
+    dropdown: [
+      {
+        type: "link",
+        label: "MoU",
+        href: "/institutions/mou-form",
+        external: false,
+      },
+      {
+        type: "link",
+        label: "Collaboration",
+        href: "/institutions/collaboration",
+        external: false,
+      },
+    ],
+  },
+  {
+    label: "Programme",
+    dropdown: [
+      { type: "link", label: "Workshop", href: "/workshops", external: false },
+
+      {
+        type: "link",
+        label: "Def-Space Summer School",
+        href: "/summer-school",
+        external: true,
+      },
+      {
+        type: "link",
+        label: "Def-Space Summer Internship",
+        href: "/bsercinternship",
+        external: true,
+      },
+      {
+        type: "link",
+        label: "Def-Space Innovation Corridor 2026",
+        href: "/",
+        external: true,
+      },
+    ],
+  },
+
+  {
+    label: "Results",
+    dropdown: [
+      {
+        type: "link",
+        label: "Def-Space Winter Internship Result 2025",
+        href: "/results/winter-internship-results",
+        external: false,
+      },
+    ],
+  },
+
+  {
+    label: "Career",
+    dropdown: [
+      {
+        type: "link",
+        label: "Apprenticeship",
+        href: "/careers/apprenticeship",
+        external: false,
+      },
+      {
+        type: "link",
+        label: "Job Vacancy",
+        href: "/careers/job-vacancy",
+        external: false,
+      },
+      {
+        type: "link",
+        label: "Mentors",
+        href: "/",
+        external: false,
+      },
+      {
+        type: "link",
+        label: "Advisor",
+        href: "/",
+        external: false,
+      },
+      {
+        type: "link",
+        label: "Speaker",
+        href: "/people/speaker",
+        external: false,
+      },
+      {
+        type: "link",
+        label: "Startup",
+        href: "/",
+        external: false,
+      },
+      {
+        type: "link",
+        label: "Partnership ",
+        href: "/",
+        external: false,
+      },
+      {
+        type: "link",
+        label: "Delegate",
+        href: "/",
+        external: false,
+      },
+      {
+        type: "link",
+        label: "Membership",
+        href: "/membership",
+        external: false,
+      },
+      {
+        type: "link",
+        label: "IEDC",
+        href: "/",
+        external: false,
+      },
+      {
+        type: "link",
+        label: "Exhibitor",
+        href: "/",
+        external: false,
+      },
+      {
+        type: "link",
+        label: "Investor ",
+        href: "/",
+        external: false,
+      },
+      {
+        type: "link",
+        label: "Organization ",
+        href: "/",
+        external: false,
+      },
+    ],
+  },
+  {
+    label: "More",
+    dropdown: [
+      { type: "link", label: "Advisory Body", href: "/advisory-board" },
+      {
+        label: "Administration",
+        type: "nested",
+        children: [
+          { label: "Chairman", href: "/", external: false },
+          { label: "Secretary", href: "/", external: false },
+          { label: "Director General", href: "/", external: false },
+          { label: "Director", href: "/", external: false },
+          { label: "Staff", href: "/people/staff", external: false },
+          { label: "Coordinator", href: "/", external: false },
+          { label: "Committee", href: "/", external: false },
+        ],
+      },
+      {
+        type: "nested",
+        label: "Technology Partner",
+        children: [
+          { label: "ISRO", href: "/tech-partner#isro", external: false },
+          { label: "ESA", href: "/tech-partner#esa", external: false },
+          { label: "KAT", href: "/tech-partner#kat", external: false },
+          { label: "JAXA", href: "/tech-partner#jaxa", external: false },
+          { label: "NASA", href: "/tech-partner#nasa", external: false },
+          { label: "UN-GGIM", href: "/tech-partner#un-ggim", external: false },
+        ],
+      },
+      { type: "link", label: "Mentor", href: "/", external: false },
+      { type: "link", label: "Speakers", href: "/", external: false },
+      { type: "link", label: "Delegates", href: "/", external: false },
+      {
+        type: "link",
+        label: "University Partner ",
+        href: "/",
+        external: false,
+      },
+
+      { type: "link", label: "Missions", href: "/missions", external: false },
+
+      {
+        type: "nested",
+        label: "People",
+        children: [
+          {
+            label: "Faculty/Guest faculty",
+            href: "/people/faculty",
+            external: false,
+          },
+          {
+            label: "Research Scholar",
+            href: "/people/research-scholar",
+            external: false,
+          },
+
+          {
+            label: "FDP Members",
+            href: "/people/fdp-members",
+            external: false,
+          },
+        ],
+      },
+
+      { type: "divider" },
+
+      {
+        type: "link",
+        label: "Knowledge Hub (Learn)",
+        href: "/knowledge-hub",
+        external: false,
+      },
+
+      {
+        type: "link",
+        label: "Space Quiz",
+        href: "/space-quiz",
+        external: false,
+      },
+      { type: "link", label: "Glossary", href: "/glossary", external: false },
+      { type: "link", label: "FAQ", href: "/faq", external: false },
+    ],
+  },
+  { label: "Contact Us", href: "/contact", external: false },
+];
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -181,7 +324,10 @@ export default function Navbar() {
                 <li key={item.label}>
                   <Link
                     href={item.href}
-                     {...(item.external && { target: "_blank", rel: "noopener noreferrer" })}
+                    {...(item.external && {
+                      target: "_blank",
+                      rel: "noopener noreferrer",
+                    })}
                     className="px-3 py-2 hover:text-white transition-colors whitespace-nowrap"
                   >
                     {item.label}
@@ -226,7 +372,10 @@ export default function Navbar() {
                   <li key={item.label} className="border-b border-white/5">
                     <Link
                       href={item.href}
-                       {...(item.external && { target: "_blank", rel: "noopener noreferrer" })}
+                      {...(item.external && {
+                        target: "_blank",
+                        rel: "noopener noreferrer",
+                      })}
                       className="block px-5 py-4 hover:text-white hover:bg-white/5 transition-colors"
                       onClick={closeAll}
                     >
@@ -302,7 +451,10 @@ function DesktopDropdown({
               <li key={item.label}>
                 <Link
                   href={item.href}
-                   {...(item.external && { target: "_blank", rel: "noopener noreferrer" })}
+                  {...(item.external && {
+                    target: "_blank",
+                    rel: "noopener noreferrer",
+                  })}
                   className="block px-4 py-2 hover:bg-white/5 hover:text-white transition-colors whitespace-nowrap"
                 >
                   {item.label}
@@ -330,7 +482,10 @@ function DesktopDropdown({
                   <li key={child.label}>
                     <Link
                       href={child.href}
-                       {...(child.external && { target: "_blank", rel: "noopener noreferrer" })}
+                      {...(child.external && {
+                        target: "_blank",
+                        rel: "noopener noreferrer",
+                      })}
                       className="block px-4 py-2 hover:bg-white/5 hover:text-white transition-colors whitespace-nowrap"
                     >
                       {child.label}
@@ -389,7 +544,10 @@ function MobileDropdown({
                 <li key={item.label}>
                   <Link
                     href={item.href}
-                     {...(item.external && { target: "_blank", rel: "noopener noreferrer" })}
+                    {...(item.external && {
+                      target: "_blank",
+                      rel: "noopener noreferrer",
+                    })}
                     className="block px-8 py-3 text-[13px] hover:text-white hover:bg-white/5 transition-colors"
                     onClick={onClose}
                   >
@@ -418,7 +576,10 @@ function MobileDropdown({
                       <li key={child.label}>
                         <Link
                           href={child.href}
-                           {...(child.external && { target: "_blank", rel: "noopener noreferrer" })}
+                          {...(child.external && {
+                            target: "_blank",
+                            rel: "noopener noreferrer",
+                          })}
                           className="block px-12 py-2.5 text-[12.5px] text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
                           onClick={onClose}
                         >
