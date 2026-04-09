@@ -215,11 +215,13 @@ export async function forwardMentorRequest(
       const contentType = response.headers.get("content-type");
 
       if (!isJsonContentType(contentType)) {
-        const textBody = await response.text();
+        const rawBody = await response.arrayBuffer();
+        const bodyBytes = new Uint8Array(rawBody);
+        const bodyText = new TextDecoder().decode(bodyBytes);
 
         if (RETRIABLE_UPSTREAM_STATUSES.has(response.status)) {
           lastRetriablePayload = {
-            message: looksLikeCloudflareErrorPage(textBody)
+            message: looksLikeCloudflareErrorPage(bodyText)
               ? "Upstream backend is unavailable (Cloudflare 52x)."
               : "Upstream backend temporarily unavailable.",
           };
@@ -227,14 +229,19 @@ export async function forwardMentorRequest(
           continue;
         }
 
-        const bodyBuffer = new TextEncoder().encode(textBody);
+        const responseHeaders: Record<string, string> = {
+          "Content-Type": contentType || "application/octet-stream",
+          "Cache-Control": "no-store",
+        };
 
-        return new NextResponse(bodyBuffer, {
+        const contentDisposition = response.headers.get("content-disposition");
+        if (contentDisposition) {
+          responseHeaders["Content-Disposition"] = contentDisposition;
+        }
+
+        return new NextResponse(bodyBytes, {
           status: response.status,
-          headers: {
-            "Content-Type": contentType || "application/octet-stream",
-            "Cache-Control": "no-store",
-          },
+          headers: responseHeaders,
         });
       }
 
