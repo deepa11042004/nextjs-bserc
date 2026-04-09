@@ -44,12 +44,17 @@ const learningLinks: string[] = [
   "Skill Tracks",
 ];
 
-const companyLinks: string[] = [
-  "About Us",
-  "Careers",
-  "Blog / Articles",
-  "Privacy Policy",
-  "Terms & Conditions",
+interface CompanyLink {
+  label: string;
+  href: string;
+}
+
+const companyLinks: CompanyLink[] = [
+  { label: "Def-Space Summer School", href: "/summer-school" },
+  { label: "Def-Space Summer Internship", href: "/bsercinternship" },
+  { label: "Refund Policy", href: "/bserc-policies/refund-policy" },
+  { label: "Privacy Policy", href: "/bserc-policies/privacy-policy" },
+  { label: "Terms & Conditions", href: "/bserc-policies/terms-and-conditions" },
 ];
 
 const contactItems: ContactItem[] = [
@@ -60,15 +65,14 @@ const contactItems: ContactItem[] = [
 ];
 
 const partnerLogos: PartnerLogo[] = [
-   { src: "/img/isro.png", alt: "ISRO" },
-   { src: "/img/DOS.svg", alt: "DOF" },
+  { src: "/img/isro.png", alt: "ISRO" },
+  { src: "/img/DOS.svg", alt: "DOF" },
   {
     src: "/img/ministry.png",
     alt: "Ministry of Education",
     style: { filter: "brightness(0) invert(1)" },
   },
-  
- 
+
   { src: "/img/iit-delhi.png", alt: "IIT Delhi" },
 ];
 // Component with TypeScript typing
@@ -82,8 +86,8 @@ const Footer: React.FC = () => {
             <div className="flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center">
                 <Image
-                width={500}
-                height={500}
+                  width={500}
+                  height={500}
                   src="/img/bserc_footer.png"
                   alt="BSERC logo"
                   className="h-full w-full object-contain"
@@ -92,7 +96,7 @@ const Footer: React.FC = () => {
               <div>
                 <p className="text-xl font-bold">BSERC</p>
                 <p className="text-xs tracking-[0.2em] text-slate-400">
-                  HUB FOR SPACE EDUCATION
+                  Space Tutor Indian Space Research Organization (ISRO)
                 </p>
               </div>
             </div>
@@ -103,8 +107,8 @@ const Footer: React.FC = () => {
                   className="flex h-10 w-20 items-center justify-center"
                 >
                   <Image
-                  width={500}
-                height={500}
+                    width={500}
+                    height={500}
                     src={item.src}
                     alt={item.alt}
                     className="h-full w-full object-contain"
@@ -155,16 +159,17 @@ const Footer: React.FC = () => {
           {/* Company */}
           <div>
             <h4 className="mb-4 text-sm font-semibold uppercase tracking-wide text-slate-400">
-              Company
+              Quick Links
             </h4>
             <ul className="space-y-3 text-sm text-slate-300">
               {companyLinks.map((item) => (
-                <li key={item}>
+                <li key={item.label}>
                   <a
-                    href="#"
+                    href={item.href}
+                    target="_blank"
                     className="inline-flex items-center gap-2 transition hover:text-[#3B82F6] hover:translate-x-1"
                   >
-                    {item}
+                    {item.label}
                   </a>
                 </li>
               ))}
@@ -192,13 +197,19 @@ const Footer: React.FC = () => {
         <div className="mt-12 border-t border-white/5 pt-6 flex flex-col gap-3 text-xs text-slate-400 sm:flex-row sm:items-center sm:justify-between">
           <p>© 2026 BSERC. All rights reserved.</p>
           <div className="flex items-center gap-4">
-            <a href="#" className="transition hover:text-[#3B82F6]">
-              Privacy
+            <a target="_blank" href="/bserc-policies/privacy-policy" className="transition hover:text-[#3B82F6]">
+              Privacy Policy
             </a>
             <span className="text-slate-600">|</span>
-            <a href="#" className="transition hover:text-[#3B82F6]">
-              Terms
+            <a target="_blank" href="/bserc-policies/terms-and-conditions" className="transition hover:text-[#3B82F6]">
+              Terms & Conditions
             </a>
+            <span className="text-slate-600">|</span>
+            <a target="_blank" href="/bserc-policies/refund-policy" className="transition hover:text-[#3B82F6]">
+             Refund Policy
+            </a>
+
+              
           </div>
         </div>
       </div>

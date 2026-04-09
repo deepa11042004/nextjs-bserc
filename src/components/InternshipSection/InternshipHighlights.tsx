@@ -1,7 +1,7 @@
 import React from "react";
 import { Play } from "lucide-react";
 
-const SchoolHighlights = () => {
+const InternshipHighlights = () => {
   return (
     <section className="h-full w-full md:py-20  py-16 px-4 bg-black">
       <div
@@ -10,7 +10,7 @@ const SchoolHighlights = () => {
       >
         {/* Heading */}
         <h2 className="text-2xl text-center sm:text-3xl lg:text-4xl font-bold text-white mb-4 leading-tight font-serif">
-          Def-Space Summer School Highlights
+          Def-Space Summer Internship Highlights
         </h2>
 
         {/* Subheading */}
@@ -43,9 +43,9 @@ const SchoolHighlights = () => {
         <ul className="text-gray-400 text-sm sm:text-base space-y-3 mb-6">
           {[
            
-            "Comprehensive curriculum tailored for Classes VI–XII learners",
+            "Comprehensive technical curriculum tailored for undergraduates , post graduate , research scholar, faculty & officials",
             "Hands-on, project-based learning with industry-standard tools and simulations",
-            "On-demand access to recorded sessions for flexible, self-paced review",
+            " access to recorded sessions for flexible, self-paced review",
             "Emphasis on foundational skills for careers in Defence, Space, and Advanced Technology sectors",
           ].map((item, index) => (
             <li key={index} className="flex items-start gap-2">
@@ -59,4 +59,4 @@ const SchoolHighlights = () => {
   );
 };
 
-export default SchoolHighlights;
+export default InternshipHighlights;

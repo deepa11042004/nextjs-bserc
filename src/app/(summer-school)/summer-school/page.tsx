@@ -4,7 +4,7 @@ import Bharat from "@/components/SummerSchool/Bharat";
 import ProgramOverview from "@/components/SummerSchool/ProgramOverView";
 import EligibilityCriteria from "@/components/SummerSchool/EligibilityCriteria";
 import ProgrammeTimeline from "@/components/SummerSchool/ProgrammeTimeline";
-import { CoreTech } from "@/components/SummerSchool/CoreTech";
+import { CoreTech } from "@/components/global/CoreTech";
 import SchoolHighlights from "@/components/SummerSchool/SchoolHighlights";
 import CertificationFee from "@/components/SummerSchool/CertificationFee";
 import MeritScholarships from "@/components/SummerSchool/MeritScholarships";

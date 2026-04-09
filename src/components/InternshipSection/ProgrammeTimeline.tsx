@@ -53,13 +53,13 @@ const ProgrammeTimeline: React.FC = () => {
           />
           <TimelineCard
             title="Format"
-            description="Fully virtual with live sessions"
+            description="live training & recorded sessions"
             highlight="Fridays-Sundays, 2-3 hrs/day"
             highlightColor="amber"
           />
           <TimelineCard
             title="Project Work"
-            description="Dedicated activities"
+            description="Dedicated techonology"
             highlight="Monday-Thursday"
             highlightColor="purple"
           />

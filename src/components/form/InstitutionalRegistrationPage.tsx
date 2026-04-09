@@ -849,59 +849,8 @@ export default function InstitutionalRegistrationPage() {
           </div>
         </div>
 
-        {/* Why Partner Section */}
-        <div className="mb-12">
-          <h2 className="text-2xl md:text-3xl font-bold text-orange-400 font-serif mb-4">
-            Why Partner With BSERC
-          </h2>
-          <p className="text-zinc-400 text-sm md:text-base mb-8 max-w-4xl">
-            Elevate your institution's academic standing and provide students
-            access to India's premier defence and space sector ecosystem
-          </p>
-          <div className="grid md:grid-cols-3 gap-6">
-            <WhyPartnerCard
-              title="Strengthen STEM Profile"
-              description="Position your institute as a forward-looking institution at the forefront of innovation in defence and space technology education."
-            />
-            <WhyPartnerCard
-              title="Student Achievement Visibility"
-              description="Showcase student projects, merit certificates, and verified career pathways in institutional newsletters and annual reports."
-            />
-            <WhyPartnerCard
-              title="Career Ecosystem Access"
-              description="Direct mentorship and guidance from ISRO, DRDO, HAL professionals and leading private space enterprises for student career planning."
-            />
-          </div>
-        </div>
-
-        {/* Old Partnership Modes Section (can be removed if not needed) */}
-        <SectionCard
-          title="Enrolment Options"
-          subtitle="Choose the partnership model that fits your institution"
-        >
-          <div className="grid md:grid-cols-2 gap-5">
-            <PartnershipModeCard
-              icon={Users}
-              title="Group Enrolment Mode"
-              description="Register cohorts of students from your institution. BSERC manages batch coordination, learning delivery, and certificate distribution through a designated focal teacher or coordinator."
-              idealFor={[
-                "Summer camps & workshops",
-                "Co-curricular programmes",
-                "Skill enhancement initiatives",
-              ]}
-            />
-            <PartnershipModeCard
-              icon={Building2}
-              title="Institutional Partnership"
-              description="Establish formal 'Def-Space Partner Institute' status with official branding rights, collaborative promotion, institutional certificate, and sustained engagement with BSERC's ecosystem."
-              idealFor={[
-                "Strategic institutional positioning",
-                "Long-term academic alignment",
-                "Sustained visibility & recognition",
-              ]}
-            />
-          </div>
-        </SectionCard>
+      
+        
 
         {/* Why Partner Section (old version - can be removed) */}
         <SectionCard
