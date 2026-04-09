@@ -13,6 +13,7 @@ import {
   UserRoundSearch,
   Images,
   Home,
+  GraduationCap,
 } from "lucide-react"
 
 import Link from "next/link"
@@ -220,6 +221,14 @@ export default function Sidebar() {
                     isActive={normalizedPath === "/admin/faculty/internship-applications"}
                   >
                     Internship Applications
+                  </NavItem>
+                  <NavItem
+                    href="/admin/summer-school/registration"
+                    icon={GraduationCap}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    isActive={normalizedPath === "/admin/summer-school/registration"}
+                  >
+                    Summer School Student Registrations
                   </NavItem>
                 </div>
               </div>

@@ -5,7 +5,10 @@ const DEV_FALLBACK_BACKEND_URLS = [
   "http://localhost:5000",
 ];
 
-type SummerSchoolEndpoint = "/api/summer-school/student-registration";
+type SummerSchoolEndpoint =
+  | "/api/summer-school/student-registration"
+  | "/api/summer-school/student-registration/create-order"
+  | "/api/summer-school/student-registration/verify-payment";
 type SummerSchoolHttpMethod = "GET" | "POST";
 
 function isProductionRuntime(): boolean {

@@ -32,6 +32,64 @@ interface SelectFieldProps {
   placeholder?: string;
 }
 
+type RazorpaySuccessResponse = {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+};
+
+type RazorpayFailureResponse = {
+  error?: {
+    description?: string;
+  };
+};
+
+type RazorpayOptions = {
+  key: string;
+  amount: number;
+  currency: string;
+  name: string;
+  description?: string;
+  order_id: string;
+  prefill?: {
+    name?: string;
+    email?: string;
+    contact?: string;
+  };
+  theme?: {
+    color?: string;
+  };
+  handler: (response: RazorpaySuccessResponse) => void | Promise<void>;
+  modal?: {
+    ondismiss?: () => void;
+  };
+};
+
+type RazorpayInstance = {
+  open: () => void;
+  on: (
+    event: "payment.failed",
+    handler: (response: RazorpayFailureResponse) => void,
+  ) => void;
+};
+
+type CreateSummerSchoolOrderResponse = {
+  requires_payment: boolean;
+  already_registered?: boolean;
+  key_id?: string;
+  order_id?: string;
+  amount?: number;
+  currency?: string;
+  registration_fee?: number;
+  message?: string;
+};
+
+declare global {
+  interface Window {
+    Razorpay?: new (options: RazorpayOptions) => RazorpayInstance;
+  }
+}
+
 function createInitialFormData() {
   return {
     fullName: "",
@@ -50,6 +108,52 @@ function createInitialFormData() {
     batch: "",
     experience: "",
   };
+}
+
+function loadRazorpayScript(): Promise<boolean> {
+  if (typeof window === "undefined") {
+    return Promise.resolve(false);
+  }
+
+  if (window.Razorpay) {
+    return Promise.resolve(true);
+  }
+
+  return new Promise((resolve) => {
+    const existing = document.querySelector(
+      'script[src="https://checkout.razorpay.com/v1/checkout.js"]',
+    );
+
+    if (existing) {
+      existing.addEventListener("load", () => resolve(true), { once: true });
+      existing.addEventListener("error", () => resolve(false), { once: true });
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+}
+
+function getApiMessage(payload: unknown): string {
+  if (!payload || typeof payload !== "object") {
+    return "";
+  }
+
+  const typedPayload = payload as { message?: unknown; error?: unknown };
+  if (typeof typedPayload.message === "string" && typedPayload.message.trim()) {
+    return typedPayload.message.trim();
+  }
+
+  if (typeof typedPayload.error === "string" && typedPayload.error.trim()) {
+    return typedPayload.error.trim();
+  }
+
+  return "";
 }
 
 const SectionCard = ({
@@ -208,54 +312,195 @@ export default function Page() {
     setSubmitMessage("");
     setIsSubmitting(true);
 
-    try {
-      const response = await fetch("/api/summer-school/student-registration", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          fullName: formData.fullName,
-          dob: formData.dob,
-          email: formData.email,
-          grade: formData.grade,
-          school: formData.school,
-          board: formData.board,
-          nationality: formData.nationality,
-          gender: formData.gender,
-          guardianName: formData.guardianName,
-          relationship: formData.relationship,
-          guardianEmail: formData.guardianEmail,
-          guardianPhone: formData.guardianPhone,
-          altPhone: formData.altPhone,
-          batch: formData.batch,
-          experience: formData.experience,
-          guidelinesAccepted,
-          conductAccepted,
-        }),
-      });
+    const registrationPayload = {
+      fullName: formData.fullName,
+      dob: formData.dob,
+      email: formData.email,
+      grade: formData.grade,
+      school: formData.school,
+      board: formData.board,
+      nationality: formData.nationality,
+      gender: formData.gender,
+      guardianName: formData.guardianName,
+      relationship: formData.relationship,
+      guardianEmail: formData.guardianEmail,
+      guardianPhone: formData.guardianPhone,
+      altPhone: formData.altPhone,
+      batch: formData.batch,
+      experience: formData.experience,
+      guidelinesAccepted,
+      conductAccepted,
+    };
 
-      const responsePayload = (await response.json().catch(() => ({}))) as {
-        message?: string;
+    try {
+      const createOrderResponse = await fetch(
+        "/api/summer-school/student-registration/create-order",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: formData.email,
+            nationality: formData.nationality,
+          }),
+        },
+      );
+
+      const createOrderPayload = (await createOrderResponse
+        .json()
+        .catch(() => ({}))) as CreateSummerSchoolOrderResponse & {
+        error?: string;
       };
 
-      if (!response.ok) {
+      if (!createOrderResponse.ok) {
         throw new Error(
-          responsePayload.message || "Unable to submit student registration.",
+          getApiMessage(createOrderPayload)
+            || "Unable to initialize payment for student registration.",
         );
       }
 
-      setSubmitMessage("Application submitted successfully!");
-      setFormData(createInitialFormData());
-      setGuidelinesAccepted(false);
-      setConductAccepted(false);
+      if (createOrderPayload.already_registered) {
+        setSubmitMessage(
+          createOrderPayload.message
+            || "Email already registered for summer school.",
+        );
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (!createOrderPayload.requires_payment) {
+        const response = await fetch("/api/summer-school/student-registration", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(registrationPayload),
+        });
+
+        const responsePayload = await response.json().catch(() => ({}));
+        const responseMessage = getApiMessage(responsePayload);
+
+        if (!response.ok) {
+          throw new Error(
+            responseMessage || "Unable to submit student registration.",
+          );
+        }
+
+        setSubmitMessage(responseMessage || "Application submitted successfully!");
+        setFormData(createInitialFormData());
+        setGuidelinesAccepted(false);
+        setConductAccepted(false);
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (
+        !createOrderPayload.key_id
+        || !createOrderPayload.order_id
+        || !createOrderPayload.amount
+        || !createOrderPayload.currency
+      ) {
+        throw new Error(
+          createOrderPayload.message
+            || "Payment initialization failed. Please try again.",
+        );
+      }
+
+      const loaded = await loadRazorpayScript();
+      if (!loaded || !window.Razorpay) {
+        throw new Error("Unable to load Razorpay checkout. Please try again.");
+      }
+
+      const amountDisplayCurrency =
+        createOrderPayload.currency === "USD" ? "$" : "₹";
+      const amountDisplay =
+        createOrderPayload.registration_fee !== undefined
+          ? `${amountDisplayCurrency}${createOrderPayload.registration_fee}`
+          : `${amountDisplayCurrency}${(
+              createOrderPayload.amount / 100
+            ).toFixed(2)}`;
+
+      const razorpay = new window.Razorpay({
+        key: createOrderPayload.key_id,
+        amount: createOrderPayload.amount,
+        currency: createOrderPayload.currency,
+        name: "BSERC",
+        description: `Summer School Student Registration (${amountDisplay})`,
+        order_id: createOrderPayload.order_id,
+        prefill: {
+          name: formData.fullName,
+          email: formData.email,
+          contact: formData.guardianPhone,
+        },
+        theme: {
+          color: "#f97316",
+        },
+        handler: async (paymentResponse) => {
+          try {
+            const verifyResponse = await fetch(
+              "/api/summer-school/student-registration/verify-payment",
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  ...registrationPayload,
+                  razorpay_order_id: paymentResponse.razorpay_order_id,
+                  razorpay_payment_id: paymentResponse.razorpay_payment_id,
+                  razorpay_signature: paymentResponse.razorpay_signature,
+                }),
+              },
+            );
+
+            const verifyPayload = await verifyResponse.json().catch(() => ({}));
+            const verifyMessage = getApiMessage(verifyPayload);
+
+            if (!verifyResponse.ok) {
+              throw new Error(
+                verifyMessage || "Unable to complete student registration.",
+              );
+            }
+
+            setSubmitMessage(
+              verifyMessage
+                || "Payment successful and student registration completed.",
+            );
+            setFormData(createInitialFormData());
+            setGuidelinesAccepted(false);
+            setConductAccepted(false);
+          } catch (error) {
+            setSubmitError(
+              error instanceof Error && error.message
+                ? error.message
+                : "Unable to complete student registration.",
+            );
+          } finally {
+            setIsSubmitting(false);
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            setIsSubmitting(false);
+          },
+        },
+      });
+
+      razorpay.on("payment.failed", (paymentFailure) => {
+        setSubmitError(
+          paymentFailure.error?.description || "Payment failed. Please try again.",
+        );
+        setIsSubmitting(false);
+      });
+
+      razorpay.open();
     } catch (error) {
       setSubmitError(
         error instanceof Error && error.message
           ? error.message
           : "Unable to submit student registration.",
       );
-    } finally {
       setIsSubmitting(false);
     }
   };
