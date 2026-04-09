@@ -10,7 +10,7 @@ export default function OurMentors() {
       <div className="mx-auto w-full max-w-7xl">
         <UnifiedMentorListing
           badgeLabel="Mentors"
-          title="Our Mentors"
+          title="Active Mentor Network"
           description="Learn from India's leading scientists, engineers, and defence professionals."
           emptyMessage="No active mentors are published yet. Please check back soon."
         />

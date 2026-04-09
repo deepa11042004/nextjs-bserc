@@ -33,7 +33,7 @@ const LateralStatCard: React.FC<StatCardProps> = ({ value, label }) => (
 const Page: React.FC = () => {
   return (
     <section className="w-full py-10 sm:py-16 px-4 bg-black">
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         <h2 className="text-center text-3xl md:text-4xl font-bold text-amber-400 font-serif mb-8">
           Lateral Entry Opportunity
         </h2>
@@ -98,7 +98,7 @@ const Page: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
           <LateralStatCard value="350" label="Total Seats Available" />
-          <LateralStatCard value="No Exam" label="Direct Registration" />
+          <LateralStatCard value="6 Technologies" label="Direct Registration" />
           <LateralStatCard value="45 Days" label="Programme Duration" />
         </div>
 

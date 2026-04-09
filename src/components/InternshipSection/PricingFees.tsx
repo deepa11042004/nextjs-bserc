@@ -44,7 +44,7 @@ const PricingFees: React.FC = () => {
       <div className="max-w-6xl mx-auto">
         {/* Heading */}
         <h2 className=" text-3xl md:text-5xl font-bold text-white font-serif text-center mb-10">
-          Pricing & Fees
+          Registration Fees
         </h2>
 
         {/* Pricing Table */}

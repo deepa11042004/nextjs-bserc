@@ -31,7 +31,7 @@ export default function Navbar() {
     <>
       {/* Header */}
       <header className="w-full bg-black border-b border-white/5 sticky top-0 z-[60] backdrop-blur-md">
-        <nav className="max-w-8xl mx-auto flex items-center justify-between px-4 sm:px-6 h-[70px]">
+        <nav className="max-w-8xl mx-auto flex items-center justify-evenly px-4 sm:px-6 h-[70px]">
           {/* Logo */}
           <Link
             href="/"
@@ -57,7 +57,7 @@ export default function Navbar() {
               <li key={item.label}>
                 <Link
                   href={item.href}
-                  className="hover:text-gray-400  transition-colors uppercase"
+                   className="hover:text-gray-400 uppercase transition-colors"
                 >
                   {item.label}
                 </Link>

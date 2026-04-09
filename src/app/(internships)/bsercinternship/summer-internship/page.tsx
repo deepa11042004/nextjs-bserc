@@ -755,7 +755,7 @@ export default function InternshipApplicationForm() {
             >
               <Upload className="w-6 h-6 text-zinc-400 mb-3 group-hover:text-zinc-200 transition-colors" />
               <p className="text-zinc-400 text-[13px] group-hover:text-zinc-300 transition-colors">
-                Click to upload photo (Max 800KB)
+                Click to upload photo (Max 800KB to 1MB)
               </p>
               <p className="mt-1 text-[11px] text-zinc-500 group-hover:text-zinc-400 transition-colors">
                 Supported: JPG, PNG, WEBP, HEIC, HEIF

@@ -6,9 +6,9 @@ interface StatItem {
 }
 
 const stats: StatItem[] = [
-  { value: "1000+", label: "Internships" },
-  { value: "50+", label: "Partner Labs" },
-  { value: "100+", label: "Mentors" },
+  { value: "1150+", label: "Internship seats" },
+  { value: "350+", label: "Lateral entry seats" },
+  { value: "20+", label: "Mentors" },
   { value: "45 Days", label: "Duration" },
 ];
 
