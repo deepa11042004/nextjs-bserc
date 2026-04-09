@@ -824,14 +824,14 @@ export default function InstitutionalRegistrationPage() {
           </h2>
           <div className="grid md:grid-cols-2 gap-6">
             <PartnershipOptionCard
-              title="Group Enrolment Mode"
+              title="International Partnership"
               description="Register cohorts of students from your institution. BSERC manages batch coordination, learning delivery, and certificate distribution through a designated focal teacher or coordinator."
               idealFor={[
                 "Summer camps, co-curricular programmes",
                 "Skill enhancement initiatives",
               ]}
               feeLabel="Registration Fee"
-              feeAmount="₹ 1,000"
+              feeAmount="$ 500"
             />
 
             <PartnershipOptionCard
