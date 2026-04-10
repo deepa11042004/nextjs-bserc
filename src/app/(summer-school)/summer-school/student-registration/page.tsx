@@ -95,6 +95,7 @@ function createInitialFormData() {
     fullName: "",
     dob: "",
     email: "",
+    altEmail: "",
     grade: "",
     school: "",
     board: "",
@@ -290,6 +291,7 @@ export default function Page() {
       ["fullName", "Full Name"],
       ["dob", "Date of Birth"],
       ["email", "Email Address"],
+      ["altEmail", "Alternative Email Address"],
       ["grade", "Current Class / Grade"],
       ["school", "School / Institution Name"],
       ["board", "Board of Education"],
@@ -316,6 +318,7 @@ export default function Page() {
       fullName: formData.fullName,
       dob: formData.dob,
       email: formData.email,
+      alternativeEmail: formData.altEmail,
       grade: formData.grade,
       school: formData.school,
       board: formData.board,
@@ -584,7 +587,7 @@ export default function Page() {
               onChange={handleInputChange}
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6">
               <InputField
                 label="Date of Birth / जन्म दिनांक"
                 type="date"
@@ -600,6 +603,15 @@ export default function Page() {
                 type="email"
                 name="email"
                 value={formData.email}
+                onChange={handleInputChange}
+              />
+              <InputField
+                label="Alternative Email Address / वैकल्पिक ईमेल पता"
+                placeholder="alternate@domain.com"
+                required
+                type="email"
+                name="altEmail"
+                value={formData.altEmail}
                 onChange={handleInputChange}
               />
             </div>
