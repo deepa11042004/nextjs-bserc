@@ -19,8 +19,6 @@ type ContactQuery = {
   email: string;
   phone: string | null;
   subject: string;
-  message: string;
-  source_path: string | null;
   created_at: string | null;
 };
 
@@ -115,8 +113,6 @@ function mapContactQuery(record: Record<string, unknown>): ContactQuery {
     email: toText(record.email),
     phone: toNullableText(record.phone),
     subject: toText(record.subject || record.subject_name),
-    message: toText(record.message),
-    source_path: toNullableText(record.source_path),
     created_at: toNullableText(record.created_at),
   };
 }
@@ -236,15 +232,13 @@ export default function ContactQueries() {
                     <TableHead className="text-white min-w-[260px]">Email</TableHead>
                     <TableHead className="text-white min-w-[160px]">Phone</TableHead>
                     <TableHead className="text-white min-w-[220px]">Subject</TableHead>
-                    <TableHead className="text-white min-w-[320px]">Message</TableHead>
-                    <TableHead className="text-white min-w-[220px]">Source</TableHead>
                     <TableHead className="text-white min-w-[160px]">Submitted</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {queries.length === 0 ? (
                     <TableRow className="border-zinc-800">
-                      <TableCell colSpan={7} className="text-center text-zinc-400 py-8">
+                      <TableCell colSpan={5} className="text-center text-zinc-400 py-8">
                         No contact queries found.
                       </TableCell>
                     </TableRow>
@@ -262,12 +256,6 @@ export default function ContactQueries() {
                         </TableCell>
                         <TableCell className="align-top text-zinc-300 text-sm">
                           {query.subject || "-"}
-                        </TableCell>
-                        <TableCell className="align-top text-zinc-300 text-sm whitespace-pre-wrap break-words">
-                          {query.message || "-"}
-                        </TableCell>
-                        <TableCell className="align-top text-zinc-400 text-sm">
-                          {query.source_path || "-"}
                         </TableCell>
                         <TableCell className="text-zinc-400 align-top">
                           <div className="flex flex-col text-sm">
