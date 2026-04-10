@@ -86,6 +86,10 @@ function normalizeNationalityForApi(value: string): string {
   return value.trim();
 }
 
+function normalizeCountryForApi(value: string): string {
+  return value.trim();
+}
+
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error && error.message.trim()) {
     return error.message;
@@ -208,6 +212,203 @@ function formatFee(value: number): string {
   return `Rs ${value.toLocaleString("en-IN")}`;
 }
 
+const COUNTRY_OPTIONS = [
+  "Afghanistan",
+  "Albania",
+  "Algeria",
+  "Andorra",
+  "Angola",
+  "Antigua and Barbuda",
+  "Argentina",
+  "Armenia",
+  "Australia",
+  "Austria",
+  "Azerbaijan",
+  "Bahamas",
+  "Bahrain",
+  "Bangladesh",
+  "Barbados",
+  "Belarus",
+  "Belgium",
+  "Belize",
+  "Benin",
+  "Bhutan",
+  "Bolivia",
+  "Bosnia and Herzegovina",
+  "Botswana",
+  "Brazil",
+  "Brunei",
+  "Bulgaria",
+  "Burkina Faso",
+  "Burundi",
+  "Cambodia",
+  "Cameroon",
+  "Canada",
+  "Cape Verde",
+  "Central African Republic",
+  "Chad",
+  "Chile",
+  "China",
+  "Colombia",
+  "Comoros",
+  "Congo",
+  "Costa Rica",
+  "Cote d'Ivoire",
+  "Croatia",
+  "Cuba",
+  "Cyprus",
+  "Czech Republic",
+  "Denmark",
+  "Djibouti",
+  "Dominica",
+  "Dominican Republic",
+  "Ecuador",
+  "Egypt",
+  "El Salvador",
+  "Equatorial Guinea",
+  "Eritrea",
+  "Estonia",
+  "Eswatini",
+  "Ethiopia",
+  "Fiji",
+  "Finland",
+  "France",
+  "Gabon",
+  "Gambia",
+  "Georgia",
+  "Germany",
+  "Ghana",
+  "Greece",
+  "Grenada",
+  "Guatemala",
+  "Guinea",
+  "Guinea-Bissau",
+  "Guyana",
+  "Haiti",
+  "Honduras",
+  "Hungary",
+  "Iceland",
+  "India",
+  "Indonesia",
+  "Iran",
+  "Iraq",
+  "Ireland",
+  "Israel",
+  "Italy",
+  "Jamaica",
+  "Japan",
+  "Jordan",
+  "Kazakhstan",
+  "Kenya",
+  "Kiribati",
+  "Kuwait",
+  "Kyrgyzstan",
+  "Laos",
+  "Latvia",
+  "Lebanon",
+  "Lesotho",
+  "Liberia",
+  "Libya",
+  "Liechtenstein",
+  "Lithuania",
+  "Luxembourg",
+  "Madagascar",
+  "Malawi",
+  "Malaysia",
+  "Maldives",
+  "Mali",
+  "Malta",
+  "Marshall Islands",
+  "Mauritania",
+  "Mauritius",
+  "Mexico",
+  "Micronesia",
+  "Moldova",
+  "Monaco",
+  "Mongolia",
+  "Montenegro",
+  "Morocco",
+  "Mozambique",
+  "Myanmar",
+  "Namibia",
+  "Nauru",
+  "Nepal",
+  "Netherlands",
+  "New Zealand",
+  "Nicaragua",
+  "Niger",
+  "Nigeria",
+  "North Korea",
+  "North Macedonia",
+  "Norway",
+  "Oman",
+  "Pakistan",
+  "Palau",
+  "Panama",
+  "Papua New Guinea",
+  "Paraguay",
+  "Peru",
+  "Philippines",
+  "Poland",
+  "Portugal",
+  "Qatar",
+  "Romania",
+  "Russia",
+  "Rwanda",
+  "Saint Kitts and Nevis",
+  "Saint Lucia",
+  "Saint Vincent and the Grenadines",
+  "Samoa",
+  "San Marino",
+  "Sao Tome and Principe",
+  "Saudi Arabia",
+  "Senegal",
+  "Serbia",
+  "Seychelles",
+  "Sierra Leone",
+  "Singapore",
+  "Slovakia",
+  "Slovenia",
+  "Solomon Islands",
+  "Somalia",
+  "South Africa",
+  "South Korea",
+  "South Sudan",
+  "Spain",
+  "Sri Lanka",
+  "Sudan",
+  "Suriname",
+  "Sweden",
+  "Switzerland",
+  "Syria",
+  "Taiwan",
+  "Tajikistan",
+  "Tanzania",
+  "Thailand",
+  "Timor-Leste",
+  "Togo",
+  "Tonga",
+  "Trinidad and Tobago",
+  "Tunisia",
+  "Turkey",
+  "Turkmenistan",
+  "Tuvalu",
+  "Uganda",
+  "Ukraine",
+  "United Arab Emirates",
+  "United Kingdom",
+  "United States",
+  "Uruguay",
+  "Uzbekistan",
+  "Vanuatu",
+  "Vatican City",
+  "Venezuela",
+  "Vietnam",
+  "Yemen",
+  "Zambia",
+  "Zimbabwe",
+] as const;
+
 // Reusable Input Component
 function FormInput({
   id,
@@ -283,8 +484,9 @@ export default function WorkshopRegistrationPageClient({
 }: {
   workshop: Workshop;
 }) {
-  const certificatePreviewSrc =
-    workshop.certificateUrl || workshop.thumbnailUrl || "/img/page-1.png";
+  // Certificate preview is temporarily disabled.
+  // const certificatePreviewSrc =
+  //   workshop.certificateUrl || workshop.thumbnailUrl || "/img/page-1.png";
 
   const emptyFormData = {
     name: "",
@@ -295,6 +497,7 @@ export default function WorkshopRegistrationPageClient({
     designation: "",
     workshopDate: "",
     nationality: "",
+    country: "",
     content: [] as string[],
     agreeRecord: false,
     agreeTerms: false,
@@ -374,10 +577,24 @@ export default function WorkshopRegistrationPageClient({
     return [`${dateLabel} (${timeLabel})`];
   }, [workshop.workshopDate, workshop.startTime, workshop.endTime]);
 
+  const isOtherNationalitySelected =
+    normalizeNationalityForApi(formData.nationality) === "Others";
+
   // Keep existing form behavior unchanged.
   const handleChange = (e: any) => {
     const { name, value, type, checked } = e.target;
     setSubmitStatus(null);
+
+    if (name === "nationality") {
+      const normalizedNationality = normalizeNationalityForApi(value);
+
+      setFormData((prev) => ({
+        ...prev,
+        nationality: value,
+        country: normalizedNationality === "Others" ? prev.country : "",
+      }));
+      return;
+    }
 
     if (type === "checkbox" && name === "content") {
       setFormData((prev) => ({
@@ -421,6 +638,26 @@ export default function WorkshopRegistrationPageClient({
       return;
     }
 
+    const normalizedNationality = normalizeNationalityForApi(formData.nationality);
+    if (normalizedNationality !== "Indian" && normalizedNationality !== "Others") {
+      setSubmitStatus({
+        type: "error",
+        message: "Please select a valid nationality.",
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
+    const normalizedCountry = normalizeCountryForApi(formData.country);
+    if (normalizedNationality === "Others" && !normalizedCountry) {
+      setSubmitStatus({
+        type: "error",
+        message: "Please select your country.",
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
     const registrationPayload: WorkshopRegistrationPayload = {
       workshop_id: workshop.id,
       full_name: formData.name.trim(),
@@ -429,7 +666,8 @@ export default function WorkshopRegistrationPageClient({
       alternative_email: formData.altEmail.trim(),
       institution: formData.institution.trim(),
       designation: normalizeDesignationForApi(formData.designation),
-      nationality: normalizeNationalityForApi(formData.nationality),
+      nationality: normalizedNationality,
+      country: normalizedNationality === "Others" ? normalizedCountry : null,
       agree_recording: formData.agreeRecord,
       agree_terms: formData.agreeTerms,
     };
@@ -606,13 +844,13 @@ export default function WorkshopRegistrationPageClient({
           </ul>
         </div>
 
+        {/*
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
           <h2 className="text-2xl font-semibold text-blue-400 mb-4 text-center">
             Certificate Preview
           </h2>
 
           <div className="relative w-full md:w-[70%] mx-auto aspect-[4/3] rounded-xl overflow-hidden border border-slate-700">
-            {/* Image */}
             <img
               src={certificatePreviewSrc}
               alt={`${workshop.title || "Workshop"} certificate preview`}
@@ -628,7 +866,6 @@ export default function WorkshopRegistrationPageClient({
             />
           </div>
 
-          {/* Added Description */}
           <div className="mt-4 text-center text-slate-300 text-sm md:text-base leading-relaxed max-w-2xl mx-auto">
             <p className="font-extrabold text-white mb-2">
               Upon completion of the workshop, participants will be certified.
@@ -639,6 +876,7 @@ export default function WorkshopRegistrationPageClient({
             </p>
           </div>
         </div>
+        */}
 
         {/* FORM */}
         <form
@@ -758,23 +996,52 @@ export default function WorkshopRegistrationPageClient({
               </select>
             </div>
 
-            <div>
-              <label className="block text-slate-200 font-medium mb-2">
-                Nationality <span className="text-red-400">*</span>
-              </label>
+            <div
+              className={`grid gap-4 ${
+                isOtherNationalitySelected ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1"
+              }`}
+            >
+              <div>
+                <label className="block text-slate-200 font-medium mb-2">
+                  Nationality <span className="text-red-400">*</span>
+                </label>
 
-              <select
-                id="nationality"
-                name="nationality"
-                value={formData.nationality}
-                onChange={handleChange}
-                required
-                className="w-full px-4 py-3 rounded-lg bg-slate-800 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Select your nationality</option>
-                <option value="Indian">Indian</option>
-                <option value="Others">Others</option>
-              </select>
+                <select
+                  id="nationality"
+                  name="nationality"
+                  value={formData.nationality}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-4 py-3 rounded-lg bg-slate-800 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select your nationality</option>
+                  <option value="Indian">Indian</option>
+                  <option value="Others">Others</option>
+                </select>
+              </div>
+
+              {isOtherNationalitySelected && (
+                <div>
+                  <label className="block text-slate-200 font-medium mb-2">
+                    Country <span className="text-red-400">*</span>
+                  </label>
+                  <select
+                    id="country"
+                    name="country"
+                    value={formData.country}
+                    onChange={handleChange}
+                    required={isOtherNationalitySelected}
+                    className="w-full px-4 py-3 rounded-lg bg-slate-800 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select your country</option>
+                    {COUNTRY_OPTIONS.map((country) => (
+                      <option key={country} value={country}>
+                        {country}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
           </div>
 

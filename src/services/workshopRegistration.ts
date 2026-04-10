@@ -50,6 +50,7 @@ export interface WorkshopRegistrationPayload {
   institution: string;
   designation: string;
   nationality: string;
+  country?: string | null;
   agree_recording: boolean;
   agree_terms: boolean;
 }

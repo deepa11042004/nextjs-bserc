@@ -252,6 +252,72 @@ function normalizeWorkshop(
   };
 }
 
+function parseWorkshopDate(value: string): Date | null {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const isoDateMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (isoDateMatch) {
+    const year = Number(isoDateMatch[1]);
+    const month = Number(isoDateMatch[2]);
+    const day = Number(isoDateMatch[3]);
+
+    const parsed = new Date(year, month - 1, day);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed;
+    }
+  }
+
+  const parsed = new Date(trimmed);
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+
+  return parsed;
+}
+
+function sortWorkshopsByNearestDate(workshops: Workshop[]): Workshop[] {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  return [...workshops].sort((left, right) => {
+    const leftDate = parseWorkshopDate(left.workshopDate);
+    const rightDate = parseWorkshopDate(right.workshopDate);
+
+    if (!leftDate && !rightDate) {
+      return 0;
+    }
+
+    if (!leftDate) {
+      return 1;
+    }
+
+    if (!rightDate) {
+      return -1;
+    }
+
+    const leftIsUpcoming = leftDate.getTime() >= today.getTime();
+    const rightIsUpcoming = rightDate.getTime() >= today.getTime();
+
+    if (leftIsUpcoming && rightIsUpcoming) {
+      return leftDate.getTime() - rightDate.getTime();
+    }
+
+    if (leftIsUpcoming) {
+      return -1;
+    }
+
+    if (rightIsUpcoming) {
+      return 1;
+    }
+
+    // For past workshops, keep the most recent ones first.
+    return rightDate.getTime() - leftDate.getTime();
+  });
+}
+
 async function parseResponsePayload(response: Response): Promise<unknown> {
   const text = await response.text();
   if (!text) {
@@ -301,11 +367,13 @@ export async function fetchWorkshops(options?: {
           continue;
         }
 
+        const sorted = sortWorkshopsByNearestDate(normalized);
+
         if (typeof options?.limit === "number") {
-          return normalized.slice(0, options.limit);
+          return sorted.slice(0, options.limit);
         }
 
-        return normalized;
+        return sorted;
       } catch {
         continue;
       }

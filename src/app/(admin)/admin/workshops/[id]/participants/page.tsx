@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
-import { ArrowLeft, Loader2, Users } from "lucide-react";
+import { ArrowLeft, Download, Loader2, Users } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/Button";
@@ -49,6 +49,7 @@ export default function WorkshopParticipantsPage() {
   const [workshopTitle, setWorkshopTitle] = useState("Workshop Participants");
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -112,6 +113,73 @@ export default function WorkshopParticipantsPage() {
 
   const totalParticipants = useMemo(() => participants.length, [participants]);
 
+  const handleExport = async () => {
+    if (isExporting || isLoading) {
+      return;
+    }
+
+    if (participants.length === 0) {
+      setError("No participants available to export.");
+      return;
+    }
+
+    setError("");
+    setIsExporting(true);
+
+    try {
+      const XLSX = await import("xlsx");
+
+      const rows = participants.map((participant) => ({
+        id: participant.id,
+        full_name: participant.full_name,
+        email: participant.email,
+        contact_number: participant.contact_number,
+        institution: participant.institution,
+        designation: participant.designation,
+      }));
+
+      const headers = [
+        "id",
+        "full_name",
+        "email",
+        "contact_number",
+        "institution",
+        "designation",
+      ];
+
+      const worksheet = XLSX.utils.json_to_sheet(rows, { header: headers });
+      worksheet["!cols"] = [
+        { wch: 10 },
+        { wch: 26 },
+        { wch: 34 },
+        { wch: 18 },
+        { wch: 30 },
+        { wch: 20 },
+      ];
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Participants");
+
+      const now = new Date();
+      const safeWorkshopId = workshopId || "workshop";
+      const filename = `workshop-${safeWorkshopId}-participants-${now.getFullYear()}-${String(
+        now.getMonth() + 1,
+      ).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}_${String(
+        now.getHours(),
+      ).padStart(2, "0")}-${String(now.getMinutes()).padStart(2, "0")}.xlsx`;
+
+      XLSX.writeFile(workbook, filename);
+    } catch (err) {
+      setError(
+        err instanceof Error && err.message
+          ? err.message
+          : "Unable to export participants.",
+      );
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen container mx-auto max-w-8xl text-zinc-100">
       <div className="flex flex-col gap-4 pt-3 pb-5 mb-6 border-b border-zinc-800 sm:flex-row sm:items-center sm:justify-between">
@@ -139,9 +207,30 @@ export default function WorkshopParticipantsPage() {
               <Users className="h-4 w-4 text-blue-400" />
               Enrolled Users
             </CardTitle>
-            <span className="text-sm text-zinc-400">
-              Total: {totalParticipants}
-            </span>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleExport}
+                disabled={isLoading || isExporting || participants.length === 0}
+                className="text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100"
+              >
+                {isExporting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Exporting...
+                  </>
+                ) : (
+                  <>
+                    <Download className="mr-2 h-4 w-4" />
+                    Export
+                  </>
+                )}
+              </Button>
+              <span className="text-sm text-zinc-400">
+                Total: {totalParticipants}
+              </span>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
