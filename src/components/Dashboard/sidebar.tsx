@@ -192,32 +192,8 @@ export default function Sidebar() {
                     Mentor Requests
                   </NavItem>
                   <NavItem
-                    href="/admin/faculty/staff-requests"
-                    icon={MessagesSquare}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    isActive={normalizedPath === "/admin/faculty/staff-requests"}
-                  >
-                    Staff Requests
-                  </NavItem>
-                  <NavItem
-                    href="/admin/faculty/speaker-requests"
-                    icon={MessagesSquare}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    isActive={normalizedPath === "/admin/faculty/speaker-requests"}
-                  >
-                    Speaker Requests
-                  </NavItem>
-                  <NavItem
-                    href="/admin/faculty/fdp-requests"
-                    icon={Video}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    isActive={normalizedPath === "/admin/faculty/fdp-requests"}
-                  >
-                    FDP Requests
-                  </NavItem>
-                  <NavItem
                     href="/admin/faculty/internship-applications"
-                    icon={Video}
+                    icon={GraduationCap}
                     onClick={() => setIsMobileMenuOpen(false)}
                     isActive={normalizedPath === "/admin/faculty/internship-applications"}
                   >
