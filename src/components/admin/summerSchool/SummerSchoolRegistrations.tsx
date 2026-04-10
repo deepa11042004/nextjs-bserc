@@ -41,6 +41,22 @@ type SummerSchoolStudentRegistration = {
   created_at: string | null;
 };
 
+type SummerSchoolRegistrationSettingsResponse = {
+  indian_fee_amount?: number;
+  other_fee_amount?: number;
+  batch_options?: string[];
+  message?: string;
+  error?: string;
+};
+
+type SettingsStatus = {
+  type: "success" | "error";
+  message: string;
+};
+
+const DEFAULT_BATCH_OPTIONS_TEXT =
+  "Batch 1: 15th May - 30th June\nBatch 2: 19th June - 30th July";
+
 function getApiMessage(payload: unknown): string {
   if (!payload || typeof payload !== "object") {
     return "";
@@ -280,6 +296,14 @@ export default function SummerSchoolRegistrations() {
   const [selectedClassFilter, setSelectedClassFilter] = useState("");
   const [selectedNationalityFilter, setSelectedNationalityFilter] = useState("");
   const [error, setError] = useState("");
+  const [indianFeeInput, setIndianFeeInput] = useState("1750");
+  const [otherFeeInput, setOtherFeeInput] = useState("150");
+  const [batchOptionsInput, setBatchOptionsInput] = useState(
+    DEFAULT_BATCH_OPTIONS_TEXT,
+  );
+  const [isSettingsLoading, setIsSettingsLoading] = useState(true);
+  const [isSettingsSaving, setIsSettingsSaving] = useState(false);
+  const [settingsStatus, setSettingsStatus] = useState<SettingsStatus | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -328,7 +352,64 @@ export default function SummerSchoolRegistrations() {
       }
     };
 
+    const loadSettings = async () => {
+      setIsSettingsLoading(true);
+
+      try {
+        const response = await fetch("/api/summer-school/student-registration/settings", {
+          method: "GET",
+          cache: "no-store",
+        });
+
+        const payload =
+          (await response.json().catch(() => ({}))) as SummerSchoolRegistrationSettingsResponse;
+
+        if (!response.ok) {
+          throw new Error(
+            getApiMessage(payload)
+              || "Unable to load summer school registration settings.",
+          );
+        }
+
+        if (!isMounted) {
+          return;
+        }
+
+        setIndianFeeInput(String(payload.indian_fee_amount ?? 0));
+        setOtherFeeInput(String(payload.other_fee_amount ?? 0));
+
+        const batchOptions = Array.isArray(payload.batch_options)
+          ? payload.batch_options
+              .map((option) => option.trim())
+              .filter(Boolean)
+          : [];
+
+        setBatchOptionsInput(
+          batchOptions.length > 0
+            ? batchOptions.join("\n")
+            : DEFAULT_BATCH_OPTIONS_TEXT,
+        );
+      } catch (err) {
+        if (!isMounted) {
+          return;
+        }
+
+        setSettingsStatus({
+          type: "error",
+          message:
+            err instanceof Error && err.message
+              ? err.message
+              : "Unable to load summer school registration settings.",
+        });
+      } finally {
+        if (isMounted) {
+          setIsSettingsLoading(false);
+        }
+      }
+    };
+
     loadRegistrations();
+    loadSettings();
 
     return () => {
       isMounted = false;
@@ -433,6 +514,89 @@ export default function SummerSchoolRegistrations() {
     }
   };
 
+  const handleSaveSettings = async () => {
+    const indianFeeAmount = Number(indianFeeInput);
+    const otherFeeAmount = Number(otherFeeInput);
+    const batchOptions = batchOptionsInput
+      .split(/\r?\n/)
+      .map((option) => option.trim())
+      .filter(Boolean);
+
+    if (
+      !Number.isFinite(indianFeeAmount)
+      || indianFeeAmount < 0
+      || !Number.isFinite(otherFeeAmount)
+      || otherFeeAmount < 0
+    ) {
+      setSettingsStatus({
+        type: "error",
+        message: "Please enter valid non-negative fee values for both nationality groups.",
+      });
+      return;
+    }
+
+    if (batchOptions.length === 0) {
+      setSettingsStatus({
+        type: "error",
+        message: "Please add at least one batch option.",
+      });
+      return;
+    }
+
+    setIsSettingsSaving(true);
+    setSettingsStatus(null);
+
+    try {
+      const response = await fetch("/api/summer-school/student-registration/settings", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          indian_fee_amount: indianFeeAmount,
+          other_fee_amount: otherFeeAmount,
+          batch_options: batchOptions,
+        }),
+        cache: "no-store",
+      });
+
+      const payload =
+        (await response.json().catch(() => ({}))) as SummerSchoolRegistrationSettingsResponse;
+
+      if (!response.ok) {
+        throw new Error(
+          getApiMessage(payload)
+            || "Unable to update summer school registration settings.",
+        );
+      }
+
+      setIndianFeeInput(String(payload.indian_fee_amount ?? indianFeeAmount));
+      setOtherFeeInput(String(payload.other_fee_amount ?? otherFeeAmount));
+
+      const updatedBatchOptions = Array.isArray(payload.batch_options)
+        ? payload.batch_options
+            .map((option) => option.trim())
+            .filter(Boolean)
+        : batchOptions;
+
+      setBatchOptionsInput(updatedBatchOptions.join("\n"));
+      setSettingsStatus({
+        type: "success",
+        message: payload.message || "Summer school registration settings updated successfully.",
+      });
+    } catch (err) {
+      setSettingsStatus({
+        type: "error",
+        message:
+          err instanceof Error && err.message
+            ? err.message
+            : "Unable to update summer school registration settings.",
+      });
+    } finally {
+      setIsSettingsSaving(false);
+    }
+  };
+
   return (
     <div className="min-h-screen container mx-auto max-w-8xl text-zinc-100">
       <div className="flex flex-col gap-4 pt-3 pb-5 mb-6 border-b border-zinc-800 sm:flex-row sm:items-center sm:justify-between">
@@ -445,6 +609,89 @@ export default function SummerSchoolRegistrations() {
           </p>
         </div>
       </div>
+
+      <Card className="mb-6 bg-zinc-900 border-zinc-800">
+        <CardHeader>
+          <CardTitle className="text-zinc-100 text-lg flex items-center gap-2">
+            <NotebookPen className="h-4 w-4 text-cyan-400" />
+            Registration Settings
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {settingsStatus && (
+            <div
+              className={`mb-4 rounded-md border px-3 py-2 text-sm ${
+                settingsStatus.type === "success"
+                  ? "border-emerald-500/40 bg-emerald-950/30 text-emerald-200"
+                  : "border-rose-500/40 bg-rose-950/30 text-rose-200"
+              }`}
+            >
+              {settingsStatus.message}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <label className="text-sm text-zinc-300 font-medium">
+                Indian Fee (INR)
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={indianFeeInput}
+                onChange={(event) => setIndianFeeInput(event.target.value)}
+                disabled={isSettingsLoading || isSettingsSaving}
+                className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100 outline-none focus:border-cyan-500"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm text-zinc-300 font-medium">
+                Others Fee (USD)
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={otherFeeInput}
+                onChange={(event) => setOtherFeeInput(event.target.value)}
+                disabled={isSettingsLoading || isSettingsSaving}
+                className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100 outline-none focus:border-cyan-500"
+              />
+            </div>
+          </div>
+
+          <div className="mt-4 space-y-2">
+            <label className="text-sm text-zinc-300 font-medium">
+              Batch Options (one batch per line)
+            </label>
+            <textarea
+              rows={4}
+              value={batchOptionsInput}
+              onChange={(event) => setBatchOptionsInput(event.target.value)}
+              disabled={isSettingsLoading || isSettingsSaving}
+              className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100 outline-none focus:border-cyan-500"
+            />
+          </div>
+
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs text-zinc-400">
+              {isSettingsLoading
+                ? "Loading current registration settings..."
+                : "These fee and batch settings are used dynamically in the Summer School student registration form."}
+            </p>
+            <button
+              type="button"
+              onClick={handleSaveSettings}
+              disabled={isSettingsLoading || isSettingsSaving}
+              className="rounded-full bg-cyan-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-300"
+            >
+              {isSettingsSaving ? "Saving..." : "Save Settings"}
+            </button>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card className="bg-zinc-900 border-zinc-800">
         <CardHeader>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, FormEvent } from "react";
+import React, { useEffect, useState, FormEvent } from "react";
 import { Check, ChevronDown, ArrowRight } from "lucide-react";
 import FormResponseOverlay from "@/components/ui/FormResponseOverlay";
 
@@ -83,6 +83,19 @@ type CreateSummerSchoolOrderResponse = {
   registration_fee?: number;
   message?: string;
 };
+
+type SummerSchoolSettingsResponse = {
+  indian_fee_amount?: number;
+  other_fee_amount?: number;
+  batch_options?: string[];
+  message?: string;
+  error?: string;
+};
+
+const DEFAULT_BATCH_OPTIONS = [
+  "Batch 1: 15th May - 30th June",
+  "Batch 2: 19th June - 30th July",
+];
 
 declare global {
   interface Window {
@@ -246,6 +259,7 @@ export default function Page() {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [submitError, setSubmitError] = useState<string>("");
   const [submitMessage, setSubmitMessage] = useState<string>("");
+  const [batchOptions, setBatchOptions] = useState<string[]>(DEFAULT_BATCH_OPTIONS);
   
   // Form state
   const [formData, setFormData] = useState(createInitialFormData());
@@ -279,6 +293,54 @@ export default function Page() {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadRegistrationSettings = async () => {
+      try {
+        const response = await fetch(
+          "/api/summer-school/student-registration/settings",
+          {
+            method: "GET",
+            cache: "no-store",
+          },
+        );
+
+        const payload =
+          (await response.json().catch(() => ({}))) as SummerSchoolSettingsResponse;
+
+        if (!response.ok || !isMounted) {
+          return;
+        }
+
+        const dynamicBatchOptions = Array.isArray(payload.batch_options)
+          ? payload.batch_options
+              .map((option) => option.trim())
+              .filter(Boolean)
+          : [];
+
+        if (dynamicBatchOptions.length === 0) {
+          return;
+        }
+
+        setBatchOptions(dynamicBatchOptions);
+        setFormData((prev) =>
+          prev.batch && !dynamicBatchOptions.includes(prev.batch)
+            ? { ...prev, batch: "" }
+            : prev,
+        );
+      } catch {
+        // Keep defaults if settings endpoint is unavailable.
+      }
+    };
+
+    void loadRegistrationSettings();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -513,7 +575,6 @@ export default function Page() {
   const nationalityOptions = ["Indian", "Other"];
   const genderOptions = ["Male", "Female", "Other", "Prefer not to say"];
   const relationshipOptions = ["Father", "Mother", "Guardian", "Other"];
-  const batchOptions = ["Batch 1: 15th May - 30th June", "Batch 2: 19th June - 30th July"];
 
   const activeResponse = submitError
     ? { type: "error" as const, message: submitError }

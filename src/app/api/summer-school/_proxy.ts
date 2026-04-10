@@ -8,8 +8,9 @@ const DEV_FALLBACK_BACKEND_URLS = [
 type SummerSchoolEndpoint =
   | "/api/summer-school/student-registration"
   | "/api/summer-school/student-registration/create-order"
-  | "/api/summer-school/student-registration/verify-payment";
-type SummerSchoolHttpMethod = "GET" | "POST";
+  | "/api/summer-school/student-registration/verify-payment"
+  | "/api/summer-school/student-registration/settings";
+type SummerSchoolHttpMethod = "GET" | "POST" | "PUT";
 
 function isProductionRuntime(): boolean {
   return process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
