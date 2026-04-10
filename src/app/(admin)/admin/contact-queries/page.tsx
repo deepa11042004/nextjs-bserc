@@ -1,16 +1,7 @@
- 
+import ContactQueries from "@/components/admin/contact/ContactQueries";
 
-import React from 'react'
-
-const page = () => {
-  return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-semibold text-white">all contact queries</h1>
-      
-    </div>
-  )
+export default function ContactQueriesPage() {
+  return <ContactQueries />;
 }
-
-export default page
 
 

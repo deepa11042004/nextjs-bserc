@@ -1,12 +1,5 @@
-import ContactPage from '@/components/form/ContactPage'
-import React from 'react'
+import ContactPage from "@/components/form/ContactPage";
 
-const page = () => {
-  return (
-    <>
-    <ContactPage/>
-    </>
-  )
+export default function InternshipContactPage() {
+  return <ContactPage />;
 }
-
-export default page

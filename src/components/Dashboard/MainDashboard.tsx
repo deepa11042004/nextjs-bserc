@@ -58,7 +58,8 @@ interface Query {
   from: string;
   email: string;
   subject: string;
-  status: "new" | "read";
+  createdAt: string | null;
+  createdAtUnix: number | null;
 }
 
 type WorkshopListItem = {
@@ -75,43 +76,16 @@ type ParticipantApiItem = {
   created_at_unix?: number | string | null;
 };
 
-const recentQueries: Query[] = [
-  {
-    id: "1",
-    from: "Dr Smita Rani Parija",
-    email: "sparija@cgu-odisha.ac.in",
-    subject: "I am associate Profe...",
-    status: "new",
-  },
-  {
-    id: "2",
-    from: "ABHISHEK DOBBALA",
-    email: "simondobbala@gmail.com",
-    subject: "Membership form",
-    status: "new",
-  },
-  {
-    id: "3",
-    from: "Ravina kumari",
-    email: "ravinachoudhary0027@gmail.com",
-    subject: "India Space Educatio...",
-    status: "read",
-  },
-  {
-    id: "4",
-    from: "Ravina kumari",
-    email: "ravinachoudhary0027@gmail.com",
-    subject: "India Space Educatio...",
-    status: "new",
-  },
-  {
-    id: "5",
-    from: "Dr. Sameer Mahapatra",
-    email: "mahapatrosameer@gmail.com",
-    subject: "VISIT REQUEST TO BSE...",
-    status: "new",
-  },
-];
+type ContactQueryApiItem = {
+  id?: number | string;
+  full_name?: string;
+  organization_name?: string;
+  email?: string;
+  subject?: string;
+  subject_name?: string;
+  created_at?: string | null;
+  created_at_unix?: number | string | null;
+};
 
 function extractWorkshopItems(payload: unknown): WorkshopListItem[] {
   if (Array.isArray(payload)) {
@@ -160,6 +134,68 @@ function extractParticipants(payload: unknown): ParticipantApiItem[] {
   return [];
 }
 
+function extractContactQueries(payload: unknown): ContactQueryApiItem[] {
+  if (Array.isArray(payload)) {
+    return payload as ContactQueryApiItem[];
+  }
+
+  if (payload && typeof payload === "object") {
+    const record = payload as Record<string, unknown>;
+
+    if (Array.isArray(record.data)) {
+      return record.data as ContactQueryApiItem[];
+    }
+
+    if (Array.isArray(record.results)) {
+      return record.results as ContactQueryApiItem[];
+    }
+  }
+
+  return [];
+}
+
+function parseTimestamp(value?: string | null): Date | null {
+  if (!value) {
+    return null;
+  }
+
+  const text = String(value).trim();
+  if (!text) {
+    return null;
+  }
+
+  const normalized = text.includes(' ') && !text.includes('T')
+    ? text.replace(' ', 'T')
+    : text;
+
+  // If timezone is missing, treat DB-like datetime strings as UTC to avoid local offset drift.
+  const hasTimezone = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(normalized);
+  if (!hasTimezone) {
+    const match = normalized.match(
+      /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?(?:\.\d+)?$/,
+    );
+
+    if (match) {
+      const [, year, month, day, hour, minute, second = "0"] = match;
+      const utcMs = Date.UTC(
+        Number(year),
+        Number(month) - 1,
+        Number(day),
+        Number(hour),
+        Number(minute),
+        Number(second),
+      );
+
+      if (Number.isFinite(utcMs)) {
+        return new Date(utcMs);
+      }
+    }
+  }
+
+  const parsed = new Date(normalized);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
 function formatRelativeTime(
   value?: string | null,
   referenceMs = Date.now(),
@@ -170,9 +206,9 @@ function formatRelativeTime(
   const unixSeconds = Number(createdAtUnix);
   if (Number.isFinite(unixSeconds) && unixSeconds > 0) {
     timestampMs = unixSeconds * 1000;
-  } else if (value) {
-    const parsed = new Date(value);
-    if (!Number.isNaN(parsed.getTime())) {
+  } else {
+    const parsed = parseTimestamp(value);
+    if (parsed) {
       timestampMs = parsed.getTime();
     }
   }
@@ -192,12 +228,12 @@ function formatRelativeTime(
 
   const diffMinutes = Math.floor(diffMs / 60_000);
   if (diffMinutes < 60) {
-    return `${diffMinutes} min ago`;
+    return `${diffMinutes} minute${diffMinutes === 1 ? "" : "s"} ago`;
   }
 
   const diffHours = Math.floor(diffMinutes / 60);
   if (diffHours < 24) {
-    return `${diffHours} hr ago`;
+    return `${diffHours} hour${diffHours === 1 ? "" : "s"} ago`;
   }
 
   const diffDays = Math.floor(diffHours / 24);
@@ -239,6 +275,31 @@ function toParticipantRow(item: ParticipantApiItem): ParticipantRow {
         ? createdAtUnix
         : null,
     avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&size=32`,
+  };
+}
+
+function toQueryRow(item: ContactQueryApiItem): Query {
+  const idAsNumber =
+    typeof item.id === "number"
+      ? item.id
+      : Number.parseInt(String(item.id ?? ""), 10);
+
+  const id = Number.isInteger(idAsNumber) && idAsNumber > 0 ? idAsNumber : 0;
+  const from = (item.full_name || item.organization_name || "").trim() || "Unknown";
+  const email = (item.email || "").trim() || "N/A";
+  const subject = (item.subject || item.subject_name || "").trim() || "No subject";
+  const createdAtUnix = Number(item.created_at_unix);
+
+  return {
+    id: String(id || Math.random()),
+    from,
+    email,
+    subject,
+    createdAt: item.created_at || null,
+    createdAtUnix:
+      Number.isFinite(createdAtUnix) && createdAtUnix > 0
+        ? createdAtUnix
+        : null,
   };
 }
 
@@ -362,9 +423,10 @@ const ParticipantsTable: React.FC<{
   );
 };
 
-const QueriesTable: React.FC<{ queries: Query[]; isLoading?: boolean }> = ({
+const QueriesTable: React.FC<{ queries: Query[]; isLoading?: boolean; nowMs?: number }> = ({
   queries,
   isLoading = false,
+  nowMs,
 }) => {
   if (isLoading) {
     return (
@@ -380,40 +442,39 @@ const QueriesTable: React.FC<{ queries: Query[]; isLoading?: boolean }> = ({
         <TableRow className="border-zinc-800">
           <TableHead className="w-[180px] text-zinc-400">From</TableHead>
           <TableHead className="text-zinc-400">Subject</TableHead>
-          <TableHead className="text-right text-zinc-400">Status</TableHead>
+          <TableHead className="text-right text-zinc-400">Date</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
-        {queries.map((query) => (
-          <TableRow
-            key={query.id}
-            className="border-zinc-800 hover:bg-zinc-900/50"
-          >
-            <TableCell>
-              <div className="flex flex-col">
-                <span className="font-medium text-sm text-zinc-100">
-                  {query.from}
-                </span>
-                <span className="text-xs text-zinc-500">{query.email}</span>
-              </div>
-            </TableCell>
-            <TableCell className="text-sm text-zinc-300">
-              {query.subject}
-            </TableCell>
-            <TableCell className="text-right">
-              <Badge
-                variant={query.status === "new" ? "destructive" : "secondary"}
-                className={
-                  query.status === "read"
-                    ? "bg-blue-950 text-blue-200 border border-blue-900 hover:bg-blue-950"
-                    : "bg-red-950 text-red-200 border border-red-900 hover:bg-red-950"
-                }
-              >
-                {query.status === "new" ? "New" : "Read"}
-              </Badge>
+        {queries.length === 0 ? (
+          <TableRow className="border-zinc-800">
+            <TableCell colSpan={3} className="py-8 text-center text-zinc-500">
+              No recent queries found.
             </TableCell>
           </TableRow>
-        ))}
+        ) : (
+          queries.map((query) => (
+            <TableRow
+              key={query.id}
+              className="border-zinc-800 hover:bg-zinc-900/50"
+            >
+              <TableCell>
+                <div className="flex flex-col">
+                  <span className="font-medium text-sm text-zinc-100">
+                    {query.from}
+                  </span>
+                  <span className="text-xs text-zinc-500">{query.email}</span>
+                </div>
+              </TableCell>
+              <TableCell className="text-sm text-zinc-300">
+                {query.subject}
+              </TableCell>
+              <TableCell className="text-right text-sm text-zinc-400">
+                {formatRelativeTime(query.createdAt, nowMs, query.createdAtUnix)}
+              </TableCell>
+            </TableRow>
+          ))
+        )}
       </TableBody>
     </Table>
   );
@@ -422,8 +483,12 @@ const QueriesTable: React.FC<{ queries: Query[]; isLoading?: boolean }> = ({
 export default function MainDashboard() {
   const [workshopCount, setWorkshopCount] = useState(0);
   const [participants, setParticipants] = useState<ParticipantRow[]>([]);
+  const [recentQueries, setRecentQueries] = useState<Query[]>([]);
+  const [contactQueriesCount, setContactQueriesCount] = useState(0);
   const [isStatsLoading, setIsStatsLoading] = useState(true);
   const [isParticipantsLoading, setIsParticipantsLoading] = useState(true);
+  const [isContactQueriesLoading, setIsContactQueriesLoading] = useState(true);
+  const [isRecentQueriesLoading, setIsRecentQueriesLoading] = useState(true);
   const [relativeTimeTick, setRelativeTimeTick] = useState(() => Date.now());
 
   useEffect(() => {
@@ -503,6 +568,50 @@ export default function MainDashboard() {
     loadWorkshops();
     loadParticipants();
 
+    const loadContactQueries = async () => {
+      setIsContactQueriesLoading(true);
+      setIsRecentQueriesLoading(true);
+
+      try {
+        const response = await fetch("/api/contact-queries", {
+          method: "GET",
+          cache: "no-store",
+        });
+
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error("Unable to fetch contact queries");
+        }
+
+        if (!isMounted) {
+          return;
+        }
+
+        const data = extractContactQueries(payload)
+          .map(toQueryRow)
+          .sort((a, b) => {
+            const aMs = a.createdAtUnix ? a.createdAtUnix * 1000 : parseTimestamp(a.createdAt)?.getTime() || 0;
+            const bMs = b.createdAtUnix ? b.createdAtUnix * 1000 : parseTimestamp(b.createdAt)?.getTime() || 0;
+            return bMs - aMs;
+          });
+
+        setContactQueriesCount(data.length);
+        setRecentQueries(data.slice(0, 5));
+      } catch {
+        if (isMounted) {
+          setContactQueriesCount(0);
+          setRecentQueries([]);
+        }
+      } finally {
+        if (isMounted) {
+          setIsContactQueriesLoading(false);
+          setIsRecentQueriesLoading(false);
+        }
+      }
+    };
+
+    loadContactQueries();
+
     return () => {
       isMounted = false;
     };
@@ -534,9 +643,10 @@ export default function MainDashboard() {
       },
       {
         title: "Contact Queries",
-        value: 20,
-        subtitle: "13 Unread",
-        highlight: "13 Unread",
+        value: isContactQueriesLoading ? "..." : contactQueriesCount,
+        subtitle: isContactQueriesLoading
+          ? "Loading queries..."
+          : `${contactQueriesCount} Total`,
         icon: <Mail className="h-5 w-5" />,
         gradient: "from-amber-600 to-amber-400",
         link: "/admin/contact-queries",
@@ -552,7 +662,7 @@ export default function MainDashboard() {
         linkText: "Manage Admins",
       },
     ],
-    [isParticipantsLoading, isStatsLoading, participants.length, workshopCount],
+    [isParticipantsLoading, isStatsLoading, isContactQueriesLoading, participants.length, workshopCount, contactQueriesCount],
   );
 
   const recentParticipants = useMemo(() => participants.slice(0, 5), [participants]);
@@ -621,7 +731,11 @@ export default function MainDashboard() {
           </CardHeader>
           <CardContent className="flex-1 pb-0 overflow-hidden">
             <div className="overflow-x-auto -mx-6 px-6">
-              <QueriesTable queries={recentQueries} isLoading={false} />
+              <QueriesTable
+                queries={recentQueries}
+                isLoading={isRecentQueriesLoading}
+                nowMs={relativeTimeTick}
+              />
             </div>
           </CardContent>
         </Card>

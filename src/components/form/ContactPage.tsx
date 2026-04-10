@@ -3,6 +3,43 @@
 import { useState, FormEvent } from "react";
 import { Check, ArrowRight, AlertCircle } from "lucide-react";
 
+function getApiMessage(payload: unknown): string {
+  if (!payload || typeof payload !== "object") {
+    return "";
+  }
+
+  const typedPayload = payload as {
+    message?: unknown;
+    error?: unknown;
+  };
+
+  if (typeof typedPayload.message === "string" && typedPayload.message.trim()) {
+    return typedPayload.message.trim();
+  }
+
+  if (typeof typedPayload.error === "string" && typedPayload.error.trim()) {
+    return typedPayload.error.trim();
+  }
+
+  return "";
+}
+
+type ContactFormData = {
+  organization_name: string;
+  email: string;
+  phone: string;
+  subject_name: string;
+  message: string;
+};
+
+const INITIAL_FORM_DATA: ContactFormData = {
+  organization_name: "",
+  email: "",
+  phone: "",
+  subject_name: "",
+  message: "",
+};
+
 // ─────────────────────────────────────────────────────────────
 // UI Components - Themed for Def-Space Design System
 // ─────────────────────────────────────────────────────────────
@@ -218,28 +255,32 @@ const SectionCard = ({
 // ─────────────────────────────────────────────────────────────
 
 export default function ContactPage() {
-  const [formData, setFormData] = useState({
-    organization_name: "",
-    contact_person: "",
-    email: "",
-    phone: "",
-    subject_name: "",
-    message: "",
-  });
+  const [formData, setFormData] = useState(INITIAL_FORM_DATA);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitErrorMessage, setSubmitErrorMessage] = useState("");
+  const [lastSubmittedEmail, setLastSubmittedEmail] = useState("");
   const [submitStatus, setSubmitStatus] = useState<
     "idle" | "success" | "error" | null
   >(null);
 
   const handleChange = (name: string, value: string) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
+
     if (errors[name]) {
       setErrors((prev) => {
         const n = { ...prev };
         delete n[name];
         return n;
       });
+    }
+
+    if (submitStatus === "error" && submitErrorMessage) {
+      setSubmitErrorMessage("");
+    }
+
+    if (submitStatus === "success") {
+      setSubmitStatus("idle");
     }
   };
 
@@ -260,38 +301,62 @@ export default function ContactPage() {
     return newErrors;
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    
+
     const newErrors = validateForm();
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
+      setSubmitErrorMessage("Please fix the highlighted errors before submitting.");
       setSubmitStatus("error");
       return;
     }
 
     setIsSubmitting(true);
     setSubmitStatus(null);
+    setSubmitErrorMessage("");
     setErrors({});
 
-    // Mock API call
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      const response = await fetch("/api/contact-queries", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          organization_name: formData.organization_name.trim(),
+          email: formData.email.trim(),
+          phone: formData.phone.trim(),
+          subject_name: formData.subject_name.trim(),
+          message: formData.message.trim(),
+          source_path:
+            typeof window !== "undefined" ? window.location.pathname : null,
+        }),
+      });
+
+      const payload = (await response.json().catch(() => ({}))) as unknown;
+
+      if (!response.ok) {
+        throw new Error(
+          getApiMessage(payload)
+          || "Unable to submit your request right now. Please try again.",
+        );
+      }
+
+      setLastSubmittedEmail(formData.email.trim());
+      setFormData(INITIAL_FORM_DATA);
       setSubmitStatus("success");
-      
-      // Reset form after success message
-      setTimeout(() => {
-        setFormData({
-          organization_name: "",
-          contact_person: "",
-          email: "",
-          phone: "",
-          subject_name: "",
-          message: "",
-        });
-        setSubmitStatus("idle");
-      }, 4000);
-    }, 1500);
+    } catch (err) {
+      setSubmitStatus("error");
+      setSubmitErrorMessage(
+        err instanceof Error && err.message
+          ? err.message
+          : "Unable to submit your request right now. Please try again.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -333,20 +398,26 @@ export default function ContactPage() {
                   <p className="font-semibold text-white">Request Submitted!</p>
                   <p className="text-zinc-400 text-sm mt-1">
                     Thank you for reaching out. Our partnerships team will
-                    contact you within 48 hours at <span className="text-zinc-300">{formData.email}</span>.
+                    contact you within 48 hours at{" "}
+                    <span className="text-zinc-300">
+                      {lastSubmittedEmail || "your registered email"}
+                    </span>
+                    .
                   </p>
                 </div>
               </div>
             )}
 
             {/* Error Summary */}
-            {submitStatus === "error" && Object.keys(errors).length > 0 && (
+            {submitStatus === "error" && (Object.keys(errors).length > 0 || Boolean(submitErrorMessage)) && (
               <div
                 className="mb-6 p-4 bg-[#111111] border border-red-900/30 rounded-xl text-red-300 flex items-start gap-3"
                 role="alert"
               >
                 <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-                <p className="text-sm">Please fix the highlighted errors before submitting.</p>
+                <p className="text-sm">
+                  {submitErrorMessage || "Please fix the highlighted errors before submitting."}
+                </p>
               </div>
             )}
 
