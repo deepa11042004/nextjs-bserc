@@ -668,6 +668,7 @@ export default function InternshipApplicationForm() {
               name="altEmail"
               type="email"
               label="Alternative Email / वैकल्पिक ईमेल पता"
+              required
               value={formData.altEmail}
               onChange={handleChange}
             />
