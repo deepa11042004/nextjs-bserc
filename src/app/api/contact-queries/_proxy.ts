@@ -5,8 +5,8 @@ const DEV_FALLBACK_BACKEND_URLS = [
   "http://localhost:5000",
 ];
 
-type ContactQueriesEndpoint = "/api/contact-queries";
-type ContactQueriesHttpMethod = "GET" | "POST";
+type ContactQueriesEndpoint = `/api/contact-queries${string}`;
+type ContactQueriesHttpMethod = "GET" | "POST" | "DELETE";
 
 function isProductionRuntime(): boolean {
   return process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
@@ -95,7 +95,7 @@ async function buildForwardPayload(
   request: Request,
   method: ContactQueriesHttpMethod,
 ): Promise<ForwardPayload | null> {
-  if (method === "GET") {
+  if (method === "GET" || method === "DELETE") {
     return {};
   }
 

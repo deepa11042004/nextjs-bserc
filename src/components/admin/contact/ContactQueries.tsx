@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Inbox, Loader2 } from "lucide-react";
+import Link from "next/link";
+import { Eye, Inbox, Loader2, Trash2 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -138,6 +139,7 @@ function extractContactQueries(payload: unknown): ContactQuery[] {
 export default function ContactQueries() {
   const [queries, setQueries] = useState<ContactQuery[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [deletingQueryId, setDeletingQueryId] = useState<number | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -189,6 +191,41 @@ export default function ContactQueries() {
     };
   }, []);
 
+  const handleDeleteQuery = async (queryId: number) => {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this contact query? This action cannot be undone.",
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setError("");
+    setDeletingQueryId(queryId);
+
+    try {
+      const response = await fetch(`/api/contact-queries/${queryId}`, {
+        method: "DELETE",
+      });
+
+      const payload = (await response.json().catch(() => ({}))) as unknown;
+
+      if (!response.ok) {
+        throw new Error(getApiMessage(payload) || "Unable to delete contact query.");
+      }
+
+      setQueries((previous) => previous.filter((query) => query.id !== queryId));
+    } catch (err) {
+      setError(
+        err instanceof Error && err.message
+          ? err.message
+          : "Unable to delete contact query.",
+      );
+    } finally {
+      setDeletingQueryId((currentId) => (currentId === queryId ? null : currentId));
+    }
+  };
+
   const totalQueries = useMemo(() => queries.length, [queries]);
 
   return (
@@ -233,12 +270,13 @@ export default function ContactQueries() {
                     <TableHead className="text-white min-w-[160px]">Phone</TableHead>
                     <TableHead className="text-white min-w-[220px]">Subject</TableHead>
                     <TableHead className="text-white min-w-[160px]">Submitted</TableHead>
+                    <TableHead className="text-white min-w-[100px] text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {queries.length === 0 ? (
                     <TableRow className="border-zinc-800">
-                      <TableCell colSpan={5} className="text-center text-zinc-400 py-8">
+                      <TableCell colSpan={6} className="text-center text-zinc-400 py-8">
                         No contact queries found.
                       </TableCell>
                     </TableRow>
@@ -261,6 +299,32 @@ export default function ContactQueries() {
                           <div className="flex flex-col text-sm">
                             <span>{formatDate(query.created_at)}</span>
                             <span className="text-zinc-500">{formatTime(query.created_at)}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="align-top text-right">
+                          <div className="inline-flex items-center gap-2">
+                            <Link
+                              href={`/admin/contact-queries/${query.id}`}
+                              className="inline-flex items-center gap-1 rounded-md border border-zinc-700 px-2 py-1 text-xs text-zinc-200 hover:bg-zinc-800 transition-colors"
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                              View
+                            </Link>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                void handleDeleteQuery(query.id);
+                              }}
+                              disabled={deletingQueryId === query.id}
+                              aria-label={`Delete query ${query.id}`}
+                              className="inline-flex items-center justify-center rounded-md bg-rose-600 px-2 py-1 text-white hover:bg-rose-500 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                            >
+                              {deletingQueryId === query.id ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-3.5 w-3.5" />
+                              )}
+                            </button>
                           </div>
                         </TableCell>
                       </TableRow>
