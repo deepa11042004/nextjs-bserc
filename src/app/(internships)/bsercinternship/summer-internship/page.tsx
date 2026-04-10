@@ -539,7 +539,7 @@ export default function InternshipApplicationForm() {
         onClose={() => setSubmitStatus(null)}
       />
 
-      <main className="max-w-4xl mx-auto">
+      <main className="max-w-6xl mx-auto">
         {/* Header Title Section */}
         <div className="mb-12">
           <div className="flex items-center gap-4 mb-4">
