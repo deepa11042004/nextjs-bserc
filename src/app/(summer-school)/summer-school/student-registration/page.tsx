@@ -539,8 +539,12 @@ export default function Page() {
               </span>
               <div className="h-px w-16 bg-orange-500/40"></div>
             </div>
-            <h1 className="text-5xl font-serif font-bold text-white mb-5 leading-tight">
-              Register as a Student
+          <h1 className="text-4xl md:text-5xl font-serif font-bold text-white leading-tight mb-4">
+              
+
+              DEF-SPACE SUMMER
+            <br />
+            SCHOOL APPLICATION FORM
             </h1>
             <p className="text-zinc-400 text-sm max-w-2xl">
               Register for Def-Space Summer School 2026. Fill in your details
