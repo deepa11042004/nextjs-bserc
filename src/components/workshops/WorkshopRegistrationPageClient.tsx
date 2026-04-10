@@ -283,8 +283,9 @@ export default function WorkshopRegistrationPageClient({
 }: {
   workshop: Workshop;
 }) {
-  const certificatePreviewSrc =
-    workshop.certificateUrl || workshop.thumbnailUrl || "/img/page-1.png";
+  // Certificate preview is temporarily disabled.
+  // const certificatePreviewSrc =
+  //   workshop.certificateUrl || workshop.thumbnailUrl || "/img/page-1.png";
 
   const emptyFormData = {
     name: "",
@@ -606,13 +607,13 @@ export default function WorkshopRegistrationPageClient({
           </ul>
         </div>
 
+        {/*
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
           <h2 className="text-2xl font-semibold text-blue-400 mb-4 text-center">
             Certificate Preview
           </h2>
 
           <div className="relative w-full md:w-[70%] mx-auto aspect-[4/3] rounded-xl overflow-hidden border border-slate-700">
-            {/* Image */}
             <img
               src={certificatePreviewSrc}
               alt={`${workshop.title || "Workshop"} certificate preview`}
@@ -628,7 +629,6 @@ export default function WorkshopRegistrationPageClient({
             />
           </div>
 
-          {/* Added Description */}
           <div className="mt-4 text-center text-slate-300 text-sm md:text-base leading-relaxed max-w-2xl mx-auto">
             <p className="font-extrabold text-white mb-2">
               Upon completion of the workshop, participants will be certified.
@@ -639,6 +639,7 @@ export default function WorkshopRegistrationPageClient({
             </p>
           </div>
         </div>
+        */}
 
         {/* FORM */}
         <form

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Loader2, UserCheck, XCircle } from "lucide-react";
+import { CheckCircle2, Download, Loader2, UserCheck, XCircle } from "lucide-react";
 
 import { AdminToast } from "@/components/admin/AdminToast";
 import { Badge } from "@/components/ui/Badge";
@@ -26,9 +26,58 @@ import {
 
 type ToastVariant = "success" | "error" | "info";
 
+function toExportCellValue(value: unknown): string | number | boolean {
+  if (value === null || value === undefined) {
+    return "";
+  }
+
+  if (
+    typeof value === "string"
+    || typeof value === "number"
+    || typeof value === "boolean"
+  ) {
+    return value;
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
+
+function buildDynamicExportRows(records: Record<string, unknown>[]) {
+  const headers: string[] = [];
+
+  records.forEach((record) => {
+    Object.keys(record).forEach((key) => {
+      if (!headers.includes(key)) {
+        headers.push(key);
+      }
+    });
+  });
+
+  const rows = records.map((record) => {
+    const row: Record<string, string | number | boolean> = {};
+
+    headers.forEach((header) => {
+      row[header] = toExportCellValue(record[header]);
+    });
+
+    return row;
+  });
+
+  return { headers, rows };
+}
+
 export default function MentorRequests() {
   const [mentors, setMentors] = useState<MentorProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState("");
   const [approvingMentorIds, setApprovingMentorIds] = useState<number[]>([]);
   const [rejectingMentorIds, setRejectingMentorIds] = useState<number[]>([]);
@@ -87,6 +136,57 @@ export default function MentorRequests() {
   }, []);
 
   const pendingCount = useMemo(() => mentors.length, [mentors]);
+
+  const handleExport = async () => {
+    if (isExporting || isLoading) {
+      return;
+    }
+
+    if (mentors.length === 0) {
+      setError("No mentor requests available to export.");
+      return;
+    }
+
+    setError("");
+    setIsExporting(true);
+
+    try {
+      const XLSX = await import("xlsx");
+
+      const mentorRecords = mentors.map((mentor) => ({ ...mentor }));
+      const { headers, rows } = buildDynamicExportRows(mentorRecords);
+
+      if (rows.length === 0) {
+        setError("No mentor requests available to export.");
+        return;
+      }
+
+      const worksheet = XLSX.utils.json_to_sheet(rows, { header: headers });
+      worksheet["!cols"] = headers.map((header) => ({
+        wch: Math.max(16, Math.min(42, header.length + 4)),
+      }));
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Mentor Requests");
+
+      const now = new Date();
+      const filename = `mentor-requests-export-${now.getFullYear()}-${String(
+        now.getMonth() + 1,
+      ).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}_${String(
+        now.getHours(),
+      ).padStart(2, "0")}-${String(now.getMinutes()).padStart(2, "0")}.xlsx`;
+
+      XLSX.writeFile(workbook, filename);
+    } catch (err) {
+      setError(
+        err instanceof Error && err.message
+          ? err.message
+          : "Unable to export mentor requests.",
+      );
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const handleApprove = async (mentorId: number) => {
     setApprovingMentorIds((prev) =>
@@ -191,7 +291,28 @@ export default function MentorRequests() {
                 <UserCheck className="h-4 w-4 text-blue-400" />
                 Pending Mentors
               </CardTitle>
-              <span className="text-sm text-zinc-400">Total: {pendingCount}</span>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleExport}
+                  disabled={isLoading || isExporting || mentors.length === 0}
+                  className="text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100"
+                >
+                  {isExporting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Exporting...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="mr-2 h-4 w-4" />
+                      Export
+                    </>
+                  )}
+                </Button>
+                <span className="text-sm text-zinc-400">Total: {pendingCount}</span>
+              </div>
             </div>
           </CardHeader>
           <CardContent>

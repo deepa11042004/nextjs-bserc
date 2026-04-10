@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, NotebookPen } from "lucide-react";
+import { Download, Loader2, NotebookPen } from "lucide-react";
 
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -30,10 +31,59 @@ import {
 type InternshipFilter = "all" | "regular" | "lateral";
 type FeeStatus = { type: "success" | "error"; message: string };
 
+function toExportCellValue(value: unknown): string | number | boolean {
+  if (value === null || value === undefined) {
+    return "";
+  }
+
+  if (
+    typeof value === "string"
+    || typeof value === "number"
+    || typeof value === "boolean"
+  ) {
+    return value;
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
+
+function buildDynamicExportRows(records: Record<string, unknown>[]) {
+  const headers: string[] = [];
+
+  records.forEach((record) => {
+    Object.keys(record).forEach((key) => {
+      if (!headers.includes(key)) {
+        headers.push(key);
+      }
+    });
+  });
+
+  const rows = records.map((record) => {
+    const row: Record<string, string | number | boolean> = {};
+
+    headers.forEach((header) => {
+      row[header] = toExportCellValue(record[header]);
+    });
+
+    return row;
+  });
+
+  return { headers, rows };
+}
+
 export default function InternshipApplications() {
   const [applications, setApplications] = useState<InternshipApplication[]>([]);
   const [filter, setFilter] = useState<InternshipFilter>("all");
   const [isLoading, setIsLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState("");
   const [generalFeeInput, setGeneralFeeInput] = useState("100");
   const [lateralFeeInput, setLateralFeeInput] = useState("100");
@@ -179,6 +229,63 @@ export default function InternshipApplications() {
     }
   };
 
+  const handleExport = async () => {
+    if (isExporting || isLoading) {
+      return;
+    }
+
+    if (filteredApplications.length === 0) {
+      setError(
+        filter === "all"
+          ? "No internship applications available to export."
+          : "No applications available to export for the selected filter.",
+      );
+      return;
+    }
+
+    setError("");
+    setIsExporting(true);
+
+    try {
+      const XLSX = await import("xlsx");
+
+      const applicationRecords = filteredApplications.map((application) => ({
+        ...application,
+      }));
+      const { headers, rows } = buildDynamicExportRows(applicationRecords);
+
+      if (rows.length === 0) {
+        setError("No internship applications available to export.");
+        return;
+      }
+
+      const worksheet = XLSX.utils.json_to_sheet(rows, { header: headers });
+      worksheet["!cols"] = headers.map((header) => ({
+        wch: Math.max(16, Math.min(42, header.length + 4)),
+      }));
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Internship Applications");
+
+      const now = new Date();
+      const filename = `internship-applications-${filter}-${now.getFullYear()}-${String(
+        now.getMonth() + 1,
+      ).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}_${String(
+        now.getHours(),
+      ).padStart(2, "0")}-${String(now.getMinutes()).padStart(2, "0")}.xlsx`;
+
+      XLSX.writeFile(workbook, filename);
+    } catch (err) {
+      setError(
+        err instanceof Error && err.message
+          ? err.message
+          : "Unable to export internship applications.",
+      );
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const totalApplications = useMemo(() => filteredApplications.length, [filteredApplications]);
   const totalApplicationsAll = useMemo(() => applications.length, [applications]);
 
@@ -295,9 +402,30 @@ export default function InternshipApplications() {
                 })}
               </div>
             </div>
-            <span className="text-sm text-zinc-400">
-              Showing {totalApplications} of {totalApplicationsAll}
-            </span>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleExport}
+                disabled={isLoading || isExporting || filteredApplications.length === 0}
+                className="text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100"
+              >
+                {isExporting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Exporting...
+                  </>
+                ) : (
+                  <>
+                    <Download className="mr-2 h-4 w-4" />
+                    Export
+                  </>
+                )}
+              </Button>
+              <span className="text-sm text-zinc-400">
+                Showing {totalApplications} of {totalApplicationsAll}
+              </span>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
