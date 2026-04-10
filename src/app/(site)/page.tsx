@@ -1,4 +1,3 @@
-import Home from "@/components/new/Home";
 import PMVision from "@/components/new/Pmvision";
 import SpaceSectorIndia from "@/components/new/SpaceSectorIndia";
 import SpaceTimeline from "@/components/new/SpaceTimeline";
@@ -18,12 +17,16 @@ import LatestNews from "@/components/new/LatestNews";
 import ISROMissionsSection from "@/components/new/ISROMissionsSection";
 import StatePartnership from "@/components/new/StatePartnership";
 import FeaturedWorkshops from "@/components/new/FeaturedWorkshops";
+import HeroSlider from "@/components/new/HeroSlider";
+import Stats from "@/components/new/Stats";
 
 export default function HomePage() {
   return (
     <>
       <HomePageClientEffects />
-      <Home />
+      <HeroSlider />
+      <Stats />
+
       <PMVision />
       <SpaceSectorIndia />
       <SpaceTimeline />
