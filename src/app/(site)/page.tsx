@@ -26,7 +26,6 @@ export default function HomePage() {
       <HomePageClientEffects />
       <HeroSlider />
       <Stats />
-
       <PMVision />
       <SpaceSectorIndia />
       <SpaceTimeline />

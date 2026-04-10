@@ -36,14 +36,7 @@ const socialLinks: SocialLink[] = [
   { icon: FaLinkedinIn, label: "LinkedIn", href: "#" },
 ];
 
-const learningLinks: string[] = [
-  "All Courses",
-  "My Learning",
-  "Categories",
-  "Certifications",
-  "Skill Tracks",
-];
-
+ 
 interface CompanyLink {
   label: string;
   href: string;
@@ -52,9 +45,10 @@ interface CompanyLink {
 const companyLinks: CompanyLink[] = [
   { label: "Def-Space Summer School", href: "/summer-school" },
   { label: "Def-Space Summer Internship", href: "/bsercinternship" },
-  { label: "Refund Policy", href: "/bserc-policies/refund-policy" },
-  { label: "Privacy Policy", href: "/bserc-policies/privacy-policy" },
-  { label: "Terms & Conditions", href: "/bserc-policies/terms-and-conditions" },
+  { label: "Def-Space Innovation Corridor", href: "/" },
+  { label: "Workshop", href: "/results/winter-internship-results" },
+  { label: "Contact Us", href: "/" },
+  
 ];
 
 const contactItems: ContactItem[] = [
@@ -80,7 +74,7 @@ const Footer: React.FC = () => {
   return (
     <footer className=" bg-black text-white border-t  border-white/10">
       <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-3">
           {/* Brand */}
           <div className="space-y-4">
             <div className="flex items-center gap-3">
@@ -137,24 +131,7 @@ const Footer: React.FC = () => {
             </div>
           </div>
 
-          {/* Learning */}
-          <div>
-            <h4 className="mb-4 text-sm font-semibold uppercase tracking-wide text-slate-400">
-              Learning
-            </h4>
-            <ul className="space-y-3 text-sm text-slate-300">
-              {learningLinks.map((item) => (
-                <li key={item}>
-                  <a
-                    href="#"
-                    className="inline-flex items-center gap-2 transition hover:text-[#3B82F6] hover:translate-x-1"
-                  >
-                    {item}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
+          
 
           {/* Company */}
           <div>
