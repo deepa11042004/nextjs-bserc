@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { Download, Loader2, UsersRound } from "lucide-react";
+import { Download, Eye, Loader2, Trash2, UsersRound } from "lucide-react";
 
-import { Badge } from "@/components/ui/Badge";
+import { AdminToast } from "@/components/admin/AdminToast";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -20,8 +20,9 @@ import {
   extractMentors,
   formatMentorDate,
   getApiMessage,
-  getStatusBadgeClasses,
 } from "@/components/admin/mentors/mentorUtils";
+
+type ToastVariant = "success" | "error" | "info";
 
 function extractMentorRecords(payload: unknown): Record<string, unknown>[] {
   if (!payload || typeof payload !== "object") {
@@ -92,6 +93,9 @@ export default function MentorList() {
   const [mentorRecords, setMentorRecords] = useState<Record<string, unknown>[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
+  const [movingMentorIds, setMovingMentorIds] = useState<number[]>([]);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastVariant, setToastVariant] = useState<ToastVariant>("info");
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -147,6 +151,43 @@ export default function MentorList() {
 
   const totalMentors = useMemo(() => mentors.length, [mentors]);
 
+  const isMovingMentor = (mentorId: number) => movingMentorIds.includes(mentorId);
+
+  const handleMoveToPending = async (mentorId: number) => {
+    setMovingMentorIds((prev) =>
+      prev.includes(mentorId) ? prev : [...prev, mentorId],
+    );
+
+    try {
+      const response = await fetch(`/api/mentor/${mentorId}/pending`, {
+        method: "PATCH",
+        cache: "no-store",
+      });
+
+      const payload = (await response.json().catch(() => ({}))) as unknown;
+
+      if (!response.ok) {
+        throw new Error(getApiMessage(payload) || "Unable to move mentor to pending.");
+      }
+
+      setMentors((prev) => prev.filter((mentor) => mentor.id !== mentorId));
+      setMentorRecords((prev) =>
+        prev.filter((record) => Number(record.id) !== mentorId),
+      );
+      setToastVariant("success");
+      setToastMessage("Mentor moved to Mentor Requests successfully.");
+    } catch (err) {
+      setToastVariant("error");
+      setToastMessage(
+        err instanceof Error && err.message
+          ? err.message
+          : "Unable to move mentor to pending.",
+      );
+    } finally {
+      setMovingMentorIds((prev) => prev.filter((id) => id !== mentorId));
+    }
+  };
+
   const handleExport = async () => {
     if (isExporting || isLoading) {
       return;
@@ -198,7 +239,15 @@ export default function MentorList() {
   };
 
   return (
-    <div className="min-h-screen container mx-auto max-w-8xl text-zinc-100">
+    <>
+      <AdminToast
+        open={Boolean(toastMessage)}
+        message={toastMessage || ""}
+        onClose={() => setToastMessage(null)}
+        variant={toastVariant}
+      />
+
+      <div className="min-h-screen container mx-auto max-w-8xl text-zinc-100">
       <div className="flex flex-col gap-4 pt-3 pb-5 mb-6 border-b border-zinc-800 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-4xl font-bold tracking-tight text-white">
@@ -219,8 +268,8 @@ export default function MentorList() {
       <Card className="bg-zinc-900 border-zinc-800">
         <CardHeader>
           <div className="flex items-center justify-between gap-3">
-            <CardTitle className="text-zinc-100 text-lg flex items-center gap-2">
-              <UsersRound className="h-4 w-4 text-blue-400" />
+            <CardTitle className="text-emerald-100 bg-emerald-950/70 border border-emerald-600 px-3 py-1 rounded-md text-lg flex items-center gap-2">
+              <UsersRound className="h-4 w-4 text-emerald-300" />
               Active Mentors
             </CardTitle>
             <div className="flex items-center gap-2">
@@ -263,24 +312,23 @@ export default function MentorList() {
               <TableHeader>
                 <TableRow className="border-zinc-800">
                   <TableHead className="text-white">Mentor</TableHead>
-                  <TableHead className="text-white">Contact</TableHead>
                   <TableHead className="text-white">Organization</TableHead>
                   <TableHead className="text-white">Track</TableHead>
                   <TableHead className="text-white">Experience</TableHead>
-                  <TableHead className="text-white">Status</TableHead>
                   <TableHead className="text-white">Registered</TableHead>
+                  <TableHead className="text-white text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {mentors.length === 0 ? (
                   <TableRow className="border-zinc-800">
-                    <TableCell colSpan={7} className="py-8 text-center text-zinc-500">
+                    <TableCell colSpan={6} className="py-8 text-center text-zinc-500">
                       No active mentors found.
                     </TableCell>
                   </TableRow>
                 ) : (
                   mentors.map((mentor) => (
-                    <TableRow key={mentor.id} className="border-zinc-800">
+                    <TableRow key={mentor.id} className="border-zinc-800 align-top">
                       <TableCell>
                         <div className="flex items-center gap-3">
                           {mentor.has_profile_photo ? (
@@ -297,11 +345,11 @@ export default function MentorList() {
                           )}
                           <div className="flex flex-col">
                             <span className="text-zinc-100 font-medium">{mentor.full_name}</span>
+                            <span className="text-zinc-400 text-xs">{mentor.phone || "-"}</span>
                             <span className="text-zinc-400 text-xs">{mentor.email}</span>
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell className="text-zinc-300">{mentor.phone || "-"}</TableCell>
                       <TableCell>
                         <div className="flex flex-col text-zinc-300 text-sm">
                           <span>{mentor.organization || "-"}</span>
@@ -319,13 +367,44 @@ export default function MentorList() {
                           ? "-"
                           : `${mentor.years_experience} years`}
                       </TableCell>
-                      <TableCell>
-                        <Badge className={getStatusBadgeClasses(mentor.status)}>
-                          {mentor.status}
-                        </Badge>
-                      </TableCell>
                       <TableCell className="text-zinc-300">
                         {formatMentorDate(mentor.created_at)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Link href={`/admin/mentors/${mentor.id}`}>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="border border-blue-700 bg-transparent text-blue-300 hover:bg-blue-950/50 hover:text-blue-200"
+                            >
+                              <Eye className="mr-1.5 h-3.5 w-3.5" />
+                              View
+                            </Button>
+                          </Link>
+
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            disabled={isMovingMentor(mentor.id)}
+                            onClick={() => void handleMoveToPending(mentor.id)}
+                            className="border border-rose-700 bg-transparent text-rose-300 hover:bg-rose-950/50 hover:text-rose-200"
+                          >
+                            {isMovingMentor(mentor.id) ? (
+                              <>
+                                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                                Moving...
+                              </>
+                            ) : (
+                              <>
+                                <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                                Delete
+                              </>
+                            )}
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -335,6 +414,7 @@ export default function MentorList() {
           )}
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </>
   );
 }
