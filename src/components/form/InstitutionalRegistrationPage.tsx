@@ -458,109 +458,11 @@ const PartnershipOptionCard = ({
   </div>
 );
 
-// ─────────────────────────────────────────────────────────────
-
-const WhyPartnerCard = ({
-  title,
-  description,
-}: {
-  title: string;
-  description: string;
-}) => (
-  <div className="bg-[#111111] border border-[#2a2a2a] rounded-xl p-6 hover:border-orange-500/30 transition-all">
-    <h4 className="text-zinc-100 font-semibold mb-3">{title}</h4>
-    <p className="text-zinc-400 text-sm leading-relaxed">{description}</p>
-  </div>
-);
+ 
 
 // ─────────────────────────────────────────────────────────────
 
-const AnnualFeePaymentCard = ({ onPayment }: { onPayment: () => void }) => (
-  <div className="bg-[#111111] border border-[#2a2a2a] rounded-xl p-6 md:p-8">
-    <div className="grid md:grid-cols-2 gap-6">
-      {/* Left: Fee Details */}
-      <div>
-        <p className="text-zinc-400 text-sm mb-2">Institutional Partnership</p>
-        <div className="flex items-baseline gap-2 mb-2">
-          <span className="text-orange-400 text-3xl font-bold">₹ 2,500</span>
-          <span className="text-zinc-500 text-sm">₹ 2,500 per year</span>
-        </div>
-        <p className="text-zinc-300 text-sm leading-relaxed mb-6">
-          Become an official Def-Space Partner institute with full institutional
-          branding, co-promotional visibility across BSERC's ecosystem, and
-          year-round access to mentorship and career guidance resources for your
-          students.
-        </p>
-
-        <div>
-          <p className="text-zinc-400 text-xs font-semibold uppercase tracking-wide mb-3">
-            What's Included:
-          </p>
-          <ul className="space-y-2">
-            {[
-              'Official "Def-Space Partner Institution" certification',
-              "Co-branding rights and institutional recognition",
-              "Priority student batch placement and coordination",
-              "Sustained mentorship and career pathways support",
-            ].map((item, i) => (
-              <li
-                key={i}
-                className="flex items-start gap-2 text-zinc-300 text-sm"
-              >
-                <Check
-                  className="w-4 h-4 text-orange-500 flex-shrink-0 mt-0.5"
-                  strokeWidth={3}
-                />
-                {item}
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-
-      {/* Right: Payment Breakdown */}
-      <div className="bg-[#181818] rounded-xl p-6 border border-[#262626]">
-        <p className="text-zinc-400 text-xs font-semibold uppercase tracking-wide mb-4">
-          Payment Breakdown
-        </p>
-
-        <div className="flex justify-between items-center mb-4">
-          <span className="text-zinc-300 text-sm">Annual Partnership Fee</span>
-          <span className="text-white font-semibold">₹ 2,500</span>
-        </div>
-
-        <div className="bg-[#111111] rounded-lg p-4 mb-6 border border-orange-500/20">
-          <div className="flex justify-between items-center">
-            <span className="text-zinc-300 font-medium">Total Amount</span>
-            <span className="text-orange-400 text-xl font-bold">₹ 2,500</span>
-          </div>
-        </div>
-
-        <p className="text-zinc-400 text-xs leading-relaxed mb-6">
-          After submission of your institute registration form above, you will
-          receive a secure payment link via email. Multiple payment methods
-          accepted including bank transfer, card payments, and digital wallets.
-        </p>
-
-        <button
-          onClick={onPayment}
-          className="w-full py-3.5 rounded-lg bg-orange-500/20 border border-orange-500/30 text-orange-400 font-semibold hover:bg-orange-500/30 transition-all"
-        >
-          Proceed to Payment
-        </button>
-      </div>
-    </div>
-
-    {/* Security Note */}
-    <div className="mt-6 pt-6 border-t border-[#2a2a2a]">
-      <p className="text-zinc-400 text-xs text-center">
-        <span className="font-semibold text-zinc-300">Secure Payment:</span> All
-        payments are processed through secure, encrypted channels with PCI-DSS
-        compliance.
-      </p>
-    </div>
-  </div>
-);
+ 
 
 // ─────────────────────────────────────────────────────────────
 // MAIN PAGE COMPONENT

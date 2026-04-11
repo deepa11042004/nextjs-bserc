@@ -702,7 +702,7 @@ export default function MentorRegistrationForm() {
         }}
       />
 
-      <main className="max-w-4xl mx-auto">
+      <main className="max-w-6xl mx-auto">
         <div className="mb-14">
           <div className="flex items-center gap-4 mb-4">
             <span className="text-orange-500 text-xs font-bold tracking-[0.2em] uppercase">

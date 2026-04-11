@@ -24,42 +24,9 @@ const NAV_ITEMS: {
   external?: boolean;
 }[] = [
   { label: "Home", href: "/", external: false },
+  { label: "About", href: "/about", external: false },
 
-  {
-    label: "About Us",
-    dropdown: [
-      {
-        type: "link",
-        label: "Government Initiatives in the Space Sector",
-        href: "/about/government-initiatives",
-        external: false,
-      },
-      {
-        type: "link",
-        label: "Our Vision",
-        href: "/about/our-vision",
-        external: false,
-      },
-      {
-        type: "link",
-        label: "Our Mission",
-        href: "/about/our-mission",
-        external: false,
-      },
-      {
-        type: "link",
-        label: "Our Goal",
-        href: "/about/our-goal",
-        external: false,
-      },
-      {
-        type: "link",
-        label: "Core Focus Areas",
-        href: "/about",
-        external: false,
-      },
-    ],
-  },
+   
 
   {
     label: "Institutions",
