@@ -2,7 +2,7 @@
 import React from "react";
 import Footer from "@/components/layout/Footer";
 import Navbar from "./Navbar";
-import NavBanner from "@/components/layout/NabBanner";
+import NavBanner from "@/components/layout/NavBanner";
 export default function SchoolLayout({
   children,
 }: {
@@ -10,11 +10,10 @@ export default function SchoolLayout({
 }) {
   return (
     <>
-     <NavBanner/>
+      <NavBanner />
       <Navbar />
       {children}
       <Footer />
-       
     </>
   );
 }

@@ -91,9 +91,9 @@ const Footer: React.FC = () => {
           <div className="space-y-6">
             {/* Logo + Title */}
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 flex-shrink-0">
+              <div className="h-12 w-12 flex-shrink-0">
                 <Image
-                  src="/img/bserc_footer.png"
+                  src="/img/bserc_new_logo.png"
                   alt="BSERC logo"
                   width={500}
                   height={500}
@@ -103,7 +103,7 @@ const Footer: React.FC = () => {
               </div>
               <div>
                 <p className="text-lg font-bold">BSERC</p>
-                <p className="text-[10px] tracking-wide text-slate-400 leading-tight">
+                <p className="text-sm tracking-wide text-slate-400 leading-tight">
                   Space Tutor • ISRO
                 </p>
               </div>
@@ -150,7 +150,7 @@ const Footer: React.FC = () => {
           </div>
 
           {/* Column 3: Quick Links */}
-          <div className="space-y-4">
+          <div className="space-y-4 ">
             <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-400">
               Quick Links
             </h4>

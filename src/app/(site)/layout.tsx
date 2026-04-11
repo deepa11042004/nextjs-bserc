@@ -1,6 +1,6 @@
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import NavBanner from "@/components/layout/NabBanner";
+import NavBanner from "@/components/layout/NavBanner";
 export const dynamic = "force-static";
 
 export default function SiteLayout({
@@ -10,7 +10,7 @@ export default function SiteLayout({
 }) {
   return (
     <>
-    <NavBanner/>
+      <NavBanner />
       <Navbar />
       <main>{children}</main>
       <Footer />
