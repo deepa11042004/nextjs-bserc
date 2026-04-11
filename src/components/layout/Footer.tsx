@@ -73,7 +73,7 @@ const partnerLogos: PartnerLogo[] = [
   { src: "/img/isro.png", alt: "ISRO" },
   { src: "/img/DOS_light.png", alt: "DOAS" },
   { src: "/img/inspace.png", alt: "Ministry of Education" },
-  { src: "/img/Skill_india.png", alt: "skill india" },
+  { src: "/img/skill_india.png", alt: "skill india" },
   { src: "/img/viksit.png", alt: "vikisit india" },
 ];
 
