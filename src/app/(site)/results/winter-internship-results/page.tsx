@@ -1,6 +1,8 @@
 "use client";
 import React, { useState, useEffect, useCallback, useMemo, memo } from "react";
 import HeroBanner from '@/components/layout/Banner';
+import resultData from "@/data/ResultData.json";
+
 // --- Types ---
 interface ResultItem {
   registrationId: string;
@@ -8,8 +10,14 @@ interface ResultItem {
   institute: string;
   score: number;
   rank: number;
-  email: string;
   selected: boolean;
+}
+
+interface RawResultItem {
+  "Roll Number": string;
+  "Student Name": string;
+  Institution: string;
+  "Marks Obtained": string | number;
 }
 
 interface ApiResponse {
@@ -23,11 +31,35 @@ interface ApiResponse {
 // --- Constants ---
 const ITEMS_PER_PAGE = 10;
 const DEBOUNCE_DELAY = 300;
-const API_TIMEOUT = 500;
+const SELECTION_CUTOFF = 50.7;
 
 // --- API Cache ---
 let cachedData: ResultItem[] | null = null;
 const cachedFilterCache = new Map<string, ResultItem[]>();
+
+function toNumericScore(value: string | number): number {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : 0;
+  }
+
+  const parsed = Number.parseFloat(String(value).trim());
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function normalizeResults(raw: RawResultItem[]): ResultItem[] {
+  return raw.map((item, index) => {
+    const score = toNumericScore(item["Marks Obtained"]);
+
+    return {
+      registrationId: String(item["Roll Number"] || "").trim(),
+      name: String(item["Student Name"] || "").trim(),
+      institute: String(item.Institution || "").trim(),
+      score,
+      rank: index + 1,
+      selected: score >= SELECTION_CUTOFF,
+    };
+  });
+}
 
 // --- API Simulation ---
 const fetchResultsApi = async (
@@ -36,22 +68,14 @@ const fetchResultsApi = async (
   query: string,
   signal?: AbortSignal
 ): Promise<ApiResponse> => {
-  await new Promise<void>((resolve, reject) => {
-    const timeout = setTimeout(resolve, API_TIMEOUT);
-    if (signal) {
-      signal.addEventListener("abort", () => {
-        clearTimeout(timeout);
-        reject(new DOMException("Aborted", "AbortError"));
-      });
-    }
-  });
-
   try {
     if (!cachedData) {
-      const response = await fetch("/data.json", { signal });
-      if (!response.ok) throw new Error("Failed to fetch");
-      const json = await response.json();
-      cachedData = json.results;
+      const rawResults = (Array.isArray(resultData) ? resultData : []) as RawResultItem[];
+      cachedData = normalizeResults(rawResults);
+    }
+
+    if (signal?.aborted) {
+      throw new DOMException("Aborted", "AbortError");
     }
 
     const cacheKey = query.toLowerCase();
@@ -63,7 +87,7 @@ const fetchResultsApi = async (
       } else {
         const lowerQuery = query.toLowerCase();
         filtered = cachedData!.filter((item) =>
-          [item.name, item.registrationId, item.institute, item.email].some(
+          [item.name, item.registrationId, item.institute, item.score.toFixed(2)].some(
             (field) => field?.toLowerCase().includes(lowerQuery)
           )
         );
@@ -321,14 +345,6 @@ const ResultsTable: React.FC = () => {
     };
   }, [page, debouncedSearch, loadResults]);
 
-  // Scroll to top on page change
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }, 100);
-    return () => clearTimeout(timer);
-  }, [page]);
-
   const EmptyStateIcon = useMemo(
     () => (
       <svg
@@ -389,7 +405,7 @@ const ResultsTable: React.FC = () => {
           className="w-full p-4 bg-gray-800 border border-gray-600 text-white rounded-lg 
                      focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent 
                      placeholder-gray-500 transition-all duration-200"
-          placeholder="Search by Name, Registration ID, Institute, or Email..."
+          placeholder="Search by Name, Registration ID, Institute, or Score..."
           aria-describedby="search-hint"
         />
         <div className="absolute right-4 top-4 text-gray-500 pointer-events-none">
@@ -421,7 +437,7 @@ const ResultsTable: React.FC = () => {
         <table className="min-w-full divide-y divide-gray-700" role="table">
           <thead className="bg-gray-800">
             <tr>
-              {["Rank", "Registration ID", "Name", "Institute", "Score", "Status"].map(
+              {["Rank", "Registration ID", "Name", "Institute", "Score"].map(
                 (header) => (
                   <th
                     key={header}
@@ -437,7 +453,7 @@ const ResultsTable: React.FC = () => {
           <tbody className="bg-gray-900 divide-y divide-gray-800">
             {loading ? (
               <tr>
-                <td colSpan={6} className="px-6 py-12 text-center">
+                <td colSpan={5} className="px-6 py-12 text-center">
                   <div
                     className="flex justify-center items-center space-x-2 text-gray-400"
                     aria-live="polite"
@@ -467,19 +483,19 @@ const ResultsTable: React.FC = () => {
                   <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-400">
                     {item.institute}
                   </td>
-                  <td className="px-4 py-4 whitespace-nowrap text-sm text-green-400 font-bold">
-                    {item.score.toFixed(2)}
-                  </td>
-                  <td className="px-4 py-4 whitespace-nowrap text-sm">
-                    {item.selected ? (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-900 text-green-300">
-                        Selected
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-700 text-gray-300">
-                        Waitlist
-                      </span>
-                    )}
+                  <td className="px-4 py-4 text-sm">
+                    <div className="font-bold text-green-400">{item.score.toFixed(2)}</div>
+                    <div className="mt-2">
+                      {item.selected ? (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-900 text-green-300">
+                          Selected
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-900 text-rose-300">
+                          Not Selected
+                        </span>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))
