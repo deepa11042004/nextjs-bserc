@@ -158,6 +158,13 @@ export function registerInternshipWithoutPayment(payload: FormData) {
   );
 }
 
+export function recordInternshipFailedPaymentAttempt(payload: FormData) {
+  return postFormData<{ message: string }>(
+    "/api/internship-registration/register",
+    payload,
+  );
+}
+
 export function getInternshipFeeSettings() {
   return getJson<InternshipFeeSettingsResponse>(
     "/api/internship-registration/fee",

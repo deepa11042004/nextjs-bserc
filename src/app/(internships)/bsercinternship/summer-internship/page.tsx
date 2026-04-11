@@ -5,6 +5,7 @@ import React, { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   createInternshipPaymentOrder,
+  recordInternshipFailedPaymentAttempt,
   registerInternshipWithoutPayment,
   verifyInternshipPaymentAndRegister,
 } from "@/services/internshipRegistration";
@@ -19,6 +20,11 @@ type RazorpaySuccessResponse = {
 type RazorpayFailureResponse = {
   error?: {
     description?: string;
+    reason?: string;
+    metadata?: {
+      order_id?: string;
+      payment_id?: string;
+    };
   };
 };
 
@@ -59,6 +65,10 @@ declare global {
 
 type SubmitStatus = {
   type: "success" | "info" | "error";
+  message: string;
+};
+
+type PaymentRetryPrompt = {
   message: string;
 };
 
@@ -295,6 +305,8 @@ export default function InternshipApplicationForm() {
   const [photoInputKey, setPhotoInputKey] = useState<number>(0);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [submitStatus, setSubmitStatus] = useState<SubmitStatus | null>(null);
+  const [paymentRetryPrompt, setPaymentRetryPrompt] =
+    useState<PaymentRetryPrompt | null>(null);
 
   const activeResponse = submitStatus
     ? {
@@ -365,9 +377,11 @@ export default function InternshipApplicationForm() {
   };
 
   const buildRegistrationFormData = (paymentDetails?: {
-    razorpay_order_id: string;
-    razorpay_payment_id: string;
-    razorpay_signature: string;
+    razorpay_order_id?: string;
+    razorpay_payment_id?: string;
+    razorpay_signature?: string;
+    payment_status?: string;
+    payment_mode?: string;
   }) => {
     const payload = new FormData();
 
@@ -394,18 +408,38 @@ export default function InternshipApplicationForm() {
     }
 
     if (paymentDetails) {
-      payload.append("razorpay_order_id", paymentDetails.razorpay_order_id);
-      payload.append("razorpay_payment_id", paymentDetails.razorpay_payment_id);
-      payload.append("razorpay_signature", paymentDetails.razorpay_signature);
+      if (paymentDetails.razorpay_order_id) {
+        payload.append("razorpay_order_id", paymentDetails.razorpay_order_id);
+      }
+
+      if (paymentDetails.razorpay_payment_id) {
+        payload.append("razorpay_payment_id", paymentDetails.razorpay_payment_id);
+      }
+
+      if (paymentDetails.razorpay_signature) {
+        payload.append("razorpay_signature", paymentDetails.razorpay_signature);
+      }
+
+      if (paymentDetails.payment_status) {
+        payload.append("payment_status", paymentDetails.payment_status);
+      }
+
+      if (paymentDetails.payment_mode) {
+        payload.append("payment_mode", paymentDetails.payment_mode);
+      }
     }
 
     return payload;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const openPaymentRetryPrompt = (message: string) => {
     setSubmitStatus(null);
+    setPaymentRetryPrompt({ message });
+  };
+
+  const startInternshipSubmission = async () => {
+    setSubmitStatus(null);
+    setPaymentRetryPrompt(null);
 
     if (!formData.declaration) {
       setSubmitStatus({
@@ -461,6 +495,36 @@ export default function InternshipApplicationForm() {
         throw new Error("Unable to load Razorpay checkout. Please try again.");
       }
 
+      const paymentAttemptState = {
+        completed: false,
+        failureRecorded: false,
+      };
+
+      const recordFailedAttempt = async (details: {
+        orderId?: string;
+        paymentId?: string;
+        mode?: string;
+      }) => {
+        if (paymentAttemptState.completed || paymentAttemptState.failureRecorded) {
+          return;
+        }
+
+        paymentAttemptState.failureRecorded = true;
+
+        try {
+          await recordInternshipFailedPaymentAttempt(
+            buildRegistrationFormData({
+              razorpay_order_id: details.orderId || order.order_id,
+              razorpay_payment_id: details.paymentId,
+              payment_status: "failed",
+              payment_mode: details.mode || "failed",
+            }),
+          );
+        } catch {
+          // Best effort only: do not block UI if failure logging fails.
+        }
+      };
+
       const razorpay = new window.Razorpay({
         key: order.key_id,
         amount: order.amount,
@@ -486,6 +550,8 @@ export default function InternshipApplicationForm() {
               }),
             );
 
+            paymentAttemptState.completed = true;
+
             clearForm();
             setSubmitStatus({
               type: "success",
@@ -504,18 +570,33 @@ export default function InternshipApplicationForm() {
         },
         modal: {
           ondismiss: () => {
+            if (!paymentAttemptState.completed) {
+              void recordFailedAttempt({
+                orderId: order.order_id,
+                mode: "cancelled",
+              });
+
+              openPaymentRetryPrompt(
+                "Payment was not completed. Would you like to try again?",
+              );
+            }
             setIsSubmitting(false);
           },
         },
       });
 
       razorpay.on("payment.failed", (response) => {
-        setSubmitStatus({
-          type: "error",
-          message:
-            response.error?.description ||
-            "Payment failed. Please try again.",
+        void recordFailedAttempt({
+          orderId: response.error?.metadata?.order_id || order.order_id,
+          paymentId: response.error?.metadata?.payment_id,
+          mode: response.error?.reason || "failed",
         });
+
+        openPaymentRetryPrompt(
+          response.error?.description
+            || "Payment failed or was not completed. Would you like to try again?",
+        );
+
         setIsSubmitting(false);
       });
 
@@ -530,6 +611,29 @@ export default function InternshipApplicationForm() {
     }
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await startInternshipSubmission();
+  };
+
+  const handlePaymentRetry = () => {
+    if (isSubmitting) {
+      return;
+    }
+
+    void startInternshipSubmission();
+  };
+
+  const handlePaymentCancel = () => {
+    setPaymentRetryPrompt(null);
+    clearForm();
+    setSubmitStatus({
+      type: "info",
+      message:
+        "Payment was not completed. Your details were saved as failed payment and the form has been cleared.",
+    });
+  };
+
   return (
     <div className="min-h-screen bg-[#0d0d0d] text-zinc-300 font-sans selection:bg-[#d4ff33] selection:text-black py-12 px-4 sm:px-6 lg:px-8">
       <FormResponseOverlay
@@ -538,6 +642,42 @@ export default function InternshipApplicationForm() {
         message={activeResponse?.message ?? ""}
         onClose={() => setSubmitStatus(null)}
       />
+
+      {paymentRetryPrompt && (
+        <div className="fixed inset-0 z-[140] flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-[2px]" />
+
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="relative w-full max-w-lg rounded-xl border border-rose-400/60 bg-rose-500/10 px-5 py-4 text-rose-100 shadow-2xl"
+          >
+            <p className="text-sm font-semibold uppercase tracking-wide text-white/90">
+              Payment Not Complete
+            </p>
+            <p className="mt-2 text-sm leading-relaxed">
+              {paymentRetryPrompt.message}
+            </p>
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={handlePaymentCancel}
+                className="rounded-md border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-white transition hover:bg-white/20"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handlePaymentRetry}
+                className="rounded-md border border-emerald-300/40 bg-emerald-500/20 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-emerald-100 transition hover:bg-emerald-500/30"
+              >
+                Try Again
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main className="max-w-6xl mx-auto">
         {/* Header Title Section */}

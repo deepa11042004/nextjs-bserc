@@ -79,6 +79,14 @@ export interface VerifyWorkshopPaymentPayload
   razorpay_signature: string;
 }
 
+export interface RecordWorkshopFailedPaymentPayload
+  extends WorkshopRegistrationPayload {
+  razorpay_order_id?: string;
+  razorpay_payment_id?: string;
+  payment_status: string;
+  payment_mode?: string;
+}
+
 export function createWorkshopPaymentOrder(payload: CreateWorkshopOrderPayload) {
   return postJson<CreateWorkshopOrderResponse>(
     "/api/workshop-registration/create-order",
@@ -97,6 +105,15 @@ export function verifyWorkshopPaymentAndRegister(
 
 export function registerWorkshopWithoutPayment(
   payload: WorkshopRegistrationPayload,
+) {
+  return postJson<{ message: string }>(
+    "/api/workshop-registration/register",
+    payload,
+  );
+}
+
+export function recordWorkshopFailedPaymentAttempt(
+  payload: RecordWorkshopFailedPaymentPayload,
 ) {
   return postJson<{ message: string }>(
     "/api/workshop-registration/register",

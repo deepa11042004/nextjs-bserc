@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Download, Loader2, Users } from "lucide-react";
 
+import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/Button";
 import {
@@ -24,6 +25,8 @@ type Participant = {
   contact_number: string;
   institution: string;
   designation: string;
+  payment_status: string | null;
+  razorpay_payment_id: string | null;
   created_at: string | null;
 };
 
@@ -102,17 +105,45 @@ function buildDynamicExportRows(records: Record<string, unknown>[]) {
   return { headers, rows };
 }
 
-function formatDate(value: string | null): string {
+function formatDate(value: string | null): { date: string; time: string } {
   if (!value) {
-    return "-";
+    return { date: "-", time: "-" };
   }
 
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) {
-    return "-";
+    return { date: "-", time: "-" };
   }
 
-  return parsed.toLocaleString();
+  return {
+    date: parsed.toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }),
+    time: parsed.toLocaleTimeString("en-IN", {
+      hour: "2-digit",
+      minute: "2-digit",
+    }),
+  };
+}
+
+function getPaymentBadgeClasses(status: string | null): string {
+  const normalized = (status || "").trim().toLowerCase();
+
+  if (normalized === "captured" || normalized === "authorized") {
+    return "bg-emerald-950 text-emerald-200 border border-emerald-900";
+  }
+
+  if (normalized === "not_required") {
+    return "bg-sky-950 text-sky-200 border border-sky-900";
+  }
+
+  if (normalized === "failed" || normalized === "faild") {
+    return "bg-rose-950 text-rose-200 border border-rose-900";
+  }
+
+  return "bg-zinc-800 text-zinc-200 border border-zinc-700";
 }
 
 export default function AdminParticipantsPage() {
@@ -303,9 +334,8 @@ export default function AdminParticipantsPage() {
                 <TableRow className="border-zinc-800">
                   <TableHead className="text-white">ID</TableHead>
                   <TableHead className="text-white">Name</TableHead>
-                  <TableHead className="text-white">Email</TableHead>
-                  <TableHead className="text-white">Contact</TableHead>
                   <TableHead className="text-white">Workshop</TableHead>
+                  <TableHead className="text-white">Payment</TableHead>
                   <TableHead className="text-white">Registered At</TableHead>
                 </TableRow>
               </TableHeader>
@@ -320,16 +350,39 @@ export default function AdminParticipantsPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  participants.map((participant) => (
-                    <TableRow key={participant.id} className="border-zinc-800">
-                      <TableCell className="text-zinc-300">{participant.id}</TableCell>
-                      <TableCell className="text-zinc-200">{participant.full_name}</TableCell>
-                      <TableCell className="text-zinc-300">{participant.email}</TableCell>
-                      <TableCell className="text-zinc-300">{participant.contact_number}</TableCell>
-                      <TableCell className="text-zinc-300">{participant.workshop_title}</TableCell>
-                      <TableCell className="text-zinc-400">{formatDate(participant.created_at)}</TableCell>
-                    </TableRow>
-                  ))
+                  participants.map((participant) => {
+                    const registeredAt = formatDate(participant.created_at);
+
+                    return (
+                      <TableRow key={participant.id} className="border-zinc-800">
+                        <TableCell className="text-zinc-300">{participant.id}</TableCell>
+                        <TableCell className="text-zinc-200">
+                          <div className="flex flex-col gap-1 text-sm">
+                            <span className="font-medium text-zinc-100">{participant.full_name}</span>
+                            <span className="text-zinc-400 text-xs">{participant.contact_number}</span>
+                            <span className="text-zinc-500 text-xs">{participant.email}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-zinc-300">{participant.workshop_title}</TableCell>
+                        <TableCell className="text-zinc-300">
+                          <div className="flex flex-col gap-2 text-sm text-zinc-300">
+                            <Badge className={getPaymentBadgeClasses(participant.payment_status)}>
+                              {participant.payment_status || "-"}
+                            </Badge>
+                            <span className="text-zinc-500 text-xs">
+                              Payment ID: {participant.razorpay_payment_id || "-"}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-zinc-400">
+                          <div className="flex flex-col gap-1">
+                            <span className="text-zinc-300">{registeredAt.date}</span>
+                            <span className="text-zinc-500 text-xs">{registeredAt.time}</span>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
                 )}
               </TableBody>
             </Table>
