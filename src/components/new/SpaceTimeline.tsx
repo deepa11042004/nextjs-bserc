@@ -118,7 +118,7 @@ const timelineData: TimelineItem[] = [
 // --- Component ---
 export default function SpaceTimelineDark() {
   return (
-    <section className="w-full py-12 sm:py-16 px-4 bg-black">
+    <section className="w-full py-12 sm:py-16 px-4  ">
       <div className="max-w-6xl mx-auto">
         {/* Heading */}
         <h2 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold text-center text-white mb-2  ">

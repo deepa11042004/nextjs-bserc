@@ -3,14 +3,11 @@ import {
   Briefcase,
   TrendingUp,
   Award,
- Star,
-  BookOpen,
-  Users,
-  Zap,
-  Globe,
+  Star,
 } from "lucide-react";
 import Image from "next/image";
 import HeroBanner from "@/components/layout/Banner";
+import SpaceTimeline from "@/components/new/SpaceTimeline";
 interface Feature {
   title: string;
   description?: string;
@@ -280,48 +277,45 @@ const page = () => {
           </div>
         </div>
 
-        
-
-       
         {/* BSERC Section */}
-<div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10 items-center py-10">
-  {/* Text Content */}
-  <div className="text-center lg:text-left order-2 lg:order-1">
-    <h2 className="text-3xl sm:text-4xl font-bold text-white mb-5">
-      BSERC
-    </h2>
-    <p className="text-gray-300 text-base sm:text-lg leading-relaxed max-w-xl mx-auto lg:mx-0">
-      Bharat Space Education Research Centre further fosters learning
-      through student and faculty development programs, specialized
-      laboratories for Drone and Def-Space science, Def-Space Summer
-      School, Def-Space Innovation Week, and Summer & Winter Internship
-      opportunities.
-    </p>
-  </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10 items-center py-10">
+          {/* Text Content */}
+          <div className="text-center lg:text-left order-2 lg:order-1">
+            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-5">
+              BSERC
+            </h2>
+            <p className="text-gray-300 text-base sm:text-lg leading-relaxed max-w-xl mx-auto lg:mx-0">
+              Bharat Space Education Research Centre further fosters learning
+              through student and faculty development programs, specialized
+              laboratories for Drone and Def-Space science, Def-Space Summer
+              School, Def-Space Innovation Week, and Summer & Winter Internship
+              opportunities.
+            </p>
+          </div>
 
-  {/* Image */}
-  <div className="flex justify-center lg:justify-end order-1 lg:order-2">
-    <Image
-      src="/img/bserc_new_logo.png"
-      alt="BSERC Logo"
-      width={400}
-      height={400}
-      className="w-48 sm:w-64 md:w-80 lg:w-full max-w-sm object-contain rounded-2xl shadow-lg"
-    />
-  </div>
-</div>
+          {/* Image */}
+          <div className="flex justify-center lg:justify-end order-1 lg:order-2">
+            <Image
+              src="/img/bserc_new_logo.png"
+              alt="BSERC Logo"
+              width={400}
+              height={400}
+              className="w-48 sm:w-64 md:w-80 lg:w-full max-w-sm object-contain rounded-2xl shadow-lg"
+            />
+          </div>
+        </div>
 
-         {/* Highlight */}
-  <div className="flex justify-center items-start gap-3 bg-orange-500/10 border border-orange-500/20 rounded-lg p-3">
-    <Star className="w-5 h-5 text-orange-500 mt-0.5 shrink-0" />
-    <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
-     Def-Space Education and Innovation: For Innovators & Learners | Atmanirbhar Bharat | Viksit Bharat @2047
-    </p>
-  </div>
+        <SpaceTimeline/>
 
-
+        {/* Highlight */}
+        <div className="flex justify-center items-start gap-3 bg-orange-500/10 border border-orange-500/20 rounded-lg p-3">
+          <Star className="w-5 h-5 text-orange-500 mt-0.5 shrink-0" />
+          <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
+            Def-Space Education and Innovation: For Innovators & Learners |
+            Atmanirbhar Bharat | Viksit Bharat @2047
+          </p>
+        </div>
       </div>
-
     </>
   );
 };
