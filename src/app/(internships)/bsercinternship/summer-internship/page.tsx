@@ -57,12 +57,6 @@ type RazorpayInstance = {
   ) => void;
 };
 
-declare global {
-  interface Window {
-    Razorpay?: new (options: RazorpayOptions) => RazorpayInstance;
-  }
-}
-
 type SubmitStatus = {
   type: "success" | "info" | "error";
   message: string;
@@ -525,7 +519,12 @@ export default function InternshipApplicationForm() {
         }
       };
 
-      const razorpay = new window.Razorpay({
+      const RazorpayConstructor =
+        window.Razorpay as unknown as new (
+          options: RazorpayOptions,
+        ) => RazorpayInstance;
+
+      const razorpay = new RazorpayConstructor({
         key: order.key_id,
         amount: order.amount,
         currency: order.currency,
