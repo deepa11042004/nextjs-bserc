@@ -142,7 +142,7 @@ const Footer: React.FC = () => {
                     alt={item.alt}
                     width={120}
                     height={60}
-                    className="max-h-full w-auto object-contain opacity-80 hover:opacity-100 transition"
+                    className="max-h-full w-auto object-contain  "
                   />
                 </div>
               ))}
