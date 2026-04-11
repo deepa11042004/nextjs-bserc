@@ -30,13 +30,31 @@ const NAV_ITEMS: {
     dropdown: [
       {
         type: "link",
-        label: "Vision",
-        href: "/about",
+        label: "Government Initiatives in the Space Sector",
+        href: "/about/government-initiatives",
         external: false,
       },
       {
         type: "link",
-        label: "Goals",
+        label: "Our Vision",
+        href: "/about/our-vision",
+        external: false,
+      },
+      {
+        type: "link",
+        label: "Our Mission",
+        href: "/about/our-mission",
+        external: false,
+      },
+      {
+        type: "link",
+        label: "Our Goal",
+        href: "/about/our-goal",
+        external: false,
+      },
+      {
+        type: "link",
+        label: "Core Focus Areas",
         href: "/about",
         external: false,
       },
