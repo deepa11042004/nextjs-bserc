@@ -2,6 +2,7 @@
 import React from "react";
 
 import Navbar from "./Navbar";
+import NavBanner from "@/components/layout/NabBanner";
 import Footer from "@/components/layout/Footer";
 export default function IntershipLayout({
   children,
@@ -10,6 +11,7 @@ export default function IntershipLayout({
 }) {
   return (
     <>
+      <NavBanner/>
       <Navbar />
      {children}
       <Footer/>    </>

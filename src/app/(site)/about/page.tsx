@@ -1,10 +1,4 @@
-import {
-  Network,
-  Briefcase,
-  TrendingUp,
-  Award,
-  Star,
-} from "lucide-react";
+import { Network, Briefcase, TrendingUp, Award, Star } from "lucide-react";
 import Image from "next/image";
 import HeroBanner from "@/components/layout/Banner";
 import SpaceTimeline from "@/components/new/SpaceTimeline";
@@ -305,7 +299,7 @@ const page = () => {
           </div>
         </div>
 
-        <SpaceTimeline/>
+        <SpaceTimeline />
 
         {/* Highlight */}
         <div className="flex justify-center items-start gap-3 bg-orange-500/10 border border-orange-500/20 rounded-lg p-3">
