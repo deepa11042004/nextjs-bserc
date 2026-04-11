@@ -73,7 +73,7 @@ const partnerLogos: PartnerLogo[] = [
   { src: "/img/isro.png", alt: "ISRO" },
   { src: "/img/DOS_light.png", alt: "DOAS" },
   { src: "/img/inspace.png", alt: "Ministry of Education" },
-  { src: "/img/skill_india.png", alt: "skill india" },
+  { src: "/img/skill_india.jpg", alt: "skill india" },
   { src: "/img/viksit.png", alt: "vikisit india" },
 ];
 
@@ -142,6 +142,7 @@ const Footer: React.FC = () => {
                   className="h-12 sm:h-14 flex items-center justify-center md:justify-start"
                 >
                   <Image
+                  priority
                     src={item.src}
                     alt={item.alt}
                     width={76}
