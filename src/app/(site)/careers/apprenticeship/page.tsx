@@ -1,7 +1,8 @@
-import React from "react";
+ 
+import ApprenticeshipApplicationForm from "@/components/form/ApprenticeshipApplicationForm";
 
 const page = () => {
-  return <>Page</>;
+  return <ApprenticeshipApplicationForm />;
 };
 
 export default page;
