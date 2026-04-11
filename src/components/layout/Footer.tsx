@@ -51,11 +51,11 @@ const socialLinks: SocialLink[] = [
 ];
 
 const companyLinks: CompanyLink[] = [
-  { label: "Def-Space Summer School", href: "/summer-school" },
-  { label: "Def-Space Summer Internship", href: "/bsercinternship" },
-  { label: "Def-Space Innovation Corridor", href: "/" },
-  { label: "Workshop", href: "/results/winter-internship-results" },
-  { label: "Contact Us", href: "/" },
+  { label: "Def-Space Summer School", href: "/summer-school" ,external:true},
+  { label: "Def-Space Summer Internship", href: "/bsercinternship" ,external:true},
+  { label: "Def-Space Innovation Corridor", href: "/" ,external:false },
+  { label: "Workshop", href: "/results/winter-internship-results" ,external:false},
+  { label: "Contact Us", href: "/contact" ,external:false},
 ];
 
 const contactItems: ContactItem[] = [
@@ -71,9 +71,9 @@ const contactItems: ContactItem[] = [
 
 const partnerLogos: PartnerLogo[] = [
   { src: "/img/isro.png", alt: "ISRO" },
-  { src: "/img/DOS.jpg", alt: "DOAS" },
+  { src: "/img/DOS_light.png", alt: "DOAS" },
   { src: "/img/inspace.png", alt: "Ministry of Education" },
-  { src: "/img/Skill_India.png", alt: "skill india" },
+  { src: "/img/Skill_india.png", alt: "skill india" },
   { src: "/img/viksit.png", alt: "vikisit india" },
 ];
 
@@ -84,13 +84,14 @@ const partnerLogos: PartnerLogo[] = [
 const Footer: React.FC = () => {
   return (
     <footer className="bg-black text-white border-t border-white/10">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 sm:py-12 lg:py-16">
-        {/* Four Column Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 sm:py-10 lg:py-12">
+        {/* Four Column Grid - Responsive */}
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4 lg:gap-8">
+          
           {/* Column 1: Brand + Social */}
-          <div className="space-y-6">
+          <div className="space-y-4 text-center md:text-left">
             {/* Logo + Title */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center md:justify-start gap-3">
               <div className="h-12 w-12 flex-shrink-0">
                 <Image
                   src="/img/bserc_new_logo.png"
@@ -102,28 +103,28 @@ const Footer: React.FC = () => {
                 />
               </div>
               <div>
-                <p className="text-lg font-bold">BSERC</p>
-                <p className="text-sm tracking-wide text-slate-400 leading-tight">
+                <p className="text-base sm:text-lg font-bold">BSERC</p>
+                <p className="text-xs tracking-wide text-slate-400 leading-tight">
                   Space Tutor • ISRO
                 </p>
               </div>
             </div>
 
             {/* Description */}
-            <p className="text-xs text-slate-300 leading-relaxed">
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-sm mx-auto md:mx-0">
               Empowering Future Innovators in Space Exploration. We are
               dedicated to advancing space science education and fostering
               innovation across India.
             </p>
 
             {/* Social Icons */}
-            <div className="flex gap-3">
+            <div className="flex justify-center md:justify-start gap-3">
               {socialLinks.map(({ icon: Icon, label, href }) => (
                 <a
                   key={label}
                   href={href}
                   aria-label={label}
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-[#0b1224] text-slate-200 transition hover:text-white hover:bg-[#1a2340]"
+                  className="flex h-9 w-9 sm:h-8 sm:w-8 items-center justify-center rounded-full bg-[#0b1224] text-slate-200 transition hover:text-white hover:bg-[#1a2340]"
                 >
                   <Icon size={14} />
                 </a>
@@ -131,17 +132,20 @@ const Footer: React.FC = () => {
             </div>
           </div>
 
-          {/* Column 2: Partner Logos */}
-          <div className="space-y-4">
+          {/* Column 2: Partner Logos - Improved responsive grid */}
+          <div>
              
-            <div className="grid grid-cols-2 gap-4 items-center">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-2 gap-4 items-center">
               {partnerLogos.map((item, idx) => (
-                <div key={idx} className="h-12 flex items-center justify-start">
+                <div 
+                  key={idx} 
+                  className="h-12 sm:h-14 flex items-center justify-center md:justify-start"
+                >
                   <Image
                     src={item.src}
                     alt={item.alt}
-                    width={120}
-                    height={60}
+                    width={76}
+                    height={76}
                     className="max-h-full w-auto object-contain  "
                   />
                 </div>
@@ -150,16 +154,20 @@ const Footer: React.FC = () => {
           </div>
 
           {/* Column 3: Quick Links */}
-          <div className="space-y-4 ">
-            <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+          <div className="text-center md:text-left">
+            <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-4">
               Quick Links
             </h4>
-            <ul className="space-y-2">
+            <ul className="space-y-2.5">
               {companyLinks.map((item) => (
                 <li key={item.label}>
                   <a
+                   {...(item.external && {
+                      target: "_blank",
+                      rel: "noopener noreferrer",
+                    })}
                     href={item.href}
-                    className="text-xs text-slate-300 hover:text-[#3B82F6] transition"
+                    className="text-xs sm:text-sm text-slate-300 hover:text-[#3B82F6] transition inline-block"
                   >
                     {item.label}
                   </a>
@@ -169,8 +177,8 @@ const Footer: React.FC = () => {
           </div>
 
           {/* Column 4: Head Office */}
-          <div className="space-y-4">
-            <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+          <div className="text-center md:text-left">
+            <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-4">
               Head Office
             </h4>
             <ul className="space-y-3">
@@ -180,12 +188,12 @@ const Footer: React.FC = () => {
                   <li key={idx}>
                     <Wrapper
                       href={href}
-                      className="flex items-start gap-2 group"
+                      className="flex items-center justify-center md:justify-start gap-2 group"
                     >
                       <span className="flex h-7 w-7 items-center justify-center rounded-md bg-[#0b1224] text-[#3B82F6] flex-shrink-0">
                         <Icon size={12} />
                       </span>
-                      <span className="text-xs text-slate-300 leading-relaxed group-hover:text-[#3B82F6] transition">
+                      <span className="text-xs sm:text-sm text-slate-300 leading-relaxed group-hover:text-[#3B82F6] transition">
                         {label}
                       </span>
                     </Wrapper>
@@ -196,45 +204,40 @@ const Footer: React.FC = () => {
           </div>
         </div>
 
-        <div className="mt-10 sm:mt-12 border-t border-white/5 pt-6">
-          
-          <div className="flex flex-col-reverse sm:flex-row items-center sm:items-start justify-between gap-4 sm:gap-6">
-           
-            {/* Copyright */}
-            <p className="text-[10px] sm:text-xs text-slate-400 text-center sm:text-left break-words">
-           
-              © 2026 BSERC. All rights reserved.{" "}
-            </p>{" "}
-            {/* Policy Links - Responsive Stack */}{" "}
-            <div className="flex flex-wrap items-center justify-center sm:justify-end gap-x-3 gap-y-2 text-[10px] sm:text-xs text-slate-400">
-              {" "}
+        {/* Footer Bottom Section - Improved responsive layout */}
+        <div className="mt-10 sm:mt-12 pt-6 border-t border-white/5">
+          <div className="flex flex-col gap-4">
+            {/* Policy Links - Top on mobile */}
+            <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[11px] sm:text-xs text-slate-400 order-1 sm:order-none">
               <a
                 href="/bserc-policies/privacy-policy"
-                className="transition hover:text-[#3B82F6] active:opacity-80 touch-manipulation whitespace-nowrap"
+                className="transition hover:text-[#3B82F6] active:opacity-80 touch-manipulation"
               >
-                {" "}
-                Privacy Policy{" "}
-              </a>{" "}
-              <span className="text-slate-600 hidden sm:inline">|</span>{" "}
-              <span className="text-slate-600 sm:hidden w-full h-px bg-white/5" />{" "}
+                Privacy Policy
+              </a>
+              <span className="text-slate-600 hidden sm:inline">•</span>
+              <span className="w-px h-3 bg-slate-700 sm:hidden" />
               <a
                 href="/bserc-policies/terms-and-conditions"
-                className="transition hover:text-[#3B82F6] active:opacity-80 touch-manipulation whitespace-nowrap"
+                className="transition hover:text-[#3B82F6] active:opacity-80 touch-manipulation"
               >
-                {" "}
-                Terms & Conditions{" "}
-              </a>{" "}
-              <span className="text-slate-600 hidden sm:inline">|</span>{" "}
-              <span className="text-slate-600 sm:hidden w-full h-px bg-white/5" />{" "}
+                Terms & Conditions
+              </a>
+              <span className="text-slate-600 hidden sm:inline">•</span>
+              <span className="w-px h-3 bg-slate-700 sm:hidden" />
               <a
                 href="/bserc-policies/refund-policy"
-                className="transition hover:text-[#3B82F6] active:opacity-80 touch-manipulation whitespace-nowrap"
+                className="transition hover:text-[#3B82F6] active:opacity-80 touch-manipulation"
               >
-                {" "}
-                Refund Policy{" "}
-              </a>{" "}
-            </div>{" "}
-          </div>{" "}
+                Refund Policy
+              </a>
+            </div>
+            
+            {/* Copyright - Bottom on mobile */}
+            <p className="text-[10px] sm:text-xs text-slate-400 text-center">
+              © {new Date().getFullYear()} BSERC. All rights reserved.
+            </p>
+          </div>
         </div>
       </div>
     </footer>
