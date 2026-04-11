@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { ArrowLeft, Download, Loader2, Users } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import {
   Table,
@@ -23,6 +24,7 @@ type Participant = {
   contact_number: string;
   institution: string;
   designation: string;
+  payment_status?: string | null;
 };
 
 type ParticipantsResponse = {
@@ -40,6 +42,24 @@ function getWorkshopIdParam(value: string | string[] | undefined): string {
   }
 
   return Array.isArray(value) ? value[0] : value;
+}
+
+function getPaymentBadgeClasses(status: string | null | undefined): string {
+  const normalized = (status || "").trim().toLowerCase();
+
+  if (normalized === "captured" || normalized === "authorized") {
+    return "bg-emerald-950 text-emerald-200 border border-emerald-900";
+  }
+
+  if (normalized === "not_required") {
+    return "bg-sky-950 text-sky-200 border border-sky-900";
+  }
+
+  if (normalized === "failed" || normalized === "faild") {
+    return "bg-rose-950 text-rose-200 border border-rose-900";
+  }
+
+  return "bg-zinc-800 text-zinc-200 border border-zinc-700";
 }
 
 export default function WorkshopParticipantsPage() {
@@ -134,7 +154,7 @@ export default function WorkshopParticipantsPage() {
         full_name: participant.full_name,
         email: participant.email,
         contact_number: participant.contact_number,
-        institution: participant.institution,
+        payment_status: participant.payment_status || "-",
         designation: participant.designation,
       }));
 
@@ -143,7 +163,7 @@ export default function WorkshopParticipantsPage() {
         "full_name",
         "email",
         "contact_number",
-        "institution",
+        "payment_status",
         "designation",
       ];
 
@@ -153,7 +173,7 @@ export default function WorkshopParticipantsPage() {
         { wch: 26 },
         { wch: 34 },
         { wch: 18 },
-        { wch: 30 },
+        { wch: 18 },
         { wch: 20 },
       ];
 
@@ -251,7 +271,7 @@ export default function WorkshopParticipantsPage() {
                   <TableHead className="text-white">Name</TableHead>
                   <TableHead className="text-white">Email</TableHead>
                   <TableHead className="text-white">Contact</TableHead>
-                  <TableHead className="text-white">Institution</TableHead>
+                  <TableHead className="text-white">Payment</TableHead>
                   <TableHead className="text-white">Designation</TableHead>
                 </TableRow>
               </TableHeader>
@@ -271,7 +291,11 @@ export default function WorkshopParticipantsPage() {
                       <TableCell className="text-zinc-200">{participant.full_name}</TableCell>
                       <TableCell className="text-zinc-300">{participant.email}</TableCell>
                       <TableCell className="text-zinc-300">{participant.contact_number}</TableCell>
-                      <TableCell className="text-zinc-300">{participant.institution}</TableCell>
+                      <TableCell className="text-zinc-300">
+                        <Badge className={getPaymentBadgeClasses(participant.payment_status)}>
+                          {participant.payment_status || "-"}
+                        </Badge>
+                      </TableCell>
                       <TableCell className="text-zinc-300">{participant.designation}</TableCell>
                     </TableRow>
                   ))

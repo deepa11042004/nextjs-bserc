@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import type { Workshop } from "@/types/workshop";
 import {
   createWorkshopPaymentOrder,
+  recordWorkshopFailedPaymentAttempt,
   registerWorkshopWithoutPayment,
   verifyWorkshopPaymentAndRegister,
   type WorkshopRegistrationPayload,
@@ -20,6 +21,11 @@ type RazorpaySuccessResponse = {
 type RazorpayFailureResponse = {
   error?: {
     description?: string;
+    reason?: string;
+    metadata?: {
+      order_id?: string;
+      payment_id?: string;
+    };
   };
 };
 
@@ -51,12 +57,6 @@ type RazorpayInstance = {
     handler: (response: RazorpayFailureResponse) => void,
   ) => void;
 };
-
-declare global {
-  interface Window {
-    Razorpay?: new (options: RazorpayOptions) => RazorpayInstance;
-  }
-}
 
 function normalizeDesignationForApi(value: string): string {
   const normalized = value.trim().toLowerCase();
@@ -479,6 +479,10 @@ type SubmitStatus = {
   message: string;
 };
 
+type PaymentRetryPrompt = {
+  message: string;
+};
+
 export default function WorkshopRegistrationPageClient({
   workshop,
 }: {
@@ -546,6 +550,8 @@ export default function WorkshopRegistrationPageClient({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<SubmitStatus | null>(null);
+  const [paymentRetryPrompt, setPaymentRetryPrompt] =
+    useState<PaymentRetryPrompt | null>(null);
 
   const activeResponse = submitStatus
     ? {
@@ -614,9 +620,14 @@ export default function WorkshopRegistrationPageClient({
     setFormData(emptyFormData);
   };
 
-  const handleSubmit = async (e: any) => {
-    e.preventDefault();
+  const openPaymentRetryPrompt = (message: string) => {
     setSubmitStatus(null);
+    setPaymentRetryPrompt({ message });
+  };
+
+  const startRegistrationFlow = async () => {
+    setSubmitStatus(null);
+    setPaymentRetryPrompt(null);
     setIsSubmitting(true);
 
     if (!formData.agreeRecord || !formData.agreeTerms) {
@@ -707,7 +718,42 @@ export default function WorkshopRegistrationPageClient({
         throw new Error("Unable to load Razorpay checkout. Please try again.");
       }
 
-      const razorpay = new window.Razorpay({
+      const paymentAttemptState = {
+        completed: false,
+        failureRecorded: false,
+      };
+
+      const recordFailedAttempt = async (details: {
+        orderId?: string;
+        paymentId?: string;
+        mode?: string;
+      }) => {
+        if (paymentAttemptState.completed || paymentAttemptState.failureRecorded) {
+          return;
+        }
+
+        paymentAttemptState.failureRecorded = true;
+
+        try {
+          await recordWorkshopFailedPaymentAttempt({
+            ...registrationPayload,
+            razorpay_order_id: details.orderId || order.order_id,
+            razorpay_payment_id: details.paymentId,
+            payment_status: "failed",
+            payment_mode: details.mode || "failed",
+          });
+        } catch {
+          // Best effort only: checkout UX should not fail if this logging call fails.
+        }
+      };
+
+      const RazorpayConstructor =
+        window.Razorpay as unknown as new (
+          options: RazorpayOptions,
+        ) => RazorpayInstance;
+
+      const razorpay = new RazorpayConstructor({
+        // Keep a best-effort record for failed/canceled payment attempts.
         key: order.key_id,
         amount: order.amount,
         currency: order.currency,
@@ -753,6 +799,8 @@ export default function WorkshopRegistrationPageClient({
               throw lastError;
             }
 
+            paymentAttemptState.completed = true;
+
             clearForm();
             setSubmitStatus({
               type: "success",
@@ -769,16 +817,33 @@ export default function WorkshopRegistrationPageClient({
         },
         modal: {
           ondismiss: () => {
+            if (!paymentAttemptState.completed) {
+              void recordFailedAttempt({
+                orderId: order.order_id,
+                mode: "cancelled",
+              });
+
+              openPaymentRetryPrompt(
+                "Payment was not completed. Would you like to try again?",
+              );
+            }
             setIsSubmitting(false);
           },
         },
       });
 
       razorpay.on("payment.failed", (response) => {
-        setSubmitStatus({
-          type: "error",
-          message: response.error?.description || "Payment failed. Please try again.",
+        void recordFailedAttempt({
+          orderId: response.error?.metadata?.order_id || order.order_id,
+          paymentId: response.error?.metadata?.payment_id,
+          mode: response.error?.reason || "failed",
         });
+
+        openPaymentRetryPrompt(
+          response.error?.description
+            || "Payment failed or was not completed. Would you like to try again?",
+        );
+
         setIsSubmitting(false);
       });
 
@@ -800,6 +865,29 @@ export default function WorkshopRegistrationPageClient({
     }
   };
 
+  const handleSubmit = async (e: any) => {
+    e.preventDefault();
+    await startRegistrationFlow();
+  };
+
+  const handlePaymentRetry = () => {
+    if (isSubmitting) {
+      return;
+    }
+
+    void startRegistrationFlow();
+  };
+
+  const handlePaymentCancel = () => {
+    setPaymentRetryPrompt(null);
+    clearForm();
+    setSubmitStatus({
+      type: "info",
+      message:
+        "Payment was not completed. Your details were saved as failed payment and the form has been cleared.",
+    });
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-white">
       <FormResponseOverlay
@@ -808,6 +896,42 @@ export default function WorkshopRegistrationPageClient({
         message={activeResponse?.message ?? ""}
         onClose={() => setSubmitStatus(null)}
       />
+
+      {paymentRetryPrompt && (
+        <div className="fixed inset-0 z-[140] flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-[2px]" />
+
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="relative w-full max-w-lg rounded-xl border border-rose-400/60 bg-rose-500/10 px-5 py-4 text-rose-100 shadow-2xl"
+          >
+            <p className="text-sm font-semibold uppercase tracking-wide text-white/90">
+              Payment Not Complete
+            </p>
+            <p className="mt-2 text-sm leading-relaxed">
+              {paymentRetryPrompt.message}
+            </p>
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={handlePaymentCancel}
+                className="rounded-md border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-white transition hover:bg-white/20"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handlePaymentRetry}
+                className="rounded-md border border-emerald-300/40 bg-emerald-500/20 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-emerald-100 transition hover:bg-emerald-500/30"
+              >
+                Try Again
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Banner */}
       <div className="bg-gradient-to-r from-blue-700 to-indigo-700 text-center py-16 shadow-lg">
