@@ -30,6 +30,7 @@ const routeLabels: Record<string, string> = {
   "admin-users": "Admin Users",
   "website-users": "Website Users",
   "contact-queries": "Contact Queries",
+  "tickets": "Support Tickets",
   "mou-requests": "MoU Requests",
   "collaboration-requests": "Collaboration Requests",
   "faqs": "FAQs",

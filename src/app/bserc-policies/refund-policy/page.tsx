@@ -41,7 +41,7 @@ export default function RefundPolicyPage() {
             Bharat Space Education Research Centre (<strong>&quot;BSERC&quot;</strong>, <strong>&quot;we&quot;</strong>, <strong>&quot;us&quot;</strong>, or <strong>&quot;our&quot;</strong>) provides specialised training programs in space technology, defence systems, robotics, and related disciplines (<strong>&quot;Programs&quot;</strong>) via its website and platforms.
           </p>
           <p className="text-slate-700 leading-relaxed mt-3 mb-0">
-            This Policy governs all refunds, cancellations, and related matters. Enrollment constitutes acceptance of this Policy, the <a href="/privacy-policy" className="text-rose-700 hover:text-rose-900 underline font-medium">Privacy Policy</a>, and <a href="/terms" className="text-rose-700 hover:text-rose-900 underline font-medium">Terms of Use</a>.
+            This Policy governs all refunds, cancellations, and related matters. Enrollment constitutes acceptance of this Policy, the <a href="/bserc-policies/privacy-policy" className="text-rose-700 hover:text-rose-900 underline font-medium">Privacy Policy</a>, and <a href="/bserc-policies/terms-and-conditions" className="text-rose-700 hover:text-rose-900 underline font-medium">Terms of Use</a>.
           </p>
         </div>
 
@@ -249,7 +249,7 @@ export default function RefundPolicyPage() {
                 outreach@bserc.org
               </a>
               <a 
-                href="/terms" 
+                href="/bserc-policies/terms-and-conditions" 
                 className="inline-flex items-center gap-2 bg-slate-600 hover:bg-slate-700 text-white px-4 py-2 rounded-lg transition-colors font-medium"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

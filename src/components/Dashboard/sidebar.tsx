@@ -7,6 +7,7 @@ import {
   Video,
   ExternalLink,
   HelpCircle,
+  LifeBuoy,
   Menu,
   LayoutPanelLeft,
   Contact,
@@ -102,7 +103,7 @@ export default function Sidebar() {
           >
             <div className="flex items-center gap-3">
               <Image
-                src="/img/logo.png"
+                src="/img/bserc_new_logo.png"
                 alt="logo"
                 width={40}
                 height={40}
@@ -246,6 +247,14 @@ export default function Sidebar() {
                     isActive={normalizedPath === "/admin/contact-queries"}
                   >
                     Contact Queries
+                  </NavItem>
+                  <NavItem
+                    href="/admin/tickets"
+                    icon={LifeBuoy}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    isActive={normalizedPath.startsWith("/admin/tickets")}
+                  >
+                    Support Tickets
                   </NavItem>
                   <NavItem
                     href="/admin/mou-requests"

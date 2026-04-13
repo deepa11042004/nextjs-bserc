@@ -106,7 +106,7 @@ export default function TermsPage() {
               </p>
             </div>
             <p>
-              Report inappropriate Content to <a href="mailto:info@bserc.org" className="text-indigo-700 hover:text-indigo-900 underline">info@bserc.org</a>. All disclosures comply with our <a href="/privacy-policy" className="text-indigo-700 hover:text-indigo-900 underline">Privacy Policy</a>.
+              Report inappropriate Content to <a href="mailto:info@bserc.org" className="text-indigo-700 hover:text-indigo-900 underline">info@bserc.org</a>. All disclosures comply with our <a href="/bserc-policies/privacy-policy" className="text-indigo-700 hover:text-indigo-900 underline">Privacy Policy</a>.
             </p>
           </div>
         </section>
