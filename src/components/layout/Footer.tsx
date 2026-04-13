@@ -106,7 +106,7 @@ const Footer: React.FC = () => {
               <div>
                 <p className="text-base sm:text-lg font-bold">BSERC</p>
                 <p className="text-xs tracking-wide text-slate-400 leading-tight">
-                  Space Tutor • ISRO
+                  Def- Space Education & Innovation • ISRO
                 </p>
               </div>
             </div>
