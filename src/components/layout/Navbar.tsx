@@ -275,8 +275,13 @@ export default function Navbar() {
     setOpenNested(null);
   };
 
-  const { isLoggedIn, role } = useAuth();
+  const { isLoggedIn, role, logout } = useAuth();
   const isStudentSession = isLoggedIn && role === "user";
+
+  const handleStudentLogout = () => {
+    closeAll();
+    logout("/login", { scope: "user" });
+  };
 
   return (
     <>
@@ -385,14 +390,33 @@ export default function Navbar() {
                 ),
               )}
 
-              <li className="border-t border-white/5 mt-4 mx-4">
-                <Link
-                  href="/login"
-                  className="block w-full text-center py-3 font-semibold text-white rounded-lg bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 hover:from-blue-600 hover:via-blue-700 hover:to-blue-800 transition-all duration-300 shadow-lg"
-                  onClick={closeAll}
-                >
-                  Log In
-                </Link>
+              <li className="border-t border-white/5 mt-4 mx-4 space-y-2 pt-4">
+                {isStudentSession ? (
+                  <>
+                    <Link
+                      href="/profile"
+                      className="block w-full text-center py-3 font-semibold text-white rounded-lg bg-gradient-to-r from-emerald-500 via-emerald-600 to-emerald-700 hover:from-emerald-600 hover:via-emerald-700 hover:to-emerald-800 transition-all duration-300 shadow-lg"
+                      onClick={closeAll}
+                    >
+                      My Profile
+                    </Link>
+                    <button
+                      type="button"
+                      className="block w-full text-center py-3 font-semibold text-red-200 rounded-lg bg-red-500/20 hover:bg-red-500/30 transition-all duration-300 border border-red-500/30"
+                      onClick={handleStudentLogout}
+                    >
+                      Logout
+                    </button>
+                  </>
+                ) : (
+                  <Link
+                    href="/login"
+                    className="block w-full text-center py-3 font-semibold text-white rounded-lg bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 hover:from-blue-600 hover:via-blue-700 hover:to-blue-800 transition-all duration-300 shadow-lg"
+                    onClick={closeAll}
+                  >
+                    Log In
+                  </Link>
+                )}
               </li>
             </ul>
           </div>

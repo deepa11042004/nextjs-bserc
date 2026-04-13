@@ -1,6 +1,12 @@
 "use client";
 
-import { LogOut, MoveUpRight, Settings, FileText } from "lucide-react";
+import {
+  CircleUserRound,
+  LifeBuoy,
+  LogOut,
+  MoveUpRight,
+  ShieldCheck,
+} from "lucide-react";
 
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
@@ -10,6 +16,10 @@ export default function StudentProfile() {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const { logout, user } = useAuth();
+
+  const displayName = user?.full_name || user?.name || "Guest";
+  const displayEmail = user?.email || "guest@example.com";
+  const avatarSeed = displayName || displayEmail;
 
   const handleLogout = () => {
     logout("/login", { scope: "user" });
@@ -32,7 +42,7 @@ export default function StudentProfile() {
         <div
           className="w-9 h-9 flex items-center justify-center rounded-full bg-[#10a5c4] text-white font-semibold text-sm uppercase 
            border border-white/10 hover:scale-105 transition"  >
-          {user?.name?.charAt(0) || "G"}
+          {avatarSeed.charAt(0) || "G"}
         </div>
       </button>
 
@@ -46,31 +56,43 @@ export default function StudentProfile() {
           {/* User Info */}
           <div className="px-4 py-3 border-b border-white/10">
             <p className="text-sm font-semibold text-white truncate pb-2">
-              {user?.name || "Guest"}
+              {displayName}
             </p>
             <p className="text-xs text-zinc-400 truncate">
-              {user?.email || "guest@example.com"}
+              {displayEmail}
             </p>
           </div>
 
           {/* Menu */}
           <div className="p-2 space-y-1">
             <Link
-              href="#"
+              href="/profile"
+              onClick={() => setOpen(false)}
               className="flex items-center gap-2 px-3 py-2 rounded-lg 
               text-zinc-300 hover:text-white hover:bg-white/5 transition"
             >
-              <Settings className="w-4 h-4" />
-              <span className="text-sm">Settings</span>
+              <CircleUserRound className="w-4 h-4" />
+              <span className="text-sm">My Profile</span>
             </Link>
 
             <Link
-              href="#"
+              href="/help-desk"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg 
+              text-zinc-300 hover:text-white hover:bg-white/5 transition"
+            >
+              <LifeBuoy className="w-4 h-4" />
+              <span className="text-sm">Help Desk</span>
+            </Link>
+
+            <Link
+              href="/bserc-policies/terms-and-conditions"
+              onClick={() => setOpen(false)}
               className="flex items-center justify-between px-3 py-2 rounded-lg 
               text-zinc-300 hover:text-white hover:bg-white/5 transition"
             >
               <div className="flex items-center gap-2">
-                <FileText className="w-4 h-4" />
+                <ShieldCheck className="w-4 h-4" />
                 <span className="text-sm">Terms</span>
               </div>
               <MoveUpRight className="w-4 h-4 opacity-70" />
