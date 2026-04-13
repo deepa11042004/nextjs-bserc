@@ -4,7 +4,7 @@ const NavBanner = () => {
   return (
     <div>
       <Image
-        src="/img/NavBanner.webp"
+        src="/img/NavBanner.png"
         alt="NavBanner"
         priority
         loading="eager"
