@@ -1,25 +1,115 @@
 "use client";
 
 import {
-  CircleUserRound,
+  Activity,
+  Award,
+  BookOpen,
+  Download,
+  FileText,
+  Heart,
+  HelpCircle,
   LifeBuoy,
   LogOut,
-  MoveUpRight,
-  ShieldCheck,
+  Settings,
+  UserCircle2,
 } from "lucide-react";
 
 import Link from "next/link";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, type ComponentType } from "react";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
+import { getMyWorkshops } from "@/services/userDashboard";
+
+type ProfileNavItem = {
+  label: string;
+  href: string;
+  icon: ComponentType<{ className?: string }>;
+};
+
+type ProfileNavSection = {
+  title: string;
+  items: ProfileNavItem[];
+};
+
+const PROFILE_NAV_SECTIONS: ProfileNavSection[] = [
+  {
+    title: "Main",
+    items: [
+      { label: "My Profile", href: "/profile", icon: UserCircle2 },
+      { label: "My Workshops", href: "/profile/workshops", icon: BookOpen },
+      { label: "Certificates", href: "/profile/certificates", icon: Award },
+      { label: "Wishlist", href: "/profile/wishlist", icon: Heart },
+    ],
+  },
+  {
+    title: "Activity",
+    items: [
+      { label: "Progress", href: "/profile/progress", icon: Activity },
+      { label: "Downloads", href: "/profile/downloads", icon: Download },
+    ],
+  },
+  {
+    title: "Support & Info",
+    items: [
+      { label: "Attendance", href: "/profile/attendance", icon: Activity },
+      { label: "Settings", href: "/profile/settings", icon: Settings },
+      { label: "Help Desk", href: "/help-desk", icon: LifeBuoy },
+      { label: "FAQ", href: "/more/faq", icon: HelpCircle },
+      {
+        label: "Terms & Conditions",
+        href: "/bserc-policies/terms-and-conditions",
+        icon: FileText,
+      },
+      {
+        label: "Refund Policy",
+        href: "/bserc-policies/refund-policy",
+        icon: FileText,
+      },
+    ],
+  },
+];
+
+function safeText(value: unknown, fallback = ""): string {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed || fallback;
+  }
+
+  return fallback;
+}
+
+function getInitials(name: string, email: string): string {
+  const base = safeText(name) || safeText(email) || "G";
+  const words = base
+    .split(/\s+/)
+    .map((word) => word.trim())
+    .filter(Boolean);
+
+  if (words.length <= 1) {
+    return base.slice(0, 2).toUpperCase();
+  }
+
+  return `${words[0]?.[0] || ""}${words[1]?.[0] || ""}`.toUpperCase();
+}
+
+function isActivePath(pathname: string, href: string): boolean {
+  if (href === "/profile") {
+    return pathname === href;
+  }
+
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
 
 export default function StudentProfile() {
   const [open, setOpen] = useState(false);
+  const [workshopCount, setWorkshopCount] = useState(0);
   const menuRef = useRef<HTMLDivElement>(null);
   const { logout, user } = useAuth();
+  const pathname = usePathname();
 
-  const displayName = user?.full_name || user?.name || "Guest";
-  const displayEmail = user?.email || "guest@example.com";
-  const avatarSeed = displayName || displayEmail;
+  const displayName = safeText(user?.full_name) || safeText(user?.name) || "Guest";
+  const displayEmail = safeText(user?.email) || "guest@example.com";
+  const avatarLabel = getInitials(displayName, displayEmail);
 
   const handleLogout = () => {
     logout("/login", { scope: "user" });
@@ -35,77 +125,111 @@ export default function StudentProfile() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadWorkshopCount = async () => {
+      try {
+        const response = await getMyWorkshops();
+
+        if (!isMounted) {
+          return;
+        }
+
+        setWorkshopCount(response.total);
+      } catch {
+        if (!isMounted) {
+          return;
+        }
+
+        setWorkshopCount(0);
+      }
+    };
+
+    void loadWorkshopCount();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [open]);
+
   return (
     <div className="relative" ref={menuRef}>
-      {/* Avatar */}
-      <button onClick={() => setOpen(!open)}>
+      <button type="button" onClick={() => setOpen((prev) => !prev)}>
         <div
           className="w-9 h-9 flex items-center justify-center rounded-full bg-[#10a5c4] text-white font-semibold text-sm uppercase 
            border border-white/10 hover:scale-105 transition"  >
-          {avatarSeed.charAt(0) || "G"}
+          {avatarLabel || "G"}
         </div>
       </button>
 
-      {/* Dropdown */}
       {open && (
         <div
-          className="absolute right-0 mt-3 w-60 rounded-xl shadow-xl 
-          bg-[#0a0c16] border border-white/10 backdrop-blur-xl
-          overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200"
+          className="absolute right-0 top-full mt-2 w-72 rounded-2xl border border-[#355287] ring-1 ring-[#273a63]/60 bg-[#07112a] p-3 shadow-[0_20px_48px_rgba(2,10,28,0.58)] backdrop-blur-xl z-50 animate-in fade-in zoom-in-95 duration-200"
         >
-          {/* User Info */}
-          <div className="px-4 py-3 border-b border-white/10">
-            <p className="text-sm font-semibold text-white truncate pb-2">
-              {displayName}
-            </p>
-            <p className="text-xs text-zinc-400 truncate">
-              {displayEmail}
-            </p>
-          </div>
-
-          {/* Menu */}
-          <div className="p-2 space-y-1">
-            <Link
-              href="/profile"
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg 
-              text-zinc-300 hover:text-white hover:bg-white/5 transition"
-            >
-              <CircleUserRound className="w-4 h-4" />
-              <span className="text-sm">My Profile</span>
-            </Link>
-
-            <Link
-              href="/help-desk"
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg 
-              text-zinc-300 hover:text-white hover:bg-white/5 transition"
-            >
-              <LifeBuoy className="w-4 h-4" />
-              <span className="text-sm">Help Desk</span>
-            </Link>
-
-            <Link
-              href="/bserc-policies/terms-and-conditions"
-              onClick={() => setOpen(false)}
-              className="flex items-center justify-between px-3 py-2 rounded-lg 
-              text-zinc-300 hover:text-white hover:bg-white/5 transition"
-            >
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4" />
-                <span className="text-sm">Terms</span>
+          <div className="max-h-[78vh] space-y-3 overflow-y-auto pr-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            <div className="rounded-xl border border-[#2a3b63] bg-[#0a1738] p-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#0f7fb8] text-sm font-semibold text-white">
+                  {avatarLabel}
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-white">{displayName}</p>
+                  <p className="truncate text-xs text-[#b6c6e0]">{displayEmail}</p>
+                </div>
               </div>
-              <MoveUpRight className="w-4 h-4 opacity-70" />
-            </Link>
+              <p className="mt-3 text-xs text-[#7ee0ff]">
+                Enrolled Workshops: {workshopCount}
+              </p>
+            </div>
 
-            {/* Logout */}
+            {PROFILE_NAV_SECTIONS.map((section) => (
+              <div key={section.title}>
+                <p className="px-1 pb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#93a9c8]">
+                  {section.title}
+                </p>
+                <div className="space-y-1">
+                  {section.items.map((item) => {
+                    const Icon = item.icon;
+                    const active = isActivePath(pathname, item.href);
+
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setOpen(false)}
+                        className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition ${
+                          active
+                            ? "bg-[#0c3f5a] text-[#dcf6ff]"
+                            : "text-[#d2def0] hover:bg-[#112247] hover:text-white"
+                        }`}
+                      >
+                        <Icon className="h-4 w-4" />
+                        <span>{item.label}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+
             <button
+              type="button"
               onClick={handleLogout}
-              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg 
-              text-red-400 hover:text-red-300 hover:bg-red-500/10 transition"
+              className="w-full rounded-lg bg-rose-700/25 px-3 py-2 text-left text-sm text-rose-100 transition hover:bg-rose-700/35"
             >
-              <LogOut className="w-4 h-4" />
-              <span className="text-sm">Logout</span>
+              <span className="flex items-center gap-2">
+                <LogOut className="h-4 w-4" />
+                Logout
+              </span>
             </button>
           </div>
         </div>
