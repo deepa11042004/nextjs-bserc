@@ -1,7 +1,7 @@
 # BSERC Next.js Frontend
 
 This project is the Next.js App Router frontend for BSERC. It includes a public site, admin dashboard routes, authentication flows, and server-side API proxies to the backend service.
-//testing payment
+//testing
 ## Prerequisites
 
 - Node.js 18+
