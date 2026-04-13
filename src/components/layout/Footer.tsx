@@ -70,13 +70,13 @@ const contactItems: ContactItem[] = [
   },
 ];
 
-const partnerLogos: PartnerLogo[] = [
-  { src: "/img/isro.png", alt: "ISRO" },
-  { src: "/img/DOS_light.png", alt: "DOAS" },
-  { src: "/img/inspace.png", alt: "Ministry of Education" },
-  { src: "/img/skill_india.jpg", alt: "skill india" },
-  { src: "/img/viksit.png", alt: "vikisit india" },
-];
+// const partnerLogos: PartnerLogo[] = [
+//   { src: "/img/isro.png", alt: "ISRO" },
+//   { src: "/img/DOS_light.png", alt: "DOAS" },
+//   { src: "/img/inspace.png", alt: "Ministry of Education" },
+//   { src: "/img/skill_india.jpg", alt: "skill india" },
+//   { src: "/img/viksit.png", alt: "vikisit india" },
+// ];
 
 // ─────────────────────────────────────────────────────────────
 // Four-Column Footer Component
@@ -87,7 +87,8 @@ const Footer: React.FC = () => {
     <footer className="bg-black text-white border-t border-white/10">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 sm:py-10 lg:py-12">
         {/* Four Column Grid - Responsive */}
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4 lg:gap-8">
+        {/* col from 4 to 3 */}
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3 lg:gap-8">
           
           {/* Column 1: Brand + Social */}
           <div className="space-y-4 text-center md:text-left">
@@ -108,7 +109,7 @@ const Footer: React.FC = () => {
                 <p className="text-xs tracking-wide text-slate-400 leading-tight">
                   Def- Space Education & Innovation 
                 </p>
-                  <p className="text-xs tracking-wide text-slate-400 leading-tight">ISRO</p>
+                   
               </div>
             </div>
 
@@ -135,7 +136,7 @@ const Footer: React.FC = () => {
           </div>
 
           {/* Column 2: Partner Logos - Improved responsive grid */}
-          <div>
+          {/* <div>
              
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-2 gap-4 items-center">
               {partnerLogos.map((item, idx) => (
@@ -154,10 +155,10 @@ const Footer: React.FC = () => {
                 </div>
               ))}
             </div>
-          </div>
+          </div> */}
 
           {/* Column 3: Quick Links */}
-          <div className="text-center md:text-left">
+          <div className="text-center  md:text-left">
             <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-4">
               Quick Links
             </h4>

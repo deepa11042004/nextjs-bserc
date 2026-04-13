@@ -142,7 +142,7 @@ const page = () => {
               </p>
             </div>
 
-            <div className={cardStyles}>
+            {/* <div className={cardStyles}>
               <p className="text-gray-300 text-sm sm:text-base md:text-lg leading-relaxed">
                 {""}
                 <span className="text-orange-400 font-semibold">
@@ -157,7 +157,7 @@ const page = () => {
                 All programmes conducted by the Centre are submitted to the
                 ISRO, Department of Space, Government of India.
               </p>
-            </div>
+            </div> */}
 
             <div className={cardStyles}>
               <p className="text-gray-300 text-sm sm:text-base md:text-lg leading-relaxed">
@@ -201,11 +201,11 @@ const page = () => {
                 is dedicated to advancing education, research, and skill
                 development in Space Science, Defence Technology, and Emerging
                 Technologies in collaboration with public and private
-                organizations. The Centre operates in alignment with ISRO and
-                iSTEM initiatives and holds approvals from the Ministry of
-                Consumer Affairs, Government of India. It is also registered as
-                a Skill India Training Centre under the Ministry of Skill
-                Development and Entrepreneurship.
+                organizations. The Centre operates in alignment with ISRO
+                initiatives and holds approvals from the Ministry of Consumer
+                Affairs, Government of India. It is also registered as a Skill
+                India Training Centre under the Ministry of Skill Development
+                and Entrepreneurship.
               </p>
             </div>
           </div>
