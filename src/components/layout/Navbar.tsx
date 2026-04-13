@@ -169,7 +169,7 @@ const NAV_ITEMS: {
   {
     label: "More",
     dropdown: [
-      { type: "link", label: "Advisory Body", href: "/more/advisory-board" },
+      { type: "link", label: "Advisory Body", href: "/more/advisory-body", external: false,  },
       {
         label: "Administration",
         type: "nested",
@@ -178,7 +178,7 @@ const NAV_ITEMS: {
           { label: "Secretary", href: "/", external: false },
           { label: "Director General", href: "/", external: false },
           { label: "Director", href: "/", external: false },
-          { label: "Staff", href: "/people/staff", external: false },
+          { label: "Staff", href: "/", external: false },
           { label: "Coordinator", href: "/", external: false },
           { label: "Committee", href: "/", external: false },
         ],
