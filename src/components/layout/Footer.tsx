@@ -9,6 +9,7 @@ import {
 import { FiMapPin, FiPhone, FiMail } from "react-icons/fi";
 import { IconType } from "react-icons";
 import Image from "next/image";
+import Link from "next/link";
 import type { StaticImageData } from "next/image";
 
 // ─────────────────────────────────────────────────────────────
@@ -205,39 +206,48 @@ const Footer: React.FC = () => {
           </div>
         </div>
 
-        {/* Footer Bottom Section - Improved responsive layout */}
-        <div className="mt-10 sm:mt-12 pt-6 border-t border-white/5">
-          <div className="flex flex-col gap-4">
-            {/* Policy Links - Top on mobile */}
-            <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[11px] sm:text-xs text-slate-400 order-1 sm:order-none">
-              <a
-                href="/bserc-policies/privacy-policy"
-                className="transition hover:text-[#3B82F6] active:opacity-80 touch-manipulation"
+        <div className="mt-10 sm:mt-12 border-t border-white/5 pt-6">
+          <div className="flex flex-col-reverse sm:flex-row items-center sm:items-start justify-between gap-4 sm:gap-6">
+            <p className="text-[10px] sm:text-xs text-slate-400 text-center sm:text-left break-words">
+              © 2026 BSERC. All rights reserved.
+            </p>
+
+            <div className="flex flex-wrap items-center justify-center sm:justify-end gap-x-3 gap-y-2 text-[10px] sm:text-xs text-slate-400">
+              <Link
+                href="/help-desk"
+                className="transition hover:text-[#3B82F6] active:opacity-80 touch-manipulation whitespace-nowrap"
               >
-                Privacy Policy
-              </a>
-              <span className="text-slate-600 hidden sm:inline">•</span>
-              <span className="w-px h-3 bg-slate-700 sm:hidden" />
-              <a
-                href="/bserc-policies/terms-and-conditions"
-                className="transition hover:text-[#3B82F6] active:opacity-80 touch-manipulation"
+                Help Desk
+              </Link>
+              <span className="text-slate-600">|</span>
+              <Link
+                href="/faq"
+                className="transition hover:text-[#3B82F6] active:opacity-80 touch-manipulation whitespace-nowrap"
               >
-                Terms & Conditions
-              </a>
-              <span className="text-slate-600 hidden sm:inline">•</span>
-              <span className="w-px h-3 bg-slate-700 sm:hidden" />
-              <a
+                FAQ
+              </Link>
+              <span className="text-slate-600">|</span>
+              <Link
                 href="/bserc-policies/refund-policy"
-                className="transition hover:text-[#3B82F6] active:opacity-80 touch-manipulation"
+                className="transition hover:text-[#3B82F6] active:opacity-80 touch-manipulation whitespace-nowrap"
               >
                 Refund Policy
-              </a>
+              </Link>
+              <span className="text-slate-600">|</span>
+              <Link
+                href="/bserc-policies/privacy-policy"
+                className="transition hover:text-[#3B82F6] active:opacity-80 touch-manipulation whitespace-nowrap"
+              >
+                Privacy Policy
+              </Link>
+              <span className="text-slate-600">|</span>
+              <Link
+                href="/bserc-policies/terms-and-conditions"
+                className="transition hover:text-[#3B82F6] active:opacity-80 touch-manipulation whitespace-nowrap"
+              >
+                Terms and Conditions
+              </Link>
             </div>
-            
-            {/* Copyright - Bottom on mobile */}
-            <p className="text-[10px] sm:text-xs text-slate-400 text-center">
-              © {new Date().getFullYear()} BSERC. All rights reserved.
-            </p>
           </div>
         </div>
       </div>

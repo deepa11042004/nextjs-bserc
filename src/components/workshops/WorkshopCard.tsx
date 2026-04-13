@@ -12,7 +12,7 @@ import {
 
 import type { Workshop } from "@/types/workshop";
 
-const FALLBACK_IMAGE = "/img/logo.png";
+const FALLBACK_IMAGE = "/img/bserc_new_logo.png";
 
 function formatDate(value: string): string {
   if (!value) {

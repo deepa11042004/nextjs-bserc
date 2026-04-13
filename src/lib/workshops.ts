@@ -11,7 +11,7 @@ const WORKSHOP_LIST_PATHS = [
   "/api/workshop-list/all",
 ];
 
-const DEFAULT_THUMBNAIL = "/img/logo.png";
+const DEFAULT_THUMBNAIL = "/img/bserc_new_logo.png";
 
 type JsonRecord = Record<string, unknown>;
 
