@@ -174,7 +174,7 @@ const NAV_ITEMS: {
         label: "Administration",
         type: "nested",
         children: [
-          { label: "Chairman", href: "/", external: false },
+          { label: "Chairman", href: "/chairman", external: false },
           { label: "Secretary", href: "/", external: false },
           { label: "Director General", href: "/", external: false },
           { label: "Director", href: "/", external: false },
