@@ -142,7 +142,7 @@ const page = () => {
               </p>
             </div>
 
-            <div className={cardStyles}>
+            {/* <div className={cardStyles}>
               <p className="text-gray-300 text-sm sm:text-base md:text-lg leading-relaxed">
                 {""}
                 <span className="text-orange-400 font-semibold">
@@ -157,7 +157,7 @@ const page = () => {
                 All programmes conducted by the Centre are submitted to the
                 ISRO, Department of Space, Government of India.
               </p>
-            </div>
+            </div> */}
 
             <div className={cardStyles}>
               <p className="text-gray-300 text-sm sm:text-base md:text-lg leading-relaxed">
