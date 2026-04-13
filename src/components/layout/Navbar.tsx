@@ -169,16 +169,16 @@ const NAV_ITEMS: {
   {
     label: "More",
     dropdown: [
-      { type: "link", label: "Advisory Body", href: "/advisory-board" },
+      { type: "link", label: "Advisory Body", href: "/more/advisory-body", external: false,  },
       {
         label: "Administration",
         type: "nested",
         children: [
-          { label: "Chairman", href: "/chairman", external: false },
+          { label: "Chairman", href: "/more/administration/chairman", external: false },
           { label: "Secretary", href: "/", external: false },
           { label: "Director General", href: "/", external: false },
           { label: "Director", href: "/", external: false },
-          { label: "Staff", href: "/people/staff", external: false },
+          { label: "Staff", href: "/", external: false },
           { label: "Coordinator", href: "/", external: false },
           { label: "Committee", href: "/", external: false },
         ],
@@ -283,6 +283,8 @@ export default function Navbar() {
       <header className="w-full bg-black border-b border-white/5 sticky top-0 z-[60] backdrop-blur-md">
         <nav className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 h-[70px]">
           {/* Logo Left */}
+
+          
           <Link
             href="/"
             className="flex items-center gap-2 shrink-0"

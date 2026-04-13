@@ -6,6 +6,7 @@ const NavBanner = () => {
       <Image
         src="/img/NavBanner.webp"
         alt="NavBanner"
+        priority
         loading="eager"
         width={1920}
         height={1080}

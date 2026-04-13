@@ -16,7 +16,7 @@ export default function DrShekharDuttBiography() {
     <main className="min-h-screen  antialiased">
       {/* Hero Section */}
       <section className="relative  text-white pb-20 pt-16 md:py-24 px-6">
-        <div className="max-w-4xl mx-auto text-center relative z-10">
+        <div className="max-w-6xl mx-auto text-center relative z-10">
           {/* Portrait Image */}
           <div className="relative w-32 h-32 md:w-40 md:h-40 mx-auto mb-6 rounded-full overflow-hidden border-4 border-white/20 shadow-2xl bg-slate-700">
             <Image
@@ -43,7 +43,7 @@ export default function DrShekharDuttBiography() {
       </section>
 
       {/* Introduction */}
-      <section className="max-w-4xl mx-auto px-6 py-8">
+      <section className="max-w-6xl mx-auto px-6 py-8">
         <div
           className="p-6 md:p-8 flex flex-col justify-center rounded-xl border-l-4 border-[#ff6b35] shadow-2xl
          bg-[linear-gradient(to_right_bottom,#0c141c,#14121b,#191118,#1c1114,#1c120f)]  "
@@ -67,7 +67,7 @@ export default function DrShekharDuttBiography() {
 
       {/* Military Service */}
 
-      <section className="max-w-4xl mx-auto px-6 py-8">
+      <section className="max-w-6xl mx-auto px-6 py-8">
         <div
           className="p-6 md:p-8 flex flex-col justify-center rounded-xl border-l-4 border-[#ff6b35] shadow-2xl
          bg-[linear-gradient(to_right_bottom,#0c141c,#14121b,#191118,#1c1114,#1c120f)]  "
@@ -91,7 +91,7 @@ export default function DrShekharDuttBiography() {
 
       {/* Civil Services Career */}
 
-      <section className="max-w-4xl mx-auto px-6 py-8 ">
+      <section className="max-w-6xl mx-auto px-6 py-8 ">
         
         <div
           className="bg-white rounded-2xl shadow-md  border border-white/20 
@@ -166,7 +166,7 @@ export default function DrShekharDuttBiography() {
       </section>
 
       {/* Governor of Chhattisgarh */}
-      <section className="max-w-4xl mx-auto px-6 py-8  ">
+      <section className="max-w-6xl mx-auto px-6 py-8  ">
         <div
           className="  text-white
          bg-[linear-gradient(to_right_bottom,#0c141c,#14121b,#191118,#1c1114,#1c120f)] rounded-2xl shadow-md  border-l-4 border-blue-600 p-6 md:p-8"
@@ -190,7 +190,7 @@ export default function DrShekharDuttBiography() {
 
       {/* Post-Retirement Contributions */}
 
-      <section className="max-w-4xl mx-auto px-6 py-8  ">
+      <section className="max-w-6xl mx-auto px-6 py-8  ">
         <div
           className="  text-white
          bg-[linear-gradient(to_right_bottom,#0c141c,#14121b,#191118,#1c1114,#1c120f)] rounded-2xl shadow-md  border-l-4 border-blue-600 p-6 md:p-8"
@@ -226,7 +226,7 @@ export default function DrShekharDuttBiography() {
       </section>
 
       {/* Literary Contributions */}
-      <section className="max-w-4xl mx-auto px-6 py-8">
+      <section className="max-w-6xl mx-auto px-6 py-8">
         <div
           className=" text-white
          bg-[linear-gradient(to_right_bottom,#0c141c,#14121b,#191118,#1c1114,#1c120f)]  rounded-2xl shadow-md border-l-4 border-emerald-600 p-6 md:p-8"
@@ -257,7 +257,7 @@ export default function DrShekharDuttBiography() {
       </section>
 
       {/* Legacy */}
-      <section className="max-w-4xl mx-auto px-6 py-8 mb-16">
+      <section className="max-w-6xl mx-auto px-6 py-8 mb-16">
         <div
           className=" border border-white/30
          bg-[linear-gradient(to_right_bottom,#0c141c,#14121b,#191118,#1c1114,#1c120f)] rounded-2xl shadow-xl p-6 md:p-10 text-white"
