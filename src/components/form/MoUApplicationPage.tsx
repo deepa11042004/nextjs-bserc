@@ -501,6 +501,12 @@ export default function MoUApplicationPage() {
       newErrors.officialPhone = "Please enter a valid phone number with country code";
     }
 
+    if (!formData.alternativeEmail.trim()) {
+      newErrors.alternativeEmail = "Alternative contact email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.alternativeEmail)) {
+      newErrors.alternativeEmail = "Please enter a valid alternative email address";
+    }
+
     if (!formData.proposalPurpose.trim()) {
       newErrors.proposalPurpose = "Purpose and scope of proposed MoU is required";
     } else if (formData.proposalPurpose.length < 100) {
@@ -747,10 +753,12 @@ export default function MoUApplicationPage() {
                   name="alternativeEmail"
                   label="Alternative Contact Email"
                   type="email"
-                  placeholder="Secondary coordination email (optional)"
+                  placeholder="secondary@institution.edu.in"
+                  required
                   value={formData.alternativeEmail}
                   onChange={(e) => handleChange("alternativeEmail", e.target.value)}
-                  helperText="For secondary coordination purposes"
+                  error={errors.alternativeEmail}
+                  helperText="This email will be used for secondary coordination and confirmation updates."
                 />
               </div>
             </div>
