@@ -6,7 +6,6 @@ export interface UserDashboardProfile {
   phone: string | null;
   city: string | null;
   institution: string | null;
-  interests: string | null;
   bio: string | null;
   profile_picture_url: string | null;
   settings: {
