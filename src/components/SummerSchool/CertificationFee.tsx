@@ -57,7 +57,7 @@ const CertificationFee: React.FC = () => {
                     <span>Indian Students (6th–12th)</span>
                   </div>
                   <span className="font-semibold text-amber-400 text-sm sm:text-base">
-                    ₹ 1,750
+                    ₹ 1,350
                   </span>
                 </div>
 
