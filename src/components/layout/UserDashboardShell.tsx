@@ -8,15 +8,61 @@ import { UserDashboardSidebar } from "@/components/layout/UserDashboardSidebar";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
-import { getMyWorkshops } from "@/services/userDashboard";
+import { getDashboardProfile, getMyWorkshops } from "@/services/userDashboard";
+import type { AuthUser } from "@/types/auth";
 
 export function UserDashboardShell({ children }: { children: ReactNode }) {
   const { isHydrated, isLoggedIn, role, user, logout } = useAuth();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [workshopCount, setWorkshopCount] = useState(0);
   const [notificationCount, setNotificationCount] = useState(0);
+  const [dashboardUser, setDashboardUser] = useState<AuthUser | null>(user);
 
   const isUserSession = isLoggedIn && role === "user";
+
+  useEffect(() => {
+    setDashboardUser(user);
+  }, [user]);
+
+  useEffect(() => {
+    if (!isUserSession) {
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadDashboardProfile = async () => {
+      try {
+        const profile = await getDashboardProfile();
+
+        if (!isMounted) {
+          return;
+        }
+
+        setDashboardUser((prev) => ({
+          ...(prev || {}),
+          id: profile.id,
+          full_name: profile.full_name || undefined,
+          name: profile.full_name || undefined,
+          email: profile.email || undefined,
+          role: profile.role || prev?.role,
+          phone: profile.phone || undefined,
+          city: profile.city || undefined,
+          institution: profile.institution || undefined,
+          bio: profile.bio || undefined,
+          profile_picture_url: profile.profile_picture_url || undefined,
+        }));
+      } catch {
+        // Keep session profile as fallback when API call fails.
+      }
+    };
+
+    void loadDashboardProfile();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isUserSession]);
 
   useEffect(() => {
     if (!isUserSession) {
@@ -123,7 +169,7 @@ export function UserDashboardShell({ children }: { children: ReactNode }) {
 
         <div className="flex items-start gap-5">
           <UserDashboardSidebar
-            user={user}
+            user={dashboardUser}
             workshopCount={workshopCount}
             isMobileOpen={isMobileOpen}
             onMobileToggle={() => setIsMobileOpen(true)}

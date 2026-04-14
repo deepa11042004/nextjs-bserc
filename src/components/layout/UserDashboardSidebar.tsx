@@ -67,6 +67,10 @@ function buildUserEmail(user: AuthUser | null): string {
   return normalizeText(user?.email) || "No email available";
 }
 
+function buildProfilePictureUrl(user: AuthUser | null): string {
+  return normalizeText(user?.profile_picture_url);
+}
+
 function getInitials(value: string): string {
   const words = value
     .split(/\s+/)
@@ -107,6 +111,7 @@ function DashboardNavContent({
   const fullName = buildDisplayName(user);
   const email = buildUserEmail(user);
   const initials = getInitials(fullName);
+  const profilePictureUrl = buildProfilePictureUrl(user);
 
   const sections: NavSection[] = [
     {
@@ -159,8 +164,17 @@ function DashboardNavContent({
         className="rounded-2xl border border-slate-700/80 bg-slate-900/70 p-3 text-slate-100 transition hover:border-cyan-500/60"
       >
         <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500/70 to-blue-500/70 text-sm font-semibold text-white">
-            {initials}
+          <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-cyan-500/70 to-blue-500/70 text-sm font-semibold text-white">
+            {profilePictureUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={profilePictureUrl}
+                alt={fullName}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              initials
+            )}
           </div>
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-white">{fullName}</p>

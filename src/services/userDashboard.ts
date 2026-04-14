@@ -86,7 +86,6 @@ export type UpdateProfilePayload = {
   phone?: string;
   city?: string;
   institution?: string;
-  interests?: string;
   bio?: string;
   profile_picture_url?: string;
 };

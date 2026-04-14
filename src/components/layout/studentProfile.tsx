@@ -18,7 +18,7 @@ import Link from "next/link";
 import { useState, useRef, useEffect, type ComponentType } from "react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
-import { getMyWorkshops } from "@/services/userDashboard";
+import { getDashboardProfile, getMyWorkshops } from "@/services/userDashboard";
 
 type ProfileNavItem = {
   label: string;
@@ -103,12 +103,24 @@ function isActivePath(pathname: string, href: string): boolean {
 export default function StudentProfile() {
   const [open, setOpen] = useState(false);
   const [workshopCount, setWorkshopCount] = useState(0);
+  const [profileSnapshot, setProfileSnapshot] = useState({
+    full_name: "",
+    email: "",
+    profile_picture_url: "",
+  });
   const menuRef = useRef<HTMLDivElement>(null);
   const { logout, user } = useAuth();
   const pathname = usePathname();
 
-  const displayName = safeText(user?.full_name) || safeText(user?.name) || "Guest";
-  const displayEmail = safeText(user?.email) || "guest@example.com";
+  const displayName = safeText(profileSnapshot.full_name)
+    || safeText(user?.full_name)
+    || safeText(user?.name)
+    || "Guest";
+  const displayEmail = safeText(profileSnapshot.email)
+    || safeText(user?.email)
+    || "guest@example.com";
+  const profilePictureUrl = safeText(profileSnapshot.profile_picture_url)
+    || safeText(user?.profile_picture_url);
   const avatarLabel = getInitials(displayName, displayEmail);
 
   const handleLogout = () => {
@@ -136,25 +148,32 @@ export default function StudentProfile() {
 
     let isMounted = true;
 
-    const loadWorkshopCount = async () => {
-      try {
-        const response = await getMyWorkshops();
+    const loadDropdownData = async () => {
+      const [workshopsResult, profileResult] = await Promise.allSettled([
+        getMyWorkshops(),
+        getDashboardProfile(),
+      ]);
 
-        if (!isMounted) {
-          return;
-        }
+      if (!isMounted) {
+        return;
+      }
 
-        setWorkshopCount(response.total);
-      } catch {
-        if (!isMounted) {
-          return;
-        }
-
+      if (workshopsResult.status === "fulfilled") {
+        setWorkshopCount(workshopsResult.value.total);
+      } else {
         setWorkshopCount(0);
+      }
+
+      if (profileResult.status === "fulfilled") {
+        setProfileSnapshot({
+          full_name: safeText(profileResult.value.full_name),
+          email: safeText(profileResult.value.email),
+          profile_picture_url: safeText(profileResult.value.profile_picture_url),
+        });
       }
     };
 
-    void loadWorkshopCount();
+    void loadDropdownData();
 
     return () => {
       isMounted = false;
@@ -167,7 +186,16 @@ export default function StudentProfile() {
         <div
           className="w-9 h-9 flex items-center justify-center rounded-full bg-[#10a5c4] text-white font-semibold text-sm uppercase 
            border border-white/10 hover:scale-105 transition"  >
-          {avatarLabel || "G"}
+          {profilePictureUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={profilePictureUrl}
+              alt={displayName}
+              className="h-full w-full rounded-full object-cover"
+            />
+          ) : (
+            avatarLabel || "G"
+          )}
         </div>
       </button>
 
@@ -178,8 +206,17 @@ export default function StudentProfile() {
           <div className="max-h-[78vh] space-y-3 overflow-y-auto pr-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
             <div className="rounded-xl border border-[#2a3b63] bg-[#0a1738] p-3">
               <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#0f7fb8] text-sm font-semibold text-white">
-                  {avatarLabel}
+                <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl bg-[#0f7fb8] text-sm font-semibold text-white">
+                  {profilePictureUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={profilePictureUrl}
+                      alt={displayName}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    avatarLabel
+                  )}
                 </div>
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-white">{displayName}</p>
