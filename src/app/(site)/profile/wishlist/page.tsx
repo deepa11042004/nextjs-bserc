@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Heart, Loader2, Trash2 } from "lucide-react";
+import { BookOpen, CalendarDays, Heart, Loader2, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,6 +24,22 @@ function formatDate(value: string | null): string {
     month: "short",
     year: "numeric",
   });
+}
+
+function formatFee(value: number | null): string {
+  if (value === null || Number.isNaN(value)) {
+    return "Fee details soon";
+  }
+
+  if (value <= 0) {
+    return "Free";
+  }
+
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  }).format(value);
 }
 
 export default function WishlistPage() {
@@ -124,27 +140,62 @@ export default function WishlistPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {items.map((item) => (
-            <Card key={item.id} className="border-slate-800 bg-slate-900/70">
-              <CardContent className="space-y-4 py-4">
+            <Card
+              key={item.id}
+              className="group overflow-hidden border-slate-800 bg-slate-900/70 transition hover:border-cyan-500/45"
+            >
+              <div className="relative h-36 border-b border-slate-800 bg-gradient-to-br from-slate-800 to-slate-900">
+                {item.thumbnail_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={item.thumbnail_url}
+                    alt={item.workshop_title}
+                    className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+                  />
+                ) : (
+                  <div className="flex h-full items-center justify-center bg-gradient-to-br from-cyan-900/30 to-slate-900 text-cyan-200">
+                    <BookOpen className="h-8 w-8" />
+                  </div>
+                )}
+              </div>
+
+              <CardContent className="space-y-4 pt-4">
                 <div>
-                  <p className="text-base font-semibold text-white">{item.workshop_title}</p>
+                  <p className="line-clamp-1 text-base font-semibold text-white">{item.workshop_title}</p>
                   <p className="text-xs text-slate-300">Saved on {formatDate(item.created_at)}</p>
                 </div>
 
-                <p className="line-clamp-2 text-sm text-slate-300">{item.description || "Workshop details available on program page."}</p>
+                <p className="line-clamp-3 text-sm text-slate-300">
+                  {item.description || "Workshop details available on the program page."}
+                </p>
+
+                <div className="flex flex-wrap gap-2 text-[11px]">
+                  <span className="inline-flex items-center gap-1 rounded-full border border-slate-700 bg-slate-900 px-2.5 py-1 text-slate-200">
+                    <CalendarDays className="h-3.5 w-3.5" />
+                    {formatDate(item.workshop_date)}
+                  </span>
+                  {item.mode ? (
+                    <span className="rounded-full border border-slate-700 bg-slate-900 px-2.5 py-1 text-slate-200">
+                      {item.mode}
+                    </span>
+                  ) : null}
+                  <span className="rounded-full border border-emerald-500/35 bg-emerald-500/10 px-2.5 py-1 text-emerald-200">
+                    {formatFee(item.fee)}
+                  </span>
+                </div>
 
                 <div className="flex flex-wrap gap-2">
-                  <Link href={item.enroll_url}>
-                    <Button className="bg-cyan-600 text-white hover:bg-cyan-500">
+                  <Link href={item.enroll_url} className="flex-1 sm:flex-none">
+                    <Button className="w-full bg-cyan-600 text-white hover:bg-cyan-500">
                       Enroll Now
                     </Button>
                   </Link>
                   <Button
                     type="button"
                     variant="outline"
-                    className="border-rose-500/50 bg-rose-500/10 text-rose-100 hover:bg-rose-500/20"
+                    className="flex-1 border-rose-500/50 bg-rose-500/10 text-rose-100 hover:bg-rose-500/20 sm:flex-none"
                     disabled={removingId === item.workshop_id}
                     onClick={() => handleRemove(item.workshop_id)}
                   >

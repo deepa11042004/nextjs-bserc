@@ -130,10 +130,15 @@ export async function changeDashboardPassword(body: ChangePasswordPayload) {
 export async function getMyWorkshops() {
   const payload = await dashboardRequest<WorkshopResponse["data"]>("/api/user-dashboard/workshops");
 
+  const data = Array.isArray(payload.data) ? payload.data : [];
+  const recommended = Array.isArray(payload.recommended) ? payload.recommended : [];
+  const rawMetaTotal = Number(payload.meta?.total);
+  const totalFromMeta = Number.isFinite(rawMetaTotal) ? rawMetaTotal : data.length;
+
   return {
-    data: payload.data,
-    recommended: payload.recommended || [],
-    total: payload.meta?.total ?? payload.data.length,
+    data,
+    recommended,
+    total: Math.max(totalFromMeta, data.length),
   };
 }
 

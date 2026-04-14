@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { Loader2, Pencil, Save, ShieldCheck } from "lucide-react";
+import { BookOpen, Loader2, Save, ShieldCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/Button";
 import {
@@ -16,9 +17,11 @@ import { normalizeUser } from "@/lib/auth";
 import {
   changeDashboardPassword,
   getDashboardProfile,
+  getMyWorkshops,
   updateDashboardProfile,
   type UpdateProfilePayload,
 } from "@/services/userDashboard";
+import type { WorkshopSummary } from "@/types/userDashboard";
 
 type ProfileFormState = {
   full_name: string;
@@ -34,33 +37,6 @@ type PasswordState = {
   oldPassword: string;
   newPassword: string;
   confirmPassword: string;
-};
-
-type EditableProfileField = keyof ProfileFormState;
-
-type FeedbackStatus = {
-  type: "success" | "error";
-  message: string;
-};
-
-const PROFILE_FIELDS: EditableProfileField[] = [
-  "full_name",
-  "email",
-  "phone",
-  "city",
-  "institution",
-  "bio",
-  "profile_picture_url",
-];
-
-const INITIAL_EDITING_STATE: Record<EditableProfileField, boolean> = {
-  full_name: false,
-  email: false,
-  phone: false,
-  city: false,
-  institution: false,
-  bio: false,
-  profile_picture_url: false,
 };
 
 const EMPTY_FORM: ProfileFormState = {
@@ -103,17 +79,6 @@ function validateProfileForm(form: ProfileFormState): string {
   return "";
 }
 
-function resolveProfileForm(
-  draft: ProfileFormState,
-  saved: ProfileFormState,
-  editingFields: Record<EditableProfileField, boolean>,
-): ProfileFormState {
-  return PROFILE_FIELDS.reduce((accumulator, field) => {
-    accumulator[field] = editingFields[field] ? draft[field] : saved[field];
-    return accumulator;
-  }, {} as ProfileFormState);
-}
-
 function computeCompletion(form: ProfileFormState): number {
   const checks = [
     Boolean(clean(form.full_name)),
@@ -148,15 +113,14 @@ export default function UserProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [form, setForm] = useState<ProfileFormState>(EMPTY_FORM);
   const [initialForm, setInitialForm] = useState<ProfileFormState>(EMPTY_FORM);
-  const [editingFields, setEditingFields] = useState<Record<EditableProfileField, boolean>>(
-    () => ({ ...INITIAL_EDITING_STATE }),
-  );
   const [isSaving, setIsSaving] = useState(false);
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
   const [passwordForm, setPasswordForm] = useState<PasswordState>(EMPTY_PASSWORD);
-  const [status, setStatus] = useState<FeedbackStatus | null>(null);
-  const [passwordStatus, setPasswordStatus] = useState<FeedbackStatus | null>(null);
-  const [toast, setToast] = useState<FeedbackStatus | null>(null);
+  const [enrolledWorkshops, setEnrolledWorkshops] = useState<WorkshopSummary[]>([]);
+  const [isWorkshopsLoading, setIsWorkshopsLoading] = useState(true);
+  const [workshopsError, setWorkshopsError] = useState<string | null>(null);
+  const [status, setStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [passwordStatus, setPasswordStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   const isUserSession = isLoggedIn && role === "user";
 
@@ -192,9 +156,8 @@ export default function UserProfilePage() {
           profile_picture_url: clean(profile.profile_picture_url),
         };
 
-        setForm(EMPTY_FORM);
+        setForm(nextForm);
         setInitialForm(nextForm);
-        setEditingFields({ ...INITIAL_EDITING_STATE });
         setStatus(null);
       } catch {
         if (!isMounted) {
@@ -211,9 +174,8 @@ export default function UserProfilePage() {
           profile_picture_url: clean(user?.profile_picture_url),
         };
 
-        setForm(EMPTY_FORM);
+        setForm(fallbackForm);
         setInitialForm(fallbackForm);
-        setEditingFields({ ...INITIAL_EDITING_STATE });
         setStatus({
           type: "error",
           message: "Could not load server profile. Showing local session details.",
@@ -233,63 +195,70 @@ export default function UserProfilePage() {
   }, [isHydrated, isUserSession, user]);
 
   useEffect(() => {
-    if (!toast) {
+    if (!isHydrated || !isUserSession) {
+      setEnrolledWorkshops([]);
+      setWorkshopsError(null);
+      setIsWorkshopsLoading(false);
       return;
     }
 
-    const timeoutId = window.setTimeout(() => {
-      setToast(null);
-    }, 2600);
+    let isMounted = true;
+
+    const loadWorkshops = async () => {
+      setIsWorkshopsLoading(true);
+
+      try {
+        const response = await getMyWorkshops();
+
+        if (!isMounted) {
+          return;
+        }
+
+        setEnrolledWorkshops(response.data);
+        setWorkshopsError(null);
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
+        const message = error instanceof Error
+          ? error.message
+          : "Could not load enrolled workshops.";
+
+        setWorkshopsError(message);
+        setEnrolledWorkshops([]);
+      } finally {
+        if (isMounted) {
+          setIsWorkshopsLoading(false);
+        }
+      }
+    };
+
+    void loadWorkshops();
 
     return () => {
-      window.clearTimeout(timeoutId);
+      isMounted = false;
     };
-  }, [toast]);
+  }, [isHydrated, isUserSession]);
 
-  const resolvedForm = useMemo(
-    () => resolveProfileForm(form, initialForm, editingFields),
-    [form, initialForm, editingFields],
-  );
-
-  const completion = useMemo(() => computeCompletion(resolvedForm), [resolvedForm]);
+  const completion = useMemo(() => computeCompletion(form), [form]);
   const isDirty = useMemo(
-    () => JSON.stringify(resolvedForm) !== JSON.stringify(initialForm),
-    [resolvedForm, initialForm],
+    () => JSON.stringify(form) !== JSON.stringify(initialForm),
+    [form, initialForm],
   );
-
-  const enableFieldEditing = (field: EditableProfileField) => {
-    setEditingFields((prev) => ({
-      ...prev,
-      [field]: true,
-    }));
-
-    setForm((prev) => ({
-      ...prev,
-      [field]: prev[field] || initialForm[field],
-    }));
-
-    setStatus(null);
-  };
-
-  const inputValueFor = (field: EditableProfileField) => (
-    editingFields[field] ? form[field] : ""
+  const ongoingWorkshop = useMemo(
+    () => enrolledWorkshops.find((workshop) => workshop.status === "ongoing") || null,
+    [enrolledWorkshops],
   );
+  const workshopPreviewItems = useMemo(() => {
+    if (!ongoingWorkshop) {
+      return enrolledWorkshops.slice(0, 3);
+    }
 
-  const placeholderFor = (field: EditableProfileField, fallback: string) => (
-    clean(initialForm[field]) || fallback
-  );
-
-  const renderEditButton = (field: EditableProfileField, label: string, className = "top-7") => (
-    <button
-      type="button"
-      className={`absolute right-2 ${className} rounded p-1 text-slate-300 transition hover:bg-slate-800 hover:text-cyan-300 disabled:cursor-not-allowed disabled:opacity-40`}
-      onClick={() => enableFieldEditing(field)}
-      aria-label={`Edit ${label}`}
-      disabled={editingFields[field] || isSaving}
-    >
-      <Pencil className="h-4 w-4" />
-    </button>
-  );
+    return enrolledWorkshops
+      .filter((workshop) => workshop.workshop_id !== ongoingWorkshop.workshop_id)
+      .slice(0, 2);
+  }, [enrolledWorkshops, ongoingWorkshop]);
 
   const handleChange = (field: keyof ProfileFormState, value: string) => {
     setForm((prev) => ({
@@ -302,10 +271,9 @@ export default function UserProfilePage() {
   const handleProfileSave = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    const validationError = validateProfileForm(resolvedForm);
+    const validationError = validateProfileForm(form);
     if (validationError) {
       setStatus({ type: "error", message: validationError });
-      setToast({ type: "error", message: validationError });
       return;
     }
 
@@ -313,13 +281,13 @@ export default function UserProfilePage() {
 
     try {
       const payload: UpdateProfilePayload = {
-        full_name: resolvedForm.full_name.trim(),
-        email: resolvedForm.email.trim(),
-        phone: resolvedForm.phone?.trim(),
-        city: resolvedForm.city?.trim(),
-        institution: resolvedForm.institution?.trim(),
-        bio: resolvedForm.bio?.trim(),
-        profile_picture_url: resolvedForm.profile_picture_url?.trim(),
+        full_name: form.full_name.trim(),
+        email: initialForm.email.trim() || form.email.trim(),
+        phone: form.phone?.trim(),
+        city: form.city?.trim(),
+        institution: form.institution?.trim(),
+        bio: form.bio?.trim(),
+        profile_picture_url: form.profile_picture_url?.trim(),
       };
 
       const updated = await updateDashboardProfile(payload);
@@ -334,11 +302,9 @@ export default function UserProfilePage() {
         profile_picture_url: clean(updated.profile_picture_url),
       };
 
-      setForm(EMPTY_FORM);
+      setForm(savedForm);
       setInitialForm(savedForm);
-      setEditingFields({ ...INITIAL_EDITING_STATE });
       setStatus({ type: "success", message: "Profile updated successfully." });
-      setToast({ type: "success", message: "Profile saved successfully." });
 
       if (token) {
         const normalized = normalizeUser(
@@ -361,7 +327,6 @@ export default function UserProfilePage() {
     } catch (error) {
       const message = error instanceof Error ? error.message : "Could not update profile.";
       setStatus({ type: "error", message });
-      setToast({ type: "error", message });
     } finally {
       setIsSaving(false);
     }
@@ -417,18 +382,6 @@ export default function UserProfilePage() {
 
   return (
     <div className="space-y-5">
-      {toast ? (
-        <div
-          className={`fixed right-4 top-4 z-[90] rounded-lg border px-4 py-2 text-sm shadow-lg ${
-            toast.type === "success"
-              ? "border-emerald-500/60 bg-emerald-900/90 text-emerald-100"
-              : "border-rose-500/60 bg-rose-900/90 text-rose-100"
-          }`}
-        >
-          {toast.message}
-        </div>
-      ) : null}
-
       <Card className="border-slate-800 bg-slate-900/70">
         <CardHeader>
           <CardTitle className="text-white">My Profile</CardTitle>
@@ -450,107 +403,89 @@ export default function UserProfilePage() {
           ) : null}
 
           <form className="space-y-4" onSubmit={handleProfileSave}>
-            <div className="flex flex-wrap items-center gap-4 rounded-xl border border-slate-700/80 bg-slate-900/80 p-3">
+            {/* <div className="flex flex-wrap items-center gap-4 rounded-xl border border-slate-700/80 bg-slate-900/80 p-3">
               <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-full border border-slate-600 bg-slate-800 text-sm font-semibold text-cyan-100">
-                {clean(resolvedForm.profile_picture_url) ? (
+                {clean(form.profile_picture_url) ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={resolvedForm.profile_picture_url}
+                    src={form.profile_picture_url}
                     alt="Profile"
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  getAvatarLabel(resolvedForm)
+                  getAvatarLabel(form)
                 )}
               </div>
-              <div className="relative min-w-0 flex-1 space-y-1">
+              <div className="min-w-0 flex-1 space-y-1">
                 <p className="text-sm font-medium text-slate-100">Profile Photo</p>
                 <input
-                  value={inputValueFor("profile_picture_url")}
+                  value={form.profile_picture_url}
                   onChange={(event) => handleChange("profile_picture_url", event.target.value)}
-                  readOnly={!editingFields.profile_picture_url}
-                  className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 pr-10 text-sm text-slate-100 outline-none focus:border-cyan-500"
-                  placeholder={placeholderFor("profile_picture_url", "https://your-image-link.jpg")}
+                  className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none focus:border-cyan-500"
+                  placeholder="https://your-image-link.jpg"
                 />
-                {renderEditButton("profile_picture_url", "profile photo URL", "top-[31px]")}
               </div>
-            </div>
+            </div> */}
 
             <div className="grid gap-4 md:grid-cols-2">
-              <label className="relative space-y-1">
+              <label className="space-y-1">
                 <span className="text-xs text-slate-400">Full Name</span>
                 <input
-                  value={inputValueFor("full_name")}
+                  value={form.full_name}
                   onChange={(event) => handleChange("full_name", event.target.value)}
-                  readOnly={!editingFields.full_name}
-                  className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 pr-10 text-sm text-slate-100 outline-none focus:border-cyan-500"
-                  placeholder={placeholderFor("full_name", "Your full name")}
+                  className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none focus:border-cyan-500"
                 />
-                {renderEditButton("full_name", "full name")}
               </label>
 
-              <label className="relative space-y-1">
+              <label className="space-y-1">
                 <span className="text-xs text-slate-400">Email</span>
                 <input
-                  value={inputValueFor("email")}
-                  onChange={(event) => handleChange("email", event.target.value)}
-                  readOnly={!editingFields.email}
-                  className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 pr-10 text-sm text-slate-100 outline-none focus:border-cyan-500"
-                  placeholder={placeholderFor("email", "name@example.com")}
+                  value={form.email}
+                  readOnly
+                  aria-readonly="true"
+                  className="w-full cursor-not-allowed rounded-md border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-slate-300 outline-none"
                 />
-                {renderEditButton("email", "email")}
+                <p className="text-[11px] text-slate-500">Email cannot be changed.</p>
               </label>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
-              <label className="relative space-y-1">
+              <label className="space-y-1">
                 <span className="text-xs text-slate-400">Phone</span>
                 <input
-                  value={inputValueFor("phone")}
+                  value={form.phone}
                   onChange={(event) => handleChange("phone", event.target.value)}
-                  readOnly={!editingFields.phone}
-                  className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 pr-10 text-sm text-slate-100 outline-none focus:border-cyan-500"
-                  placeholder={placeholderFor("phone", "Add your phone number")}
+                  className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none focus:border-cyan-500"
                 />
-                {renderEditButton("phone", "phone")}
               </label>
 
-              <label className="relative space-y-1">
+              <label className="space-y-1">
                 <span className="text-xs text-slate-400">City</span>
                 <input
-                  value={inputValueFor("city")}
+                  value={form.city}
                   onChange={(event) => handleChange("city", event.target.value)}
-                  readOnly={!editingFields.city}
-                  className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 pr-10 text-sm text-slate-100 outline-none focus:border-cyan-500"
-                  placeholder={placeholderFor("city", "Add your city")}
+                  className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none focus:border-cyan-500"
                 />
-                {renderEditButton("city", "city")}
               </label>
             </div>
 
-            <label className="relative block space-y-1">
+            <label className="space-y-1 block">
               <span className="text-xs text-slate-400">Institution</span>
               <input
-                value={inputValueFor("institution")}
+                value={form.institution}
                 onChange={(event) => handleChange("institution", event.target.value)}
-                readOnly={!editingFields.institution}
-                className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 pr-10 text-sm text-slate-100 outline-none focus:border-cyan-500"
-                placeholder={placeholderFor("institution", "Add your institution")}
+                className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none focus:border-cyan-500"
               />
-              {renderEditButton("institution", "institution")}
             </label>
 
-            <label className="relative block space-y-1">
+            <label className="space-y-1 block">
               <span className="text-xs text-slate-400">Bio</span>
               <textarea
-                value={inputValueFor("bio")}
+                value={form.bio}
                 onChange={(event) => handleChange("bio", event.target.value)}
-                readOnly={!editingFields.bio}
-                placeholder={placeholderFor("bio", "Add a short bio")}
-                className="h-24 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 pr-10 text-sm text-slate-100 outline-none focus:border-cyan-500"
+                className="h-24 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none focus:border-cyan-500"
               />
-              {renderEditButton("bio", "bio")}
-              <p className="text-right text-[11px] text-slate-500">{resolvedForm.bio.length}/320</p>
+              <p className="text-right text-[11px] text-slate-500">{form.bio.length}/320</p>
             </label>
 
             <div className="flex flex-wrap gap-2">
@@ -577,8 +512,7 @@ export default function UserProfilePage() {
                 className="border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800"
                 disabled={!isDirty || isSaving}
                 onClick={() => {
-                  setForm(EMPTY_FORM);
-                  setEditingFields({ ...INITIAL_EDITING_STATE });
+                  setForm(initialForm);
                   setStatus(null);
                 }}
               >
@@ -676,7 +610,7 @@ export default function UserProfilePage() {
           </CardContent>
         </Card>
 
-        <Card className="border-slate-800 bg-slate-900/70">
+        {/* <Card className="border-slate-800 bg-slate-900/70">
           <CardHeader>
             <CardTitle className="text-white">Profile Completion</CardTitle>
             <CardDescription className="text-slate-300">
@@ -694,6 +628,103 @@ export default function UserProfilePage() {
             <p className="text-xs text-slate-400">
               Tip: add profile photo and institution details to maximize completion.
             </p>
+          </CardContent>
+        </Card> */}
+
+        <Card className="border-slate-800 bg-slate-900/70">
+          <CardHeader>
+            <div className="flex items-center justify-between gap-2">
+              <CardTitle className="text-white">Enrolled Workshops</CardTitle>
+              <span className="rounded-full border border-cyan-500/40 bg-cyan-500/10 px-2.5 py-0.5 text-xs text-cyan-100">
+                {enrolledWorkshops.length}
+              </span>
+            </div>
+            <CardDescription className="text-slate-300">
+              Quick view of your active learning programs.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {isWorkshopsLoading ? (
+              <div className="flex items-center gap-2 text-sm text-slate-300">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Loading workshops...
+              </div>
+            ) : workshopsError ? (
+              <p className="text-sm text-rose-200">{workshopsError}</p>
+            ) : enrolledWorkshops.length === 0 ? (
+              <div className="space-y-2 rounded-lg border border-slate-700 bg-slate-900/70 p-3">
+                <p className="text-sm text-slate-200">No enrolled workshops yet.</p>
+                <Link href="/all-programs" className="inline-block">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800"
+                  >
+                    <BookOpen className="mr-2 h-4 w-4" />
+                    Explore Programs
+                  </Button>
+                </Link>
+              </div>
+            ) : (
+              <>
+                {ongoingWorkshop ? (
+                  <div className="space-y-3 rounded-xl border border-cyan-500/35 bg-gradient-to-br from-cyan-950/40 via-slate-900/90 to-slate-900 px-3 py-3">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.12em] text-cyan-200">Ongoing Workshop</p>
+                        <p className="line-clamp-1 text-sm font-semibold text-white">{ongoingWorkshop.workshop_title}</p>
+                      </div>
+                      <span className="rounded-full border border-cyan-500/50 bg-cyan-500/15 px-2 py-0.5 text-[11px] text-cyan-100">
+                        {ongoingWorkshop.progress_percent}%
+                      </span>
+                    </div>
+
+                    <div className="h-2 overflow-hidden rounded-full bg-slate-800">
+                      <div
+                        className="h-full bg-gradient-to-r from-cyan-500 to-emerald-500"
+                        style={{ width: `${ongoingWorkshop.progress_percent}%` }}
+                      />
+                    </div>
+
+                    <p className="text-xs text-slate-300">
+                      {ongoingWorkshop.modules_completed}/{ongoingWorkshop.modules_total} modules completed
+                    </p>
+
+                    <Link href={ongoingWorkshop.continue_url} className="inline-block">
+                      <Button
+                        type="button"
+                        className="bg-cyan-600 text-white hover:bg-cyan-500"
+                      >
+                        Continue Ongoing Workshop
+                      </Button>
+                    </Link>
+                  </div>
+                ) : null}
+
+                <div className="space-y-2">
+                  {workshopPreviewItems.map((workshop) => (
+                    <div
+                      key={workshop.workshop_id}
+                      className="rounded-lg border border-slate-700 bg-slate-900/70 px-3 py-2"
+                    >
+                      <p className="line-clamp-1 text-sm font-medium text-white">{workshop.workshop_title}</p>
+                      <p className="text-xs text-slate-300">
+                        {workshop.progress_percent}% complete • {workshop.status.replace("-", " ")}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+                <Link href="/profile/workshops" className="inline-block">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800"
+                  >
+                    View All Workshops
+                  </Button>
+                </Link>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>

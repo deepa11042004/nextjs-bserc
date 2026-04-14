@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { Bell, Loader2 } from "lucide-react";
 
@@ -13,6 +14,7 @@ import type { AuthUser } from "@/types/auth";
 
 export function UserDashboardShell({ children }: { children: ReactNode }) {
   const { isHydrated, isLoggedIn, role, user, logout } = useAuth();
+  const pathname = usePathname();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [workshopCount, setWorkshopCount] = useState(0);
   const [notificationCount, setNotificationCount] = useState(0);
@@ -81,7 +83,11 @@ export function UserDashboardShell({ children }: { children: ReactNode }) {
           return;
         }
 
-        setWorkshopCount(workshops.total);
+        const safeTotal = Number.isFinite(workshops.total)
+          ? workshops.total
+          : workshops.data.length;
+
+        setWorkshopCount(Math.max(safeTotal, workshops.data.length));
         setNotificationCount(workshops.recommended.length);
       } catch {
         if (!isMounted) {
@@ -98,7 +104,7 @@ export function UserDashboardShell({ children }: { children: ReactNode }) {
     return () => {
       isMounted = false;
     };
-  }, [isUserSession]);
+  }, [isUserSession, pathname]);
 
   if (!isHydrated) {
     return (
