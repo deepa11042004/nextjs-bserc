@@ -261,7 +261,7 @@ export default function StudentProfile() {
             <button
               type="button"
               onClick={handleLogout}
-              className="w-full rounded-lg bg-rose-700/25 px-3 py-2 text-left text-sm text-rose-100 transition hover:bg-rose-700/35"
+              className="w-full rounded-lg text-left text-sm transition border-rose-500 bg-rose-500 px-4 py-2 text-white hover:bg-rose-600"
             >
               <span className="flex items-center gap-2">
                 <LogOut className="h-4 w-4" />

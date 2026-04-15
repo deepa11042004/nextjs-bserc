@@ -9,6 +9,7 @@ import {
   Clock,
   ChevronRight,
   MessageCircle,
+  LifeBuoy,
   Loader2,
 } from "lucide-react";
 
@@ -485,9 +486,11 @@ export default function MainDashboard() {
   const [participants, setParticipants] = useState<ParticipantRow[]>([]);
   const [recentQueries, setRecentQueries] = useState<Query[]>([]);
   const [contactQueriesCount, setContactQueriesCount] = useState(0);
+  const [supportTicketsCount, setSupportTicketsCount] = useState(0);
   const [isStatsLoading, setIsStatsLoading] = useState(true);
   const [isParticipantsLoading, setIsParticipantsLoading] = useState(true);
   const [isContactQueriesLoading, setIsContactQueriesLoading] = useState(true);
+  const [isSupportTicketsLoading, setIsSupportTicketsLoading] = useState(true);
   const [isRecentQueriesLoading, setIsRecentQueriesLoading] = useState(true);
   const [relativeTimeTick, setRelativeTimeTick] = useState(() => Date.now());
 
@@ -610,7 +613,40 @@ export default function MainDashboard() {
       }
     };
 
+    const loadSupportTickets = async () => {
+      setIsSupportTicketsLoading(true);
+
+      try {
+        const response = await fetch("/api/admin/tickets", {
+          method: "GET",
+          cache: "no-store",
+        });
+
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error("Unable to fetch support tickets");
+        }
+
+        if (!isMounted) {
+          return;
+        }
+
+        const root = payload as Record<string, unknown>;
+        const items = Array.isArray(root.data) ? root.data : [];
+        setSupportTicketsCount(items.length);
+      } catch {
+        if (isMounted) {
+          setSupportTicketsCount(0);
+        }
+      } finally {
+        if (isMounted) {
+          setIsSupportTicketsLoading(false);
+        }
+      }
+    };
+
     loadContactQueries();
+    loadSupportTickets();
 
     return () => {
       isMounted = false;
@@ -642,15 +678,15 @@ export default function MainDashboard() {
         linkText: "View Participants",
       },
       {
-        title: "Contact Queries",
-        value: isContactQueriesLoading ? "..." : contactQueriesCount,
-        subtitle: isContactQueriesLoading
-          ? "Loading queries..."
-          : `${contactQueriesCount} Total`,
-        icon: <Mail className="h-5 w-5" />,
+        title: "Support Tickets",
+        value: isSupportTicketsLoading ? "..." : supportTicketsCount,
+        subtitle: isSupportTicketsLoading
+          ? "Loading tickets..."
+          : `${supportTicketsCount} Total`,
+        icon: <LifeBuoy className="h-5 w-5" />,
         gradient: "from-amber-600 to-amber-400",
-        link: "/admin/contact-queries",
-        linkText: "View Queries",
+        link: "/admin/tickets",
+        linkText: "View Tickets",
       },
       {
         title: "Admin Users",
@@ -662,7 +698,7 @@ export default function MainDashboard() {
         linkText: "Manage Admins",
       },
     ],
-    [isParticipantsLoading, isStatsLoading, isContactQueriesLoading, participants.length, workshopCount, contactQueriesCount],
+    [isParticipantsLoading, isStatsLoading, isContactQueriesLoading, isSupportTicketsLoading, participants.length, workshopCount, contactQueriesCount, supportTicketsCount],
   );
 
   const recentParticipants = useMemo(() => participants.slice(0, 5), [participants]);
