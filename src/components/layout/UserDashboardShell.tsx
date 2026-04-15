@@ -165,7 +165,7 @@ export function UserDashboardShell({ children }: { children: ReactNode }) {
             <Button
               type="button"
               variant="ghost"
-              className="hidden text-slate-300 hover:text-white sm:inline-flex"
+              className="hidden rounded-md border border-rose-500 bg-rose-500 px-4 py-2 text-white hover:bg-rose-600 sm:inline-flex"
               onClick={() => logout("/login", { scope: "user" })}
             >
               Logout

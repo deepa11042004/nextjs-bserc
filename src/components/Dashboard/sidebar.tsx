@@ -129,6 +129,14 @@ export default function Sidebar() {
                 >
                   Dashboard
                 </NavItem>
+                <NavItem
+                  href="/admin/contact-queries"
+                  icon={MessagesSquare}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  isActive={normalizedPath === "/admin/contact-queries"}
+                >
+                  Contact Queries
+                </NavItem>
               </div>
 
               <div>
@@ -239,14 +247,6 @@ export default function Sidebar() {
                     isActive={normalizedPath === "/admin/website-users"}
                   >
                     Website Users
-                  </NavItem>
-                  <NavItem
-                    href="/admin/contact-queries"
-                    icon={MessagesSquare}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    isActive={normalizedPath === "/admin/contact-queries"}
-                  >
-                    Contact Queries
                   </NavItem>
                   <NavItem
                     href="/admin/tickets"

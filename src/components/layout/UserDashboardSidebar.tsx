@@ -229,7 +229,7 @@ function DashboardNavContent({
       <Button
         type="button"
         variant="destructive"
-        className="mt-4 h-9 justify-start bg-rose-500/15 text-rose-200 hover:bg-rose-500/25"
+        className="mt-4 h-9 justify-start border-rose-500 bg-rose-500 px-4 py-2 text-white hover:bg-rose-600"
         onClick={onLogout}
       >
         Logout
