@@ -1,268 +1,360 @@
 "use client";
-import React, { useState, useEffect, useCallback, useRef } from "react";
-import { ChevronLeft, ChevronRight, Circle, Play, Pause } from "lucide-react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
-// ──────────────────────────────────────────────────────────────
-// 1. TYPES & CONFIGURATION
-// ──────────────────────────────────────────────────────────────
-type SlideType = "video" | "hero-content";
+import type { HeroSlide, HeroMediaType } from "@/types/heroSlide";
 
-interface SlideConfig {
-  id: number;
-  type: SlideType;
-  videoUrl?: string;
+type HeroSlidesResponse = {
+  data?: unknown;
+  message?: unknown;
+  error?: unknown;
+};
+
+function toText(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
 }
 
-const SLIDES_CONFIG: SlideConfig[] = [
-  {
-    id: 1,
-    type: "hero-content",
-  },
-  {
-    id: 2,
-    type: "video",
-    videoUrl: "/video/space-video.mp4",
-  },
-];
+function toNullableText(value: unknown): string | null {
+  const cleaned = toText(value);
+  return cleaned || null;
+}
 
-// ──────────────────────────────────────────────────────────────
-// 2. PAGE COMPONENTS
-// ──────────────────────────────────────────────────────────────
+function toPositiveInt(value: unknown): number {
+  const numeric = Number(value);
+  return Number.isInteger(numeric) && numeric > 0 ? numeric : 0;
+}
 
-/** Page 1: Fullscreen Background Video */
-const VideoSlide: React.FC<{ videoUrl: string }> = ({ videoUrl }) => {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [isPlaying, setIsPlaying] = useState(true);
+function toMediaType(value: unknown): HeroMediaType | null {
+  const cleaned = toText(value).toLowerCase();
 
-  const togglePlayback = useCallback(() => {
-    if (!videoRef.current) return;
-    if (isPlaying) videoRef.current.pause();
-    else videoRef.current.play();
-    setIsPlaying((prev) => !prev);
-  }, [isPlaying]);
+  if (cleaned === "image" || cleaned === "video") {
+    return cleaned;
+  }
 
-  return (
-    <div className="relative w-full h-full overflow-hidden">
-      <video
-        ref={videoRef}
-        autoPlay
-        muted
-        loop
-        playsInline
-        className="absolute inset-0 w-full h-full object-cover"
-        src={videoUrl}
-      />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30" />
+  return null;
+}
 
-      <button
-        onClick={togglePlayback}
-        className="absolute top-20 right-4 md:top-6 md:right-6 p-2.5 md:p-3 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 transition-all z-20"
-        aria-label={isPlaying ? "Pause video" : "Play video"}
-      >
-        {isPlaying ? <Pause size={20} /> : <Play size={20} />}
-      </button>
-    </div>
-  );
-};
+function getApiMessage(payload: unknown): string {
+  if (!payload || typeof payload !== "object") {
+    return "";
+  }
 
-/** Page 2: Hero Content */
-const HeroContentSlide: React.FC = () => {
-  return (
-    <section className="w-full h-screen bg-black text-white flex flex-col items-center justify-center px-6  pb-10 relative overflow-hidden">
-      {/* Subtle background glow effect */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-96 bg-cyan-500/10 blur-3xl rounded-full pointer-events-none" />
+  const root = payload as HeroSlidesResponse;
 
-      <div className="relative z-10 max-w-5xl mx-auto text-center pb-10">
-        {/* Badge with top glow */}
-        <div className="relative inline-block mb-10">
-          {/* Top center glow effect */}
-          <div className="absolute -top-8 left-1/2 -translate-x-1/2 w-3/4 h-16 bg-cyan-400/30 blur-2xl rounded-full" />
-          <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-1/2 h-8 bg-cyan-300/40 blur-xl rounded-full" />
-          
-          {/* Badge */}
-          <span className="relative px-6 py-2.5 rounded-full text-sm font-semibold tracking-widest text-cyan-300 border border-cyan-500/50 bg-cyan-950/20 backdrop-blur-sm">
-            NATIONAL SPACE DAY
-          </span>
-        </div>
+  if (typeof root.message === "string" && root.message.trim()) {
+    return root.message.trim();
+  }
 
-        {/* Main Heading */}
-        <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold font-serif leading-tight mb-6 text-white">
-          India's Def-Space 
-          <br />
-          Sector Revolution
-        </h1>
+  if (typeof root.error === "string" && root.error.trim()) {
+    return root.error.trim();
+  }
 
-        {/* Subtitle */}
-        <p className="text-yellow-400 text-lg md:text-xl font-semibold mb-6">
-          Transforming India's Defence & Space Sector
-        </p>
+  return "";
+}
 
-        {/* Description */}
-        <p className="text-gray-400 text-base md:text-lg max-w-3xl mx-auto mb-10 leading-relaxed">
-          Advancing scientific innovation, Defence & Space literacy, and <br />
-          research excellence for Viksit Bharat 2047
-        </p>
+function normalizeSlide(item: unknown): HeroSlide | null {
+  if (!item || typeof item !== "object" || Array.isArray(item)) {
+    return null;
+  }
 
-        {/* Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-          <button className="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-cyan-400 to-cyan-600 text-black font-semibold rounded-lg shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 hover:scale-105 transition-all duration-200">
-            Explore
-          </button>
-          <button className="w-full sm:w-auto px-8 py-3.5 border border-gray-600 text-white font-semibold rounded-lg hover:bg-gray-800 hover:border-gray-500 transition-all duration-200">
-            Learn More
-          </button>
-        </div>
-      </div>
+  const row = item as Record<string, unknown>;
+  const id = toPositiveInt(row.id);
+  const mediaType = toMediaType(row.media_type);
 
-       
-    </section>
-  );
-};
+  if (!id || !mediaType) {
+    return null;
+  }
 
-// ──────────────────────────────────────────────────────────────
-// 3. MAIN SLIDER COMPONENT
-// ──────────────────────────────────────────────────────────────
-const HeroSlider: React.FC = () => {
+  const mediaUrl = `/api/hero-slides/${id}/media`;
+
+  return {
+    id,
+    title: toText(row.title),
+    subtitle: toNullableText(row.subtitle),
+    media_type: mediaType,
+    media_mime_type: toNullableText(row.media_mime_type),
+    media_url: mediaUrl,
+    cta_text: toNullableText(row.cta_text),
+    cta_link: toNullableText(row.cta_link),
+    position: toPositiveInt(row.position) || id,
+    is_active: typeof row.is_active === "boolean" ? row.is_active : undefined,
+    created_at: toNullableText(row.created_at),
+    updated_at: toNullableText(row.updated_at),
+  };
+}
+
+export default function HeroSlider() {
+  const [slides, setSlides] = useState<HeroSlide[]>([]);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isHoveringNav, setIsHoveringNav] = useState(false);
-  const totalSlides = SLIDES_CONFIG.length;
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchSlides = async () => {
+      setIsLoading(true);
+      setLoadError("");
+
+      try {
+        const response = await fetch("/api/hero-slides", {
+          method: "GET",
+          cache: "no-store",
+        });
+
+        const payload = (await response.json().catch(() => ({}))) as unknown;
+
+        if (!response.ok) {
+          throw new Error(getApiMessage(payload) || "Unable to load hero slides.");
+        }
+
+        const root = payload as HeroSlidesResponse;
+        const items = Array.isArray(root?.data) ? root.data : [];
+        const normalized = items
+          .map(normalizeSlide)
+          .filter((slide): slide is HeroSlide => Boolean(slide))
+          .sort((a, b) => a.position - b.position || a.id - b.id);
+
+        if (!isMounted) {
+          return;
+        }
+
+        setSlides(normalized);
+      } catch (err) {
+        if (!isMounted) {
+          return;
+        }
+
+        setSlides([]);
+        setLoadError(
+          err instanceof Error && err.message
+            ? err.message
+            : "Unable to load hero slides.",
+        );
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    fetchSlides();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const totalSlides = slides.length;
+
+  useEffect(() => {
+    if (currentSlide >= totalSlides && totalSlides > 0) {
+      setCurrentSlide(0);
+    }
+  }, [currentSlide, totalSlides]);
 
   const changeSlide = useCallback(
     (direction: "next" | "prev") => {
-      if (isTransitioning) return;
+      if (isTransitioning || totalSlides <= 1) {
+        return;
+      }
+
       setIsTransitioning(true);
+
       setCurrentSlide((prev) =>
         direction === "next"
           ? (prev + 1) % totalSlides
-          : (prev - 1 + totalSlides) % totalSlides
+          : (prev - 1 + totalSlides) % totalSlides,
       );
-      setTimeout(() => setIsTransitioning(false), 700);
+
+      window.setTimeout(() => setIsTransitioning(false), 500);
     },
-    [isTransitioning, totalSlides]
+    [isTransitioning, totalSlides],
   );
 
-  // Keyboard navigation
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "ArrowRight") changeSlide("next");
-      if (e.key === "ArrowLeft") changeSlide("prev");
+    if (totalSlides <= 1) {
+      return undefined;
+    }
+
+    const timer = window.setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % totalSlides);
+    }, 7000);
+
+    return () => window.clearInterval(timer);
+  }, [totalSlides]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "ArrowRight") {
+        changeSlide("next");
+      }
+
+      if (event.key === "ArrowLeft") {
+        changeSlide("prev");
+      }
     };
+
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [changeSlide]);
 
-  const renderSlideContent = (slide: SlideConfig) => {
-    switch (slide.type) {
-      case "video":
-        return <VideoSlide videoUrl={slide.videoUrl || ""} />;
-      case "hero-content":
-        return <HeroContentSlide />;
-      default:
-        return (
-          <div className="w-full h-full bg-gray-900 flex items-center justify-center">
-            Unknown Slide Type
-          </div>
-        );
-    }
-  };
+  const current = useMemo(() => slides[currentSlide] || null, [slides, currentSlide]);
+
+  if (isLoading) {
+    return <section className="h-screen md:h-[90vh] animate-pulse bg-zinc-950" aria-label="Loading hero" />;
+  }
+
+  if (!current) {
+    return (
+      <section className="h-screen md:h-[90vh] bg-black text-white flex items-center justify-center px-6 text-center">
+        <p className="text-sm text-zinc-400">{loadError || "No active hero slides available."}</p>
+      </section>
+    );
+  }
 
   return (
-    <div
-      className="relative w-full h-screen md:h-[90vh] bg-black overflow-hidden group"
+    <section
+      className="relative w-full h-screen md:h-[90vh] overflow-hidden bg-black group"
       onMouseEnter={() => setIsHoveringNav(true)}
       onMouseLeave={() => setIsHoveringNav(false)}
     >
-      {/* Slides Container */}
-      <div className="relative w-full h-full">
-        {SLIDES_CONFIG.map((slide, index) => (
-          <div
-            key={slide.id}
-            className={`absolute inset-0 w-full h-full transition-opacity duration-700 ease-in-out ${
-              index === currentSlide
-                ? "opacity-100 z-10"
-                : "opacity-0 z-0 pointer-events-none"
-            }`}
-          >
-            {renderSlideContent(slide)}
-          </div>
-        ))}
-      </div>
-
-      {/* Navigation Arrows */}
-      <div className="absolute inset-x-4 inset-y-auto bottom-4   md:inset-y-0 md:left-0 md:right-0 flex items-center justify-between px-2 sm:px-4 md:px-8 z-30 pointer-events-none">
-        {/* Previous Button */}
-        <button
-          onClick={() => changeSlide("prev")}
-          disabled={isTransitioning}
-          className={` 
-            pointer-events-auto
-            p-2 sm:p-3 md:p-4 rounded-full
-            bg-black/30 backdrop-blur-md
-            border border-white/20
-            text-white
-            hover:bg-black/50 hover:border-cyan-400/50 hover:scale-110
-            transition-all duration-300
-            disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100
-            ${isHoveringNav ? "opacity-100 translate-x-0" : "opacity-70 -translate-x-2"}
-          `}
-          aria-label="Previous slide"
+      {slides.map((slide, index) => (
+        <div
+          key={slide.id}
+          className={`absolute inset-0 h-full w-full transition-opacity duration-700 ease-in-out ${
+            index === currentSlide ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none"
+          }`}
         >
-          <ChevronLeft size={20} className="sm:w-6 sm:h-6 md:w-8 md:h-8" />
-        </button>
-
-        {/* Next Button */}
-        <button
-          onClick={() => changeSlide("next")}
-          disabled={isTransitioning}
-          className={`
-            pointer-events-auto
-            p-2 sm:p-3 md:p-4 rounded-full
-            bg-black/30 backdrop-blur-md
-            border border-white/20
-            text-white
-            hover:bg-black/50 hover:border-cyan-400/50 hover:scale-110
-            transition-all duration-300
-            disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100
-            ${isHoveringNav ? "opacity-100 translate-x-0" : "opacity-70 translate-x-2"}
-          `}
-          aria-label="Next slide"
-        >
-          <ChevronRight size={20} className="sm:w-6 sm:h-6 md:w-8 md:h-8" />
-        </button>
-      </div>
-
-      {/* Slide Indicators */}
-      <div className="absolute bottom-6 sm:bottom-10 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 sm:gap-3">
-        {SLIDES_CONFIG.map((_, index) => (
-          <button
-            key={index}
-            onClick={() => {
-              if (!isTransitioning && index !== currentSlide) {
-                setIsTransitioning(true);
-                setCurrentSlide(index);
-                setTimeout(() => setIsTransitioning(false), 700);
-              }
-            }}
-            className="group/dot transition-all p-1"
-            aria-label={`Go to slide ${index + 1}`}
-          >
-            <Circle
-              size={index === currentSlide ? 10 : 7}
-              className={`
-                transition-all duration-300
-                ${
-                  index === currentSlide
-                    ? "text-cyan-400 fill-cyan-400 scale-110"
-                    : "text-gray-500 group-hover/dot:text-gray-300"
-                }
-              `}
+          {slide.media_type === "video" ? (
+            <video
+              className="absolute inset-0 h-full w-full object-cover"
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="metadata"
+            >
+              <source src={slide.media_url} type={slide.media_mime_type || "video/mp4"} />
+            </video>
+          ) : (
+            <img
+              src={slide.media_url}
+              alt={slide.title || "Hero slide"}
+              className="absolute inset-0 h-full w-full object-cover"
+              loading={index === 0 ? "eager" : "lazy"}
             />
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-};
+          )}
 
-export default HeroSlider;
+          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/40 to-black/50" />
+
+          <div className="absolute inset-0 z-20 flex items-center justify-center px-6">
+            <div className="relative mx-auto max-w-5xl text-center text-white">
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute left-1/2 top-3 h-32 w-56 -translate-x-1/2 rounded-full bg-cyan-400/25 blur-3xl"
+              />
+
+              <p className="relative inline-flex items-center rounded-full border border-cyan-300/40 bg-cyan-400/5 px-7 py-2 text-[11px] sm:text-xs font-semibold uppercase tracking-[0.22em] text-cyan-200/95">
+                NATIONAL SPACE DAY
+              </p>
+
+              <h1 className="mt-7 font-serif text-4xl sm:text-5xl md:text-6xl lg:text-7xl leading-[0.95] font-bold tracking-tight text-white">
+                India&apos;s Def-Space
+                <br />
+                Sector Revolution
+              </h1>
+
+              <h2 className="mt-6 text-xl sm:text-2xl md:text-4xl font-semibold text-yellow-400">
+                Transforming India&apos;s Defence &amp; Space Sector
+              </h2>
+
+              <p className="mt-6 mx-auto max-w-3xl text-sm sm:text-base md:text-lg leading-relaxed text-zinc-300/95">
+                Advancing scientific innovation, Defence &amp; Space literacy, and
+                <br className="hidden sm:block" />
+                research excellence for Viksit Bharat 2047
+              </p>
+
+              <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
+                <a
+                  href="/programs"
+                  className="inline-flex items-center rounded-xl bg-cyan-400 px-9 py-3.5 text-lg font-semibold text-black shadow-[0_0_26px_rgba(34,211,238,0.38)] transition hover:bg-cyan-300"
+                >
+                  Explore
+                </a>
+
+                <a
+                  href="/about"
+                  className="inline-flex items-center rounded-xl border border-white/25 bg-black/35 px-9 py-3.5 text-lg font-semibold text-white transition hover:border-cyan-300/55 hover:bg-black/50"
+                >
+                  Learn More
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      ))}
+
+      {loadError ? (
+        <div className="absolute top-3 left-1/2 z-40 -translate-x-1/2 rounded-md border border-rose-500/40 bg-rose-950/30 px-3 py-2 text-xs text-rose-200">
+          {loadError}
+        </div>
+      ) : null}
+
+      {totalSlides > 1 ? (
+        <>
+          <div className="absolute inset-x-4 inset-y-auto bottom-4 md:inset-y-0 md:left-0 md:right-0 flex items-center justify-between px-2 sm:px-4 md:px-8 z-30 pointer-events-none">
+            <button
+              onClick={() => changeSlide("prev")}
+              disabled={isTransitioning}
+              className={`pointer-events-auto p-2 sm:p-3 md:p-4 rounded-full bg-black/30 backdrop-blur-md border border-white/20 text-white hover:bg-black/50 hover:border-cyan-400/50 hover:scale-110 transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 ${
+                isHoveringNav ? "opacity-100 translate-x-0" : "opacity-70 -translate-x-2"
+              }`}
+              aria-label="Previous slide"
+            >
+              <ChevronLeft size={20} className="sm:w-6 sm:h-6 md:w-8 md:h-8" />
+            </button>
+
+            <button
+              onClick={() => changeSlide("next")}
+              disabled={isTransitioning}
+              className={`pointer-events-auto p-2 sm:p-3 md:p-4 rounded-full bg-black/30 backdrop-blur-md border border-white/20 text-white hover:bg-black/50 hover:border-cyan-400/50 hover:scale-110 transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 ${
+                isHoveringNav ? "opacity-100 translate-x-0" : "opacity-70 translate-x-2"
+              }`}
+              aria-label="Next slide"
+            >
+              <ChevronRight size={20} className="sm:w-6 sm:h-6 md:w-8 md:h-8" />
+            </button>
+          </div>
+
+          <div className="absolute bottom-6 sm:bottom-10 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 sm:gap-3">
+            {slides.map((slide, index) => {
+              const isActive = index === currentSlide;
+
+              return (
+                <button
+                  key={slide.id}
+                  onClick={() => {
+                    if (isTransitioning || isActive) {
+                      return;
+                    }
+
+                    setIsTransitioning(true);
+                    setCurrentSlide(index);
+                    window.setTimeout(() => setIsTransitioning(false), 500);
+                  }}
+                  className={`h-2.5 rounded-full transition-all duration-300 ${
+                    isActive ? "w-7 bg-cyan-400" : "w-2.5 bg-zinc-500 hover:bg-zinc-300"
+                  }`}
+                  aria-label={`Go to slide ${index + 1}`}
+                />
+              );
+            })}
+          </div>
+        </>
+      ) : null}
+    </section>
+  );
+}

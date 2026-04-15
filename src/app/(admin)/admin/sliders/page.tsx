@@ -1,16 +1,12 @@
- 
+import HeroSlidesManager from "@/components/admin/sliders/HeroSlidesManager";
 
-import React from 'react'
-
-const page = () => {
+export default function HeroSlidersPage() {
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold text-white">Hero Slider</h1>
-      
+      <h1 className="text-2xl font-semibold text-white">Hero Sliders</h1>
+      <HeroSlidesManager />
     </div>
-  )
+  );
 }
-
-export default page
 
 
