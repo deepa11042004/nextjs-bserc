@@ -56,12 +56,10 @@ const companyLinks: CompanyLink[] = [
   { label: "Def-Space Summer Internship", href: "/bsercinternship" ,external:true},
   { label: "Def-Space Innovation Corridor", href: "/" ,external:false },
   { label: "Workshop", href: "/results/winter-internship-results" ,external:false},
-  { label: "Contact Us", href: "/contact" ,external:false},
 ];
 
 const contactItems: ContactItem[] = [
-  { icon: FiMapPin, label: "New Delhi, India" },
-  { icon: FiPhone, label: "+91 7042880241", href: "tel:+917042880241" },
+  { icon: FiMail, label: "Contact Us", href: "/contact" },
   { icon: FiMail, label: "info@bserc.org", href: "mailto:info@bserc.org" },
   {
     icon: FiMail,
@@ -157,10 +155,10 @@ const Footer: React.FC = () => {
             </div>
           </div> */}
 
-          {/* Column 3: Quick Links */}
+          {/* Column 3: News and Updates */}
           <div className="text-center  md:text-left">
             <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-4">
-              Quick Links
+              News and Updates
             </h4>
             <ul className="space-y-2.5">
               {companyLinks.map((item) => (
@@ -180,10 +178,10 @@ const Footer: React.FC = () => {
             </ul>
           </div>
 
-          {/* Column 4: Head Office */}
+          {/* Column 4: News and Updates */}
           <div className="text-center md:text-left">
             <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-4">
-              Head Office
+              News and Updates
             </h4>
             <ul className="space-y-3">
               {contactItems.map(({ icon: Icon, label, href }, idx) => {
