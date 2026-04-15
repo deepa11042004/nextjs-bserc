@@ -8,6 +8,7 @@ import { Menu, X } from "lucide-react";
 const NAV_ITEMS = [
   { label: "HOME", href: "/summer-school" },
   { label: "ABOUT ", href: "/summer-school/about" },
+   { label: "PROJECTS ", href: "/summer-school/projects" },
   { label: "REGISTRATION", href: "/summer-school/student-registration" },
   { label: "MENTORS", href: "/summer-school/mentors" },
   { label: "REG.MENTOR", href: "/summer-school/mentor-registration" },
