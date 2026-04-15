@@ -156,7 +156,7 @@ const Footer: React.FC = () => {
           </div> */}
 
           {/* Column 3: News and Updates */}
-          <div className="text-center  md:text-left">
+          {/* <div className="text-center  md:text-left">
             <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-4">
               News and Updates
             </h4>
@@ -176,7 +176,7 @@ const Footer: React.FC = () => {
                 </li>
               ))}
             </ul>
-          </div>
+          </div> */}
 
           {/* Column 4: News and Updates */}
           <div className="text-center md:text-left">
