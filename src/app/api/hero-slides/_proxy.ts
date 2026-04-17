@@ -36,7 +36,9 @@ function getBackendBaseUrls(): string[] {
   const envUrls = splitConfiguredApiUrls();
   const raw = isProductionRuntime()
     ? envUrls
-    : [...DEV_FALLBACK_BACKEND_URLS, ...envUrls];
+    : envUrls.length > 0
+      ? [...envUrls, ...DEV_FALLBACK_BACKEND_URLS]
+      : DEV_FALLBACK_BACKEND_URLS;
 
   const normalized = raw.filter((value): value is string => Boolean(value));
   return [...new Set(normalized.map((value) => value.replace(/\/$/, "")))];

@@ -11,6 +11,18 @@ type HeroSlidesResponse = {
   error?: unknown;
 };
 
+const HERO_SECTION_SIZE_CLASS =
+  "w-full aspect-[16/9] min-h-[420px] max-h-[90vh] md:min-h-[560px]";
+const DEFAULT_BADGE_TEXT = "NATIONAL SPACE DAY";
+const DEFAULT_HEADING_TEXT = "India's Def-Space\nSector Revolution";
+const DEFAULT_SUBHEADING_TEXT = "Transforming India's Defence & Space Sector";
+const DEFAULT_DESCRIPTION_TEXT =
+  "Advancing scientific innovation, Defence & Space literacy, and research excellence for Viksit Bharat 2047";
+const DEFAULT_PRIMARY_CTA_TEXT = "Explore";
+const DEFAULT_PRIMARY_CTA_LINK = "/programs";
+const DEFAULT_SECONDARY_CTA_TEXT = "Internships";
+const DEFAULT_SECONDARY_CTA_LINK = "/bsercinternship/summer-internship";
+
 function toText(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
@@ -33,6 +45,27 @@ function toMediaType(value: unknown): HeroMediaType | null {
   }
 
   return null;
+}
+
+function toSafeHref(value: string | null | undefined, fallback: string): string {
+  const cleaned = toText(value);
+
+  if (!cleaned) {
+    return fallback;
+  }
+
+  if (
+    cleaned.startsWith("/")
+    || cleaned.startsWith("http://")
+    || cleaned.startsWith("https://")
+    || cleaned.startsWith("mailto:")
+    || cleaned.startsWith("tel:")
+    || cleaned.startsWith("#")
+  ) {
+    return cleaned;
+  }
+
+  return fallback;
 }
 
 function getApiMessage(payload: unknown): string {
@@ -72,11 +105,15 @@ function normalizeSlide(item: unknown): HeroSlide | null {
     id,
     title: toText(row.title),
     subtitle: toNullableText(row.subtitle),
+    description: toNullableText(row.description),
+    badge_text: toNullableText(row.badge_text),
     media_type: mediaType,
     media_mime_type: toNullableText(row.media_mime_type),
     media_url: mediaUrl,
     cta_text: toNullableText(row.cta_text),
     cta_link: toNullableText(row.cta_link),
+    secondary_cta_text: toNullableText(row.secondary_cta_text),
+    secondary_cta_link: toNullableText(row.secondary_cta_link),
     position: toPositiveInt(row.position) || id,
     is_active: typeof row.is_active === "boolean" ? row.is_active : undefined,
     created_at: toNullableText(row.created_at),
@@ -205,12 +242,12 @@ export default function HeroSlider() {
   const current = useMemo(() => slides[currentSlide] || null, [slides, currentSlide]);
 
   if (isLoading) {
-    return <section className="h-screen md:h-[90vh] animate-pulse bg-zinc-950" aria-label="Loading hero" />;
+    return <section className={`${HERO_SECTION_SIZE_CLASS} animate-pulse bg-zinc-950`} aria-label="Loading hero" />;
   }
 
   if (!current) {
     return (
-      <section className="h-screen md:h-[90vh] bg-black text-white flex items-center justify-center px-6 text-center">
+      <section className={`${HERO_SECTION_SIZE_CLASS} bg-black text-white flex items-center justify-center px-6 text-center`}>
         <p className="text-sm text-zinc-400">{loadError || "No active hero slides available."}</p>
       </section>
     );
@@ -218,85 +255,92 @@ export default function HeroSlider() {
 
   return (
     <section
-      className="relative w-full h-screen md:h-[90vh] overflow-hidden bg-black group"
+      className={`relative ${HERO_SECTION_SIZE_CLASS} overflow-hidden bg-black group`}
       onMouseEnter={() => setIsHoveringNav(true)}
       onMouseLeave={() => setIsHoveringNav(false)}
     >
-      {slides.map((slide, index) => (
-        <div
-          key={slide.id}
-          className={`absolute inset-0 h-full w-full transition-opacity duration-700 ease-in-out ${
-            index === currentSlide ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none"
-          }`}
-        >
-          {slide.media_type === "video" ? (
-            <video
-              className="absolute inset-0 h-full w-full object-cover"
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="metadata"
-            >
-              <source src={slide.media_url} type={slide.media_mime_type || "video/mp4"} />
-            </video>
-          ) : (
-            <img
-              src={slide.media_url}
-              alt={slide.title || "Hero slide"}
-              className="absolute inset-0 h-full w-full object-cover"
-              loading={index === 0 ? "eager" : "lazy"}
-            />
-          )}
+      {slides.map((slide, index) => {
+        const badgeText = slide.badge_text || DEFAULT_BADGE_TEXT;
+        const headingText = slide.title || DEFAULT_HEADING_TEXT;
+        const subheadingText = slide.subtitle || DEFAULT_SUBHEADING_TEXT;
+        const descriptionText = slide.description || DEFAULT_DESCRIPTION_TEXT;
+        const primaryCtaText = slide.cta_text || DEFAULT_PRIMARY_CTA_TEXT;
+        const primaryCtaLink = toSafeHref(slide.cta_link, DEFAULT_PRIMARY_CTA_LINK);
+        const secondaryCtaText = slide.secondary_cta_text || DEFAULT_SECONDARY_CTA_TEXT;
+        const secondaryCtaLink = toSafeHref(slide.secondary_cta_link, DEFAULT_SECONDARY_CTA_LINK);
 
-          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/40 to-black/50" />
-
-          <div className="absolute inset-0 z-20 flex items-center justify-center px-6">
-            <div className="relative mx-auto max-w-5xl text-center text-white">
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute left-1/2 top-3 h-32 w-56 -translate-x-1/2 rounded-full bg-cyan-400/25 blur-3xl"
+        return (
+          <div
+            key={slide.id}
+            className={`absolute inset-0 h-full w-full transition-opacity duration-700 ease-in-out ${
+              index === currentSlide ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none"
+            }`}
+          >
+            {slide.media_type === "video" ? (
+              <video
+                className="absolute inset-0 h-full w-full object-cover"
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="metadata"
+              >
+                <source src={slide.media_url} type={slide.media_mime_type || "video/mp4"} />
+              </video>
+            ) : (
+              <img
+                src={slide.media_url}
+                alt={slide.title || "Hero slide"}
+                className="absolute inset-0 h-full w-full object-cover"
+                loading={index === 0 ? "eager" : "lazy"}
               />
+            )}
 
-              <p className="relative inline-flex items-center rounded-full border border-cyan-300/40 bg-cyan-400/5 px-7 py-2 text-[11px] sm:text-xs font-semibold uppercase tracking-[0.22em] text-cyan-200/95">
-                NATIONAL SPACE DAY
-              </p>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/40 to-black/50" />
 
-              <h1 className="mt-7 font-serif text-4xl sm:text-5xl md:text-6xl lg:text-7xl leading-[0.95] font-bold tracking-tight text-white">
-                India&apos;s Def-Space
-                <br />
-                Sector Revolution
-              </h1>
+            <div className="absolute inset-0 z-20 flex items-center justify-center px-6">
+              <div className="relative mx-auto max-w-5xl text-center text-white">
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute left-1/2 top-3 h-32 w-56 -translate-x-1/2 rounded-full bg-cyan-400/25 blur-3xl"
+                />
 
-              <h2 className="mt-6 text-xl sm:text-2xl md:text-4xl font-semibold text-yellow-400">
-                Transforming India&apos;s Defence &amp; Space Sector
-              </h2>
+                <p className="relative inline-flex items-center rounded-full border border-cyan-300/40 bg-cyan-400/5 px-7 py-2 text-[11px] sm:text-xs font-semibold uppercase tracking-[0.22em] text-cyan-200/95">
+                  {badgeText}
+                </p>
 
-              <p className="mt-6 mx-auto max-w-3xl text-sm sm:text-base md:text-lg leading-relaxed text-zinc-300/95">
-                Advancing scientific innovation, Defence &amp; Space literacy, and
-                <br className="hidden sm:block" />
-                research excellence for Viksit Bharat 2047
-              </p>
+                <h1 className="mt-7 whitespace-pre-line font-serif text-4xl sm:text-5xl md:text-6xl lg:text-7xl leading-[0.95] font-bold tracking-tight text-white">
+                  {headingText}
+                </h1>
 
-              <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-                <Link
-                  href="/programs"
-                  className="inline-flex items-center rounded-xl bg-cyan-400 px-9 py-3.5 text-lg font-semibold text-black shadow-[0_0_26px_rgba(34,211,238,0.38)] transition hover:bg-cyan-300"
-                >
-                  Explore
-                </Link>
+                <h2 className="mt-6 text-xl sm:text-2xl md:text-4xl font-semibold text-yellow-400">
+                  {subheadingText}
+                </h2>
 
-                <Link
-                  href="/bsercinternship/summer-internship"
-                  className="inline-flex items-center rounded-xl border border-white/25 bg-black/35 px-9 py-3.5 text-lg font-semibold text-white transition hover:border-cyan-300/55 hover:bg-black/50"
-                >
-                  Internships
-                </Link>
+                <p className="mt-6 mx-auto max-w-3xl whitespace-pre-line text-sm sm:text-base md:text-lg leading-relaxed text-zinc-300/95">
+                  {descriptionText}
+                </p>
+
+                <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
+                  <Link
+                    href={primaryCtaLink}
+                    className="inline-flex items-center rounded-xl bg-cyan-400 px-9 py-3.5 text-lg font-semibold text-black shadow-[0_0_26px_rgba(34,211,238,0.38)] transition hover:bg-cyan-300"
+                  >
+                    {primaryCtaText}
+                  </Link>
+
+                  <Link
+                    href={secondaryCtaLink}
+                    className="inline-flex items-center rounded-xl border border-white/25 bg-black/35 px-9 py-3.5 text-lg font-semibold text-white transition hover:border-cyan-300/55 hover:bg-black/50"
+                  >
+                    {secondaryCtaText}
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
 
       {loadError ? (
         <div className="absolute top-3 left-1/2 z-40 -translate-x-1/2 rounded-md border border-rose-500/40 bg-rose-950/30 px-3 py-2 text-xs text-rose-200">

@@ -29,3 +29,21 @@ export async function DELETE(
     "DELETE",
   );
 }
+
+export async function PUT(
+  request: Request,
+  context: { params: Promise<{ id: string }> },
+) {
+  const { id } = await context.params;
+  const slideId = parseHeroSlideId(id);
+
+  if (!slideId) {
+    return NextResponse.json({ message: "Invalid hero slide id" }, { status: 400 });
+  }
+
+  return forwardAdminHeroSlidesRequest(
+    request,
+    `/api/admin/hero-slides/${slideId}`,
+    "PUT",
+  );
+}
