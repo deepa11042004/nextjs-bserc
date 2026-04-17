@@ -79,6 +79,8 @@ type RazorpayInstance = {
   ) => void;
 };
 
+type RazorpayConstructor = new (options: RazorpayOptions) => RazorpayInstance;
+
 type CreateSummerSchoolOrderResponse = {
   requires_payment: boolean;
   already_registered?: boolean;
@@ -107,10 +109,12 @@ const EWS_CATEGORY_VALUE = "EWS(Economily weaker section)";
 const RECOMMENDATION_LETTER_DOWNLOAD_PATH =
   "/Recommendation%20Letter%20Def-Space%20Summer%20School%202026.pdf";
 
-declare global {
-  interface Window {
-    Razorpay?: new (options: RazorpayOptions) => RazorpayInstance;
+function getRazorpayConstructor(): RazorpayConstructor | undefined {
+  if (typeof window === "undefined") {
+    return undefined;
   }
+
+  return (window as unknown as { Razorpay?: RazorpayConstructor }).Razorpay;
 }
 
 function createInitialFormData() {
@@ -140,7 +144,9 @@ function loadRazorpayScript(): Promise<boolean> {
     return Promise.resolve(false);
   }
 
-  if (window.Razorpay) {
+  const razorpayConstructor = getRazorpayConstructor();
+
+  if (razorpayConstructor) {
     return Promise.resolve(true);
   }
 
@@ -579,7 +585,9 @@ export default function Page() {
       };
 
       const loaded = await loadRazorpayScript();
-      if (!loaded || !window.Razorpay) {
+      const razorpayConstructor = getRazorpayConstructor();
+
+      if (!loaded || !razorpayConstructor) {
         throw new Error("Unable to load Razorpay checkout. Please try again.");
       }
 
@@ -592,7 +600,7 @@ export default function Page() {
               createOrderPayload.amount / 100
             ).toFixed(2)}`;
 
-      const razorpay = new window.Razorpay({
+      const razorpay = new razorpayConstructor({
         key: createOrderPayload.key_id,
         amount: createOrderPayload.amount,
         currency: createOrderPayload.currency,
