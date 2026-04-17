@@ -1,8 +1,11 @@
 "use client";
-import React from "react";
-import { Video } from "lucide-react";
+import React, { useState } from "react";
+import { Volume2, VolumeX } from "lucide-react";
 
 const SpaceWorkshop: React.FC = () => {
+  const [isFirstVideoMuted, setIsFirstVideoMuted] = useState(true);
+  const [isSecondVideoMuted, setIsSecondVideoMuted] = useState(true);
+
   return (
     <section className="w-full px-4 py-12 bg-black">
       <div className="max-w-6xl mx-auto space-y-16">
@@ -81,10 +84,23 @@ const SpaceWorkshop: React.FC = () => {
             className="order-1 lg:order-2 relative rounded-2xl overflow-hidden 
   min-h-[300px] sm:min-h-[400px] lg:min-h-[500px]"
           >
+            <button
+              type="button"
+              onClick={() => setIsFirstVideoMuted((prev) => !prev)}
+              aria-label={isFirstVideoMuted ? "Unmute first video" : "Mute first video"}
+              className="absolute right-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-black/55 text-white backdrop-blur-sm transition hover:bg-black/70"
+            >
+              {isFirstVideoMuted ? (
+                <VolumeX className="h-5 w-5" />
+              ) : (
+                <Volume2 className="h-5 w-5" />
+              )}
+            </button>
+
             {/* Video */}
             <video
               autoPlay
-              muted
+              muted={isFirstVideoMuted}
               loop
               playsInline
               className="absolute inset-0 w-full h-full object-cover"
@@ -101,10 +117,23 @@ const SpaceWorkshop: React.FC = () => {
             className="relative rounded-2xl overflow-hidden 
 min-h-[300px] sm:min-h-[400px] lg:min-h-[500px]"
           >
+            <button
+              type="button"
+              onClick={() => setIsSecondVideoMuted((prev) => !prev)}
+              aria-label={isSecondVideoMuted ? "Unmute second video" : "Mute second video"}
+              className="absolute right-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-black/55 text-white backdrop-blur-sm transition hover:bg-black/70"
+            >
+              {isSecondVideoMuted ? (
+                <VolumeX className="h-5 w-5" />
+              ) : (
+                <Volume2 className="h-5 w-5" />
+              )}
+            </button>
+
             {/* Video */}
             <video
               autoPlay
-              muted
+              muted={isSecondVideoMuted}
               loop
               playsInline
               className="absolute inset-0 w-full h-full object-cover"

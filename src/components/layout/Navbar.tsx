@@ -46,7 +46,7 @@ const NAV_ITEMS: {
     ],
   },
   {
-    label: "Programme",
+    label: "Internships",
     dropdown: [
       { type: "link", label: "Workshop", href: "/workshops", external: false },
 

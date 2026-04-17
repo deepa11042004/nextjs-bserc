@@ -20,6 +20,7 @@ type SummerSchoolStudentRegistration = {
   full_name: string;
   email: string;
   dob: string | null;
+  category: string;
   grade: string;
   school: string;
   board: string;
@@ -43,6 +44,7 @@ type SummerSchoolStudentRegistration = {
 
 type SummerSchoolRegistrationSettingsResponse = {
   indian_fee_amount?: number;
+  ews_fee_amount?: number;
   other_fee_amount?: number;
   batch_options?: string[];
   message?: string;
@@ -181,6 +183,7 @@ function mapRegistration(record: Record<string, unknown>): SummerSchoolStudentRe
     full_name: toText(record.full_name),
     email: toText(record.email),
     dob: toNullableText(record.dob),
+    category: toText(record.category),
     grade: toText(record.grade),
     school: toText(record.school),
     board: toText(record.board),
@@ -296,7 +299,8 @@ export default function SummerSchoolRegistrations() {
   const [selectedClassFilter, setSelectedClassFilter] = useState("");
   const [selectedNationalityFilter, setSelectedNationalityFilter] = useState("");
   const [error, setError] = useState("");
-  const [indianFeeInput, setIndianFeeInput] = useState("1750");
+  const [indianFeeInput, setIndianFeeInput] = useState("1350");
+  const [ewsFeeInput, setEwsFeeInput] = useState("750");
   const [otherFeeInput, setOtherFeeInput] = useState("150");
   const [batchOptionsInput, setBatchOptionsInput] = useState(
     DEFAULT_BATCH_OPTIONS_TEXT,
@@ -375,7 +379,8 @@ export default function SummerSchoolRegistrations() {
           return;
         }
 
-        setIndianFeeInput(String(payload.indian_fee_amount ?? 0));
+          setIndianFeeInput(String(payload.indian_fee_amount ?? 0));
+          setEwsFeeInput(String(payload.ews_fee_amount ?? 0));
         setOtherFeeInput(String(payload.other_fee_amount ?? 0));
 
         const batchOptions = Array.isArray(payload.batch_options)
@@ -516,6 +521,7 @@ export default function SummerSchoolRegistrations() {
 
   const handleSaveSettings = async () => {
     const indianFeeAmount = Number(indianFeeInput);
+    const ewsFeeAmount = Number(ewsFeeInput);
     const otherFeeAmount = Number(otherFeeInput);
     const batchOptions = batchOptionsInput
       .split(/\r?\n/)
@@ -525,12 +531,14 @@ export default function SummerSchoolRegistrations() {
     if (
       !Number.isFinite(indianFeeAmount)
       || indianFeeAmount < 0
+      || !Number.isFinite(ewsFeeAmount)
+      || ewsFeeAmount < 0
       || !Number.isFinite(otherFeeAmount)
       || otherFeeAmount < 0
     ) {
       setSettingsStatus({
         type: "error",
-        message: "Please enter valid non-negative fee values for both nationality groups.",
+        message: "Please enter valid non-negative fee values for all fee groups.",
       });
       return;
     }
@@ -554,6 +562,7 @@ export default function SummerSchoolRegistrations() {
         },
         body: JSON.stringify({
           indian_fee_amount: indianFeeAmount,
+          ews_fee_amount: ewsFeeAmount,
           other_fee_amount: otherFeeAmount,
           batch_options: batchOptions,
         }),
@@ -570,7 +579,8 @@ export default function SummerSchoolRegistrations() {
         );
       }
 
-      setIndianFeeInput(String(payload.indian_fee_amount ?? indianFeeAmount));
+        setIndianFeeInput(String(payload.indian_fee_amount ?? indianFeeAmount));
+        setEwsFeeInput(String(payload.ews_fee_amount ?? ewsFeeAmount));
       setOtherFeeInput(String(payload.other_fee_amount ?? otherFeeAmount));
 
       const updatedBatchOptions = Array.isArray(payload.batch_options)
@@ -630,7 +640,7 @@ export default function SummerSchoolRegistrations() {
             </div>
           )}
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <div className="space-y-2">
               <label className="text-sm text-zinc-300 font-medium">
                 Indian Fee (INR)
@@ -641,6 +651,21 @@ export default function SummerSchoolRegistrations() {
                 step="0.01"
                 value={indianFeeInput}
                 onChange={(event) => setIndianFeeInput(event.target.value)}
+                disabled={isSettingsLoading || isSettingsSaving}
+                className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100 outline-none focus:border-cyan-500"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm text-zinc-300 font-medium">
+                EWS Fee (INR)
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={ewsFeeInput}
+                onChange={(event) => setEwsFeeInput(event.target.value)}
                 disabled={isSettingsLoading || isSettingsSaving}
                 className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100 outline-none focus:border-cyan-500"
               />
@@ -867,6 +892,9 @@ export default function SummerSchoolRegistrations() {
                             <span>{registration.batch || "-"}</span>
                             <span className="text-zinc-500">
                               {registration.nationality || "-"}
+                            </span>
+                            <span className="text-zinc-500">
+                              Category: {registration.category || "-"}
                             </span>
                           </div>
                         </TableCell>

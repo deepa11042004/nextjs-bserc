@@ -160,7 +160,7 @@ export default function StatePartnership() {
         {/* Benefits Section */}
         <div className="rounded-2xl p-10 border border-white/10 bg-gradient-to-br from-[#1E90FF]/10 to-[#FF6B35]/10 max-w-6xl mx-auto">
           <h3 className="text-4xl text-center font-bold font-serif text-white pt-5 mb-6 leading-tight lg:text-4xl">
-            Benefits of BSERC Partnership
+            BSERC Impact
           </h3>
 
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">

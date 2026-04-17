@@ -30,6 +30,7 @@ interface SelectFieldProps {
   value?: string;
   onChange?: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   placeholder?: string;
+  infoText?: string;
 }
 
 type RazorpaySuccessResponse = {
@@ -41,6 +42,11 @@ type RazorpaySuccessResponse = {
 type RazorpayFailureResponse = {
   error?: {
     description?: string;
+    reason?: string;
+    metadata?: {
+      order_id?: string;
+      payment_id?: string;
+    };
   };
 };
 
@@ -86,6 +92,7 @@ type CreateSummerSchoolOrderResponse = {
 
 type SummerSchoolSettingsResponse = {
   indian_fee_amount?: number;
+  ews_fee_amount?: number;
   other_fee_amount?: number;
   batch_options?: string[];
   message?: string;
@@ -96,6 +103,9 @@ const DEFAULT_BATCH_OPTIONS = [
   "Batch 1: 15th May - 30th June",
   "Batch 2: 19th June - 30th July",
 ];
+const EWS_CATEGORY_VALUE = "EWS(Economily weaker section)";
+const RECOMMENDATION_LETTER_DOWNLOAD_PATH =
+  "/Recommendation%20Letter%20Def-Space%20Summer%20School%202026.pdf";
 
 declare global {
   interface Window {
@@ -108,6 +118,7 @@ function createInitialFormData() {
     fullName: "",
     dob: "",
     email: "",
+    category: "",
     altEmail: "",
     grade: "",
     school: "",
@@ -188,12 +199,32 @@ const SectionCard = ({
 const FormLabel = ({
   label,
   required,
+  infoText,
 }: {
   label: string;
   required?: boolean;
+  infoText?: string;
 }) => (
   <label className="block text-zinc-100 text-[13px] font-semibold mb-2.5">
-    {label} {required && <span className="text-red-500 ml-0.5">*</span>}
+    <span className="inline-flex items-center gap-2">
+      <span>
+        {label} {required && <span className="text-red-500 ml-0.5">*</span>}
+      </span>
+      {infoText && (
+        <span className="relative inline-flex items-center group">
+          <button
+            type="button"
+            aria-label={`${label} information`}
+            className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-zinc-500 text-[10px] leading-none text-zinc-200 transition-colors hover:border-orange-500 hover:text-orange-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/60"
+          >
+            i
+          </button>
+          <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 hidden w-72 -translate-x-1/2 rounded-md border border-zinc-700 bg-[#0f0f0f] px-3 py-2 text-xs font-normal leading-relaxed text-zinc-300 shadow-xl group-hover:block group-focus-within:block">
+            {infoText}
+          </span>
+        </span>
+      )}
+    </span>
   </label>
 );
 
@@ -229,9 +260,10 @@ const SelectField: React.FC<SelectFieldProps> = ({
   value,
   onChange,
   placeholder = "--Select--",
+  infoText,
 }) => (
   <div className="w-full mb-6">
-    <FormLabel label={label} required={required} />
+    <FormLabel label={label} required={required} infoText={infoText} />
     <div className="relative">
       <select
         name={name}
@@ -259,6 +291,12 @@ export default function Page() {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [submitError, setSubmitError] = useState<string>("");
   const [submitMessage, setSubmitMessage] = useState<string>("");
+  const [showEwsRecommendationPrompt, setShowEwsRecommendationPrompt] =
+    useState<boolean>(false);
+  const [showPaymentIncompletePrompt, setShowPaymentIncompletePrompt] =
+    useState<boolean>(false);
+  const [retryPaymentAction, setRetryPaymentAction] =
+    useState<null | (() => void)>(null);
   const [batchOptions, setBatchOptions] = useState<string[]>(DEFAULT_BATCH_OPTIONS);
   
   // Form state
@@ -292,6 +330,19 @@ export default function Page() {
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSuccessfulRegistration = (message: string, category: string) => {
+    if (category === EWS_CATEGORY_VALUE) {
+      setSubmitMessage("");
+      setShowEwsRecommendationPrompt(true);
+    } else {
+      setSubmitMessage(message);
+    }
+
+    setFormData(createInitialFormData());
+    setGuidelinesAccepted(false);
+    setConductAccepted(false);
   };
 
   useEffect(() => {
@@ -353,6 +404,7 @@ export default function Page() {
       ["fullName", "Full Name"],
       ["dob", "Date of Birth"],
       ["email", "Email Address"],
+      ["category", "Category"],
       ["altEmail", "Alternative Email Address"],
       ["grade", "Current Class / Grade"],
       ["school", "School / Institution Name"],
@@ -374,12 +426,16 @@ export default function Page() {
 
     setSubmitError("");
     setSubmitMessage("");
+    setShowEwsRecommendationPrompt(false);
+    setShowPaymentIncompletePrompt(false);
+    setRetryPaymentAction(null);
     setIsSubmitting(true);
 
     const registrationPayload = {
       fullName: formData.fullName,
       dob: formData.dob,
       email: formData.email,
+      category: formData.category,
       alternativeEmail: formData.altEmail,
       grade: formData.grade,
       school: formData.school,
@@ -408,6 +464,7 @@ export default function Page() {
           body: JSON.stringify({
             email: formData.email,
             nationality: formData.nationality,
+            category: formData.category,
           }),
         },
       );
@@ -452,10 +509,10 @@ export default function Page() {
           );
         }
 
-        setSubmitMessage(responseMessage || "Application submitted successfully!");
-        setFormData(createInitialFormData());
-        setGuidelinesAccepted(false);
-        setConductAccepted(false);
+        handleSuccessfulRegistration(
+          responseMessage || "Application submitted successfully!",
+          formData.category,
+        );
         setIsSubmitting(false);
         return;
       }
@@ -471,6 +528,55 @@ export default function Page() {
             || "Payment initialization failed. Please try again.",
         );
       }
+
+      const resolvedRegistrationFee =
+        createOrderPayload.registration_fee !== undefined
+          ? Number(createOrderPayload.registration_fee)
+          : Number(createOrderPayload.amount) / 100;
+
+      let hasFinalPaymentOutcome = false;
+      let hasLoggedPaymentAttempt = false;
+
+      const logPaymentAttempt = async (
+        paymentStatus: "failed",
+        options?: {
+          razorpayOrderId?: string;
+          razorpayPaymentId?: string;
+          paymentMode?: string;
+        },
+      ) => {
+        if (hasLoggedPaymentAttempt) {
+          return;
+        }
+
+        hasLoggedPaymentAttempt = true;
+
+        try {
+          await fetch(
+            "/api/summer-school/student-registration/log-payment-attempt",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                ...registrationPayload,
+                payment_status: paymentStatus,
+                payment_amount: resolvedRegistrationFee,
+                payment_currency: createOrderPayload.currency,
+                razorpay_order_id:
+                  options?.razorpayOrderId || createOrderPayload.order_id,
+                razorpay_payment_id: options?.razorpayPaymentId || "",
+                payment_mode:
+                  options?.paymentMode
+                  || "gateway_failed",
+              }),
+            },
+          );
+        } catch {
+          // Do not block UX if payment-attempt logging fails.
+        }
+      };
 
       const loaded = await loadRazorpayScript();
       if (!loaded || !window.Razorpay) {
@@ -502,6 +608,8 @@ export default function Page() {
           color: "#f97316",
         },
         handler: async (paymentResponse) => {
+          hasFinalPaymentOutcome = true;
+
           try {
             const verifyResponse = await fetch(
               "/api/summer-school/student-registration/verify-payment",
@@ -528,13 +636,11 @@ export default function Page() {
               );
             }
 
-            setSubmitMessage(
+            handleSuccessfulRegistration(
               verifyMessage
                 || "Payment successful and student registration completed.",
+              formData.category,
             );
-            setFormData(createInitialFormData());
-            setGuidelinesAccepted(false);
-            setConductAccepted(false);
           } catch (error) {
             setSubmitError(
               error instanceof Error && error.message
@@ -547,12 +653,38 @@ export default function Page() {
         },
         modal: {
           ondismiss: () => {
+            if (!hasFinalPaymentOutcome) {
+              void logPaymentAttempt("failed", {
+                razorpayOrderId: createOrderPayload.order_id,
+                paymentMode: "gateway_dismissed",
+              });
+
+              setRetryPaymentAction(() => () => {
+                setShowPaymentIncompletePrompt(false);
+                setSubmitError("");
+                setSubmitMessage("");
+                setIsSubmitting(true);
+                razorpay.open();
+              });
+              setShowPaymentIncompletePrompt(true);
+            }
+
             setIsSubmitting(false);
           },
         },
       });
 
       razorpay.on("payment.failed", (paymentFailure) => {
+        hasFinalPaymentOutcome = true;
+
+        void logPaymentAttempt("failed", {
+          razorpayOrderId:
+            paymentFailure.error?.metadata?.order_id
+            || createOrderPayload.order_id,
+          razorpayPaymentId: paymentFailure.error?.metadata?.payment_id || "",
+          paymentMode: paymentFailure.error?.reason || "gateway_failed",
+        });
+
         setSubmitError(
           paymentFailure.error?.description || "Payment failed. Please try again.",
         );
@@ -573,6 +705,7 @@ export default function Page() {
   const gradeOptions = ["Class VI", "Class VII", "Class VIII", "Class IX", "Class X", "Class XI", "Class XII"];
   const boardOptions = ["CBSE", "ICSE", "State Board", "International", "Other"];
   const nationalityOptions = ["Indian", "Other"];
+  const categoryOptions = ["General Category", "EWS(Economily weaker section)"];
   const genderOptions = ["Male", "Female", "Other", "Prefer not to say"];
   const relationshipOptions = ["Father", "Mother", "Guardian", "Other"];
 
@@ -593,6 +726,103 @@ export default function Page() {
           setSubmitMessage("");
         }}
       />
+
+      {showEwsRecommendationPrompt && (
+        <div className="fixed inset-0 z-[141] flex items-center justify-center px-4">
+          <button
+            type="button"
+            aria-label="Close recommendation letter popup backdrop"
+            className="absolute inset-0 bg-black/75 backdrop-blur-[2px]"
+            onClick={() => setShowEwsRecommendationPrompt(false)}
+          />
+
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="relative w-full max-w-lg rounded-xl border border-cyan-400/60 bg-cyan-500/10 px-5 py-4 shadow-2xl"
+          >
+            <div className="mb-4">
+              <p className="text-sm font-semibold uppercase tracking-wide text-white/90">
+                Registration Successful
+              </p>
+              <p className="mt-1 text-sm leading-relaxed text-zinc-100">
+                After successful registration, candidates must download the
+                Recommendation Letter, get it signed by the Principal or any
+                authorised school authority, and email the signed copy to
+                outreach@bserc.org.
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <a
+                href={RECOMMENDATION_LETTER_DOWNLOAD_PATH}
+                download
+                className="rounded-md border border-cyan-400/50 bg-cyan-500/20 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-cyan-100 transition hover:bg-cyan-500/30"
+              >
+                Download Letter
+              </a>
+              <button
+                type="button"
+                onClick={() => setShowEwsRecommendationPrompt(false)}
+                className="rounded-md border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-white transition hover:bg-white/20"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showPaymentIncompletePrompt && (
+        <div className="fixed inset-0 z-[140] flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-black/75 backdrop-blur-[2px]" />
+
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="relative w-full max-w-lg rounded-xl border border-amber-400/60 bg-amber-500/10 px-5 py-4 shadow-2xl"
+          >
+            <div className="mb-4">
+              <p className="text-sm font-semibold uppercase tracking-wide text-white/90">
+                Payment Incomplete
+              </p>
+              <p className="mt-1 text-sm leading-relaxed text-zinc-100">
+                Payment does not complete. Would you like to retry payment?
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  if (retryPaymentAction) {
+                    retryPaymentAction();
+                  }
+                }}
+                className="rounded-md border border-orange-400/50 bg-orange-500/20 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-orange-200 transition hover:bg-orange-500/30"
+              >
+                Repayment
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPaymentIncompletePrompt(false);
+                  setRetryPaymentAction(null);
+                  setIsSubmitting(false);
+                  setSubmitError("");
+                  setSubmitMessage("");
+                  setFormData(createInitialFormData());
+                  setGuidelinesAccepted(false);
+                  setConductAccepted(false);
+                }}
+                className="rounded-md border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-white transition hover:bg-white/20"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main className="max-w-6xl mx-auto">
         <form onSubmit={handleSubmit}>
@@ -639,22 +869,13 @@ export default function Page() {
           </SectionCard>
 
           <SectionCard title="1. PERSONAL INFORMATION / व्यक्तिगत जानकारी">
-            <InputField
-              label="Full Name / पूरा नाम"
-              placeholder="Dr./Prof./Your Name"
-              required
-              name="fullName"
-              value={formData.fullName}
-              onChange={handleInputChange}
-            />
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
               <InputField
-                label="Date of Birth / जन्म दिनांक"
-                type="date"
+                label="Full Name / पूरा नाम"
+                placeholder="Dr./Prof./Your Name"
                 required
-                name="dob"
-                value={formData.dob}
+                name="fullName"
+                value={formData.fullName}
                 onChange={handleInputChange}
               />
               <InputField
@@ -665,6 +886,27 @@ export default function Page() {
                 name="email"
                 value={formData.email}
                 onChange={handleInputChange}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6">
+              <InputField
+                label="Date of Birth / जन्म दिनांक"
+                type="date"
+                required
+                name="dob"
+                value={formData.dob}
+                onChange={handleInputChange}
+              />
+              <SelectField
+                label="Category"
+                required
+                name="category"
+                options={categoryOptions}
+                value={formData.category}
+                onChange={handleInputChange}
+                placeholder="--Select Category--"
+                infoText="Economically Weaker Section candidates (whose family annual income is less than ₹7 lakh) can apply under the Weaker Section. The registration fee for this category is ₹750."
               />
               <InputField
                 label="Alternative Email Address / वैकल्पिक ईमेल पता"

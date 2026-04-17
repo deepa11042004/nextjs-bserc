@@ -9,6 +9,7 @@ type SummerSchoolEndpoint =
   | "/api/summer-school/student-registration"
   | "/api/summer-school/student-registration/create-order"
   | "/api/summer-school/student-registration/verify-payment"
+  | "/api/summer-school/student-registration/log-payment-attempt"
   | "/api/summer-school/student-registration/settings";
 type SummerSchoolHttpMethod = "GET" | "POST" | "PUT";
 

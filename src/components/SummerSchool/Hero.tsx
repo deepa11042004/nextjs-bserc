@@ -38,8 +38,8 @@ const slides: SlideData[] = [
     badge: "Classes VI–XII",
     title: "Innovation in Defence & Space Technology",
     desc: "Explore Rocketry, Drones, AI, Robotics, and Aircraft Design. Aligned with Viksit Bharat @2047 and Atmanirbhar Bharat vision.",
-    cta: "Learn More",
-  link: "/summer-school/student-registration",
+    cta: "Internships",
+    link: "/bsercinternship/summer-internship",
     accentColor: "emerald",
   },
   {

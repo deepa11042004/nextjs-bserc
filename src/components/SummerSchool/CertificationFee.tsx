@@ -31,6 +31,17 @@ const CertificationFee: React.FC = () => {
                 </li>
               </ul>
             </div>
+
+            <div className="mt-5 rounded-xl border border-amber-500/30 bg-amber-500/10 p-6">
+              <h3 className="text-lg sm:text-xl font-semibold text-amber-300 mb-2">
+                Economically Weaker Section
+              </h3>
+              <p className="text-sm sm:text-base text-gray-300 leading-relaxed">
+                Economically Weaker Section candidates (whose family annual income
+                is less than ₹7 lakh) can apply under the Weaker Section. The
+                registration fee for this category is ₹750.
+              </p>
+            </div>
           </div>
 
           {/* Fee Card */}
@@ -58,6 +69,16 @@ const CertificationFee: React.FC = () => {
                   </div>
                   <span className="font-semibold text-amber-400 text-sm sm:text-base">
                     ₹ 1,350
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center px-3 py-3 border-b border-slate-700/30">
+                  <div className="flex items-center gap-2 text-gray-300 text-sm sm:text-base">
+                    <IndianRupee className="w-4 h-4 text-amber-500" />
+                    <span>EWS (Economically Weaker Section) Students</span>
+                  </div>
+                  <span className="font-semibold text-amber-400 text-sm sm:text-base">
+                    ₹ 750
                   </span>
                 </div>
 

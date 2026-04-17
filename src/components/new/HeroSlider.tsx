@@ -1,5 +1,6 @@
 "use client";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import type { HeroSlide, HeroMediaType } from "@/types/heroSlide";
@@ -278,19 +279,19 @@ export default function HeroSlider() {
               </p>
 
               <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-                <a
+                <Link
                   href="/programs"
                   className="inline-flex items-center rounded-xl bg-cyan-400 px-9 py-3.5 text-lg font-semibold text-black shadow-[0_0_26px_rgba(34,211,238,0.38)] transition hover:bg-cyan-300"
                 >
                   Explore
-                </a>
+                </Link>
 
-                <a
-                  href="/about"
+                <Link
+                  href="/bsercinternship/summer-internship"
                   className="inline-flex items-center rounded-xl border border-white/25 bg-black/35 px-9 py-3.5 text-lg font-semibold text-white transition hover:border-cyan-300/55 hover:bg-black/50"
                 >
-                  Learn More
-                </a>
+                  Internships
+                </Link>
               </div>
             </div>
           </div>
