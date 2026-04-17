@@ -1,4 +1,5 @@
 import { ApiError } from "@/services/api";
+import type { InternshipApplication } from "@/types/internshipApplication";
 
 async function parseResponseBody(response: Response): Promise<unknown> {
   const text = await response.text();
@@ -91,6 +92,56 @@ async function putJson<T>(path: string, payload: unknown): Promise<T> {
   return body as T;
 }
 
+async function patchJson<T>(path: string, payload: unknown): Promise<T> {
+  const response = await fetch(path, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+    cache: "no-store",
+  });
+
+  const body = await parseResponseBody(response);
+
+  if (!response.ok) {
+    const message =
+      typeof body === "object" &&
+      body !== null &&
+      "message" in body &&
+      typeof (body as { message?: unknown }).message === "string"
+        ? (body as { message: string }).message
+        : `Request failed with status ${response.status}`;
+
+    throw new ApiError(message, response.status, body);
+  }
+
+  return body as T;
+}
+
+async function deleteJson<T>(path: string): Promise<T> {
+  const response = await fetch(path, {
+    method: "DELETE",
+    cache: "no-store",
+  });
+
+  const body = await parseResponseBody(response);
+
+  if (!response.ok) {
+    const message =
+      typeof body === "object" &&
+      body !== null &&
+      "message" in body &&
+      typeof (body as { message?: unknown }).message === "string"
+        ? (body as { message: string }).message
+        : `Request failed with status ${response.status}`;
+
+    throw new ApiError(message, response.status, body);
+  }
+
+  return body as T;
+}
+
 async function postFormData<T>(path: string, payload: FormData): Promise<T> {
   const response = await fetch(path, {
     method: "POST",
@@ -137,6 +188,11 @@ export interface InternshipFeeSettingsResponse {
   message?: string;
 }
 
+export interface InternshipApplicationMutationResponse {
+  message?: string;
+  application?: InternshipApplication;
+}
+
 export function createInternshipPaymentOrder(payload: CreateInternshipOrderPayload) {
   return postJson<CreateInternshipOrderResponse>(
     "/api/internship-registration/create-order",
@@ -178,5 +234,21 @@ export function updateInternshipFeeSettings(payload: {
   return putJson<InternshipFeeSettingsResponse>(
     "/api/internship-registration/fee",
     payload,
+  );
+}
+
+export function deleteInternshipApplication(applicationId: number) {
+  return deleteJson<InternshipApplicationMutationResponse>(
+    `/api/internship-registration/${applicationId}`,
+  );
+}
+
+export function transferInternshipApplicationPaymentStatus(
+  applicationId: number,
+  paymentStatus: "failed" | "captured",
+) {
+  return patchJson<InternshipApplicationMutationResponse>(
+    `/api/internship-registration/${applicationId}/payment-status`,
+    { payment_status: paymentStatus },
   );
 }

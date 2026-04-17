@@ -105,7 +105,7 @@ const DEFAULT_BATCH_OPTIONS = [
   "Batch 1: 15th May - 30th June",
   "Batch 2: 19th June - 30th July",
 ];
-const EWS_CATEGORY_VALUE = "EWS(Economily weaker section)";
+const EWS_CATEGORY_VALUE = "EWS(Economically weaker section)";
 const RECOMMENDATION_LETTER_DOWNLOAD_PATH =
   "/Recommendation%20Letter%20Def-Space%20Summer%20School%202026.pdf";
 
@@ -713,7 +713,7 @@ export default function Page() {
   const gradeOptions = ["Class VI", "Class VII", "Class VIII", "Class IX", "Class X", "Class XI", "Class XII"];
   const boardOptions = ["CBSE", "ICSE", "State Board", "International", "Other"];
   const nationalityOptions = ["Indian", "Other"];
-  const categoryOptions = ["General Category", "EWS(Economily weaker section)"];
+  const categoryOptions = ["General Category", EWS_CATEGORY_VALUE];
   const genderOptions = ["Male", "Female", "Other", "Prefer not to say"];
   const relationshipOptions = ["Father", "Mother", "Guardian", "Other"];
 

@@ -5,14 +5,9 @@ const DEV_FALLBACK_BACKEND_URLS = [
   "http://localhost:5000",
 ];
 
-type InternshipRegistrationEndpoint =
-  | "/api/internship/registration/create-order"
-  | "/api/internship/registration/verify-payment"
-  | "/api/internship/registration/register"
-  | "/api/internship/registration/list"
-  | "/api/internship/registration/fee";
+type InternshipRegistrationEndpoint = `/api/internship/registration${string}`;
 
-type InternshipHttpMethod = "GET" | "POST" | "PUT";
+type InternshipHttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
 function isProductionRuntime(): boolean {
   return process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
@@ -30,12 +25,47 @@ function getConfiguredApiUrl(): string {
     return apiUrl;
   }
 
-  const publicApiUrl = process.env.API_URL?.trim();
+  const publicApiUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
   if (publicApiUrl) {
     return publicApiUrl;
   }
 
   return "";
+}
+
+function extractPayloadMessage(payload: unknown): string {
+  if (!payload || typeof payload !== "object") {
+    return "";
+  }
+
+  const record = payload as { message?: unknown; error?: unknown };
+
+  if (typeof record.message === "string") {
+    return record.message.trim();
+  }
+
+  if (typeof record.error === "string") {
+    return record.error.trim();
+  }
+
+  return "";
+}
+
+function isMissingUpstreamRouteResponse(
+  status: number,
+  payload: unknown,
+  method: InternshipHttpMethod,
+): boolean {
+  if (status !== 404 && status !== 405) {
+    return false;
+  }
+
+  const message = extractPayloadMessage(payload).toLowerCase();
+  if (!message) {
+    return false;
+  }
+
+  return message.includes(`cannot ${method.toLowerCase()} `);
 }
 
 function isLoopbackUrl(value: string): boolean {
@@ -101,7 +131,7 @@ async function buildForwardPayload(
   request: Request,
   method: InternshipHttpMethod,
 ): Promise<ForwardPayload | null> {
-  if (method === "GET") {
+  if (method === "GET" || method === "DELETE") {
     return {};
   }
 
@@ -187,6 +217,18 @@ export async function forwardInternshipRegistrationRequest(
       });
 
       const responsePayload = await parseUpstreamBody(upstreamResponse);
+
+      if (
+        isMissingUpstreamRouteResponse(
+          upstreamResponse.status,
+          responsePayload,
+          method,
+        )
+      ) {
+        lastRetriablePayload = responsePayload;
+        lastRetriableStatus = upstreamResponse.status;
+        continue;
+      }
 
       if ([500, 502, 503, 504].includes(upstreamResponse.status)) {
         lastRetriablePayload = responsePayload;

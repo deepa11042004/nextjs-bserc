@@ -1,7 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Download, Loader2, NotebookPen } from "lucide-react";
+import {
+  ArrowRightLeft,
+  Download,
+  Eye,
+  Loader2,
+  NotebookPen,
+  Trash2,
+  X,
+} from "lucide-react";
 
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -24,12 +32,20 @@ import {
   getPaymentBadgeClasses,
 } from "@/components/admin/internships/internshipUtils";
 import {
+  deleteInternshipApplication,
   getInternshipFeeSettings,
+  transferInternshipApplicationPaymentStatus,
   updateInternshipFeeSettings,
 } from "@/services/internshipRegistration";
 
-type InternshipFilter = "all" | "regular" | "lateral";
+type RegistrationTypeFilter = "all" | "regular" | "lateral";
+type PaymentStatusFilter = "all" | "failed" | "captured";
 type FeeStatus = { type: "success" | "error"; message: string };
+type ActiveModalType = "view" | "delete" | "transfer";
+type TransferPaymentStatus = "failed" | "captured";
+
+const INSTITUTION_NAME_MAX_DISPLAY_LENGTH = 42;
+const QUALIFICATION_MAX_DISPLAY_LENGTH = 36;
 
 function toExportCellValue(value: unknown): string | number | boolean {
   if (value === null || value === undefined) {
@@ -79,9 +95,34 @@ function buildDynamicExportRows(records: Record<string, unknown>[]) {
   return { headers, rows };
 }
 
+function truncateDisplayValue(
+  value: string | null | undefined,
+  maxLength: number,
+): string {
+  const normalized = (value || "").trim();
+
+  if (!normalized) {
+    return "-";
+  }
+
+  if (normalized.length <= maxLength) {
+    return normalized;
+  }
+
+  return `${normalized.slice(0, maxLength).trimEnd()}...`;
+}
+
+function presentText(value: string | null | undefined): string {
+  const normalized = (value || "").trim();
+  return normalized || "-";
+}
+
 export default function InternshipApplications() {
   const [applications, setApplications] = useState<InternshipApplication[]>([]);
-  const [filter, setFilter] = useState<InternshipFilter>("all");
+  const [registrationTypeFilter, setRegistrationTypeFilter] =
+    useState<RegistrationTypeFilter>("all");
+  const [paymentStatusFilter, setPaymentStatusFilter] =
+    useState<PaymentStatusFilter>("all");
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState("");
@@ -90,16 +131,31 @@ export default function InternshipApplications() {
   const [isFeeLoading, setIsFeeLoading] = useState(true);
   const [isFeeSaving, setIsFeeSaving] = useState(false);
   const [feeStatus, setFeeStatus] = useState<FeeStatus | null>(null);
+  const [activeModalType, setActiveModalType] = useState<ActiveModalType | null>(null);
+  const [selectedApplication, setSelectedApplication] =
+    useState<InternshipApplication | null>(null);
+  const [isDeletingApplication, setIsDeletingApplication] = useState(false);
+  const [isTransferringPaymentStatus, setIsTransferringPaymentStatus] = useState(false);
+  const [actionError, setActionError] = useState("");
+  const [actionNotice, setActionNotice] = useState("");
 
   const filteredApplications = useMemo(() => {
-    if (filter === "all") {
-      return applications;
-    }
+    return applications.filter((application) => {
+      const matchesRegistrationType =
+        registrationTypeFilter === "all"
+          ? true
+          : registrationTypeFilter === "lateral"
+          ? application.is_lateral
+          : !application.is_lateral;
 
-    return applications.filter((application) =>
-      filter === "lateral" ? application.is_lateral : !application.is_lateral,
-    );
-  }, [applications, filter]);
+      const matchesPaymentStatus =
+        paymentStatusFilter === "all"
+          ? true
+          : (application.payment_status || "").toLowerCase() === paymentStatusFilter;
+
+      return matchesRegistrationType && matchesPaymentStatus;
+    });
+  }, [applications, paymentStatusFilter, registrationTypeFilter]);
 
   useEffect(() => {
     let isMounted = true;
@@ -184,6 +240,18 @@ export default function InternshipApplications() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!actionNotice) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setActionNotice("");
+    }, 3000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [actionNotice]);
+
   const handleSaveFeeSettings = async () => {
     const generalFee = Number(generalFeeInput);
     const lateralFee = Number(lateralFeeInput);
@@ -236,9 +304,9 @@ export default function InternshipApplications() {
 
     if (filteredApplications.length === 0) {
       setError(
-        filter === "all"
+        registrationTypeFilter === "all" && paymentStatusFilter === "all"
           ? "No internship applications available to export."
-          : "No applications available to export for the selected filter.",
+          : "No applications available to export for the selected filters.",
       );
       return;
     }
@@ -268,7 +336,7 @@ export default function InternshipApplications() {
       XLSX.utils.book_append_sheet(workbook, worksheet, "Internship Applications");
 
       const now = new Date();
-      const filename = `internship-applications-${filter}-${now.getFullYear()}-${String(
+      const filename = `internship-applications-${registrationTypeFilter}-${paymentStatusFilter}-${now.getFullYear()}-${String(
         now.getMonth() + 1,
       ).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}_${String(
         now.getHours(),
@@ -288,6 +356,113 @@ export default function InternshipApplications() {
 
   const totalApplications = useMemo(() => filteredApplications.length, [filteredApplications]);
   const totalApplicationsAll = useMemo(() => applications.length, [applications]);
+
+  const selectedPaymentStatus =
+    (selectedApplication?.payment_status || "").trim().toLowerCase();
+
+  const openApplicationModal = (
+    modalType: ActiveModalType,
+    application: InternshipApplication,
+  ) => {
+    setActionError("");
+    setSelectedApplication(application);
+    setActiveModalType(modalType);
+  };
+
+  const closeApplicationModal = () => {
+    if (isDeletingApplication || isTransferringPaymentStatus) {
+      return;
+    }
+
+    setActionError("");
+    setSelectedApplication(null);
+    setActiveModalType(null);
+  };
+
+  const handleDeleteApplication = async () => {
+    if (!selectedApplication || isDeletingApplication) {
+      return;
+    }
+
+    setIsDeletingApplication(true);
+    setActionError("");
+    setError("");
+
+    try {
+      const response = await deleteInternshipApplication(selectedApplication.id);
+      const responseMessage = getApiMessage(response);
+
+      setApplications((previous) =>
+        previous.filter((application) => application.id !== selectedApplication.id),
+      );
+
+      setActionNotice(
+        responseMessage
+          || `Internship application for ${selectedApplication.full_name} deleted successfully.`,
+      );
+
+      setSelectedApplication(null);
+      setActiveModalType(null);
+    } catch (err) {
+      setActionError(
+        err instanceof Error && err.message
+          ? err.message
+          : "Unable to delete internship application.",
+      );
+    } finally {
+      setIsDeletingApplication(false);
+    }
+  };
+
+  const handleTransferPaymentStatus = async (
+    targetPaymentStatus: TransferPaymentStatus,
+  ) => {
+    if (!selectedApplication || isTransferringPaymentStatus) {
+      return;
+    }
+
+    setIsTransferringPaymentStatus(true);
+    setActionError("");
+    setError("");
+
+    try {
+      const response = await transferInternshipApplicationPaymentStatus(
+        selectedApplication.id,
+        targetPaymentStatus,
+      );
+
+      const responseMessage = getApiMessage(response);
+      const updatedApplication = response.application;
+
+      setApplications((previous) =>
+        previous.map((application) => {
+          if (application.id !== selectedApplication.id) {
+            return application;
+          }
+
+          return updatedApplication
+            ? updatedApplication
+            : { ...application, payment_status: targetPaymentStatus };
+        }),
+      );
+
+      setActionNotice(
+        responseMessage
+          || `Payment status updated to ${targetPaymentStatus} for ${selectedApplication.full_name}.`,
+      );
+
+      setSelectedApplication(null);
+      setActiveModalType(null);
+    } catch (err) {
+      setActionError(
+        err instanceof Error && err.message
+          ? err.message
+          : "Unable to transfer internship payment status.",
+      );
+    } finally {
+      setIsTransferringPaymentStatus(false);
+    }
+  };
 
   return (
     <div className="min-h-screen container mx-auto max-w-8xl text-zinc-100">
@@ -377,6 +552,7 @@ export default function InternshipApplications() {
                 Submitted Applications
               </CardTitle>
               <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-medium text-zinc-400">Type:</span>
                 {(["all", "regular", "lateral"] as const).map((option) => {
                   const label =
                     option === "all"
@@ -387,11 +563,33 @@ export default function InternshipApplications() {
 
                   return (
                     <button
-                      key={option}
+                      key={`type-${option}`}
                       type="button"
-                      onClick={() => setFilter(option)}
+                      onClick={() => setRegistrationTypeFilter(option)}
                       className={`rounded-full px-4 py-2 text-sm font-medium transition ${
-                        filter === option
+                        registrationTypeFilter === option
+                          ? "bg-cyan-500 text-black"
+                          : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-medium text-zinc-400">Payment:</span>
+                {(["all", "captured", "failed"] as const).map((option) => {
+                  const label = option === "all" ? "All" : option === "captured" ? "Captured" : "Failed";
+
+                  return (
+                    <button
+                      key={`payment-${option}`}
+                      type="button"
+                      onClick={() => setPaymentStatusFilter(option)}
+                      className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                        paymentStatusFilter === option
                           ? "bg-cyan-500 text-black"
                           : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
                       }`}
@@ -429,6 +627,12 @@ export default function InternshipApplications() {
           </div>
         </CardHeader>
         <CardContent>
+          {actionNotice && (
+            <div className="mb-4 rounded-md border border-emerald-500/40 bg-emerald-950/30 px-3 py-2 text-sm text-emerald-200">
+              {actionNotice}
+            </div>
+          )}
+
           {error && (
             <div className="mb-4 rounded-md border border-rose-500/40 bg-rose-950/30 px-3 py-2 text-sm text-rose-200">
               {error}
@@ -441,14 +645,14 @@ export default function InternshipApplications() {
             </div>
           ) : (
             <div className="w-full overflow-x-auto">
-              <Table>
+              <Table className="table-fixed">
                 <TableHeader>
                   <TableRow className="border-zinc-800">
-                    <TableHead className="text-white min-w-[220px]">Applicant</TableHead>
-                    <TableHead className="text-white min-w-[250px]">Contact</TableHead>
-                    <TableHead className="text-white min-w-[200px]">Institution</TableHead>
-                    <TableHead className="text-white min-w-[220px]">Payment</TableHead>
-                    <TableHead className="text-white min-w-[170px]">Applied At</TableHead>
+                    <TableHead className="text-white w-[22%]">Applicant</TableHead>
+                    <TableHead className="text-white w-[24%]">Contact</TableHead>
+                    <TableHead className="text-white w-[22%]">Institution</TableHead>
+                    <TableHead className="text-white w-[16%]">Payment</TableHead>
+                    <TableHead className="text-white w-[16%]">Applied At / Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -457,7 +661,7 @@ export default function InternshipApplications() {
                       <TableCell colSpan={5} className="py-8 text-center text-zinc-500">
                         {applications.length === 0
                           ? "No internship applications found."
-                          : "No applications found for the selected filter."}
+                          : "No applications found for the selected filters."}
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -484,10 +688,24 @@ export default function InternshipApplications() {
                         </TableCell>
 
                         <TableCell>
-                          <div className="flex flex-col gap-1 text-sm text-zinc-300">
-                            <span>{application.institution_name}</span>
-                            <span className="text-zinc-500">
-                              {application.educational_qualification}
+                          <div className="flex min-w-0 flex-col gap-1 text-sm text-zinc-300">
+                            <span
+                              className="block truncate"
+                              title={application.institution_name || undefined}
+                            >
+                              {truncateDisplayValue(
+                                application.institution_name,
+                                INSTITUTION_NAME_MAX_DISPLAY_LENGTH,
+                              )}
+                            </span>
+                            <span
+                              className="block truncate text-zinc-500"
+                              title={application.educational_qualification || undefined}
+                            >
+                              {truncateDisplayValue(
+                                application.educational_qualification,
+                                QUALIFICATION_MAX_DISPLAY_LENGTH,
+                              )}
                             </span>
                             <span className="text-zinc-500">
                               Declaration: {application.declaration_accepted ? "Accepted" : "No"}
@@ -507,14 +725,42 @@ export default function InternshipApplications() {
                               {application.payment_status || "-"}
                             </Badge>
                             <span className="text-zinc-500 text-xs">
-                              Payment ID: {application.razorpay_payment_id || "-"}
+                              ID: {application.razorpay_payment_id || "-"}
                             </span>
                           </div>
                         </TableCell>
 
                         <TableCell className="text-zinc-300 text-sm">
-                          <div className="flex flex-col gap-1">
-                            <span className="font-medium text-zinc-100">{application.internship_name}</span>
+                          <div className="flex flex-col gap-2">
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => openApplicationModal("view", application)}
+                                aria-label="View application"
+                                title="View full application details"
+                                className="rounded-md bg-cyan-500 p-1.5 text-black transition hover:bg-cyan-400"
+                              >
+                                <Eye className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => openApplicationModal("delete", application)}
+                                aria-label="Delete application"
+                                title="Delete this internship entry"
+                                className="rounded-md bg-rose-500 p-1.5 text-black transition hover:bg-rose-400"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => openApplicationModal("transfer", application)}
+                                aria-label="Transfer status"
+                                title="Transfer payment status to failed/captured"
+                                className="rounded-md bg-amber-500 p-1.5 text-black transition hover:bg-amber-400"
+                              >
+                                <ArrowRightLeft className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
                             <span className="text-zinc-500">{formatDateTime(application.created_at)}</span>
                             <span className="text-xs text-zinc-400">
                               {application.is_lateral ? "Lateral Registration" : "Regular Registration"}
@@ -530,6 +776,307 @@ export default function InternshipApplications() {
           )}
         </CardContent>
       </Card>
+
+      {activeModalType && selectedApplication && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="w-full max-w-3xl rounded-xl border border-zinc-700 bg-zinc-950 shadow-2xl"
+          >
+            <div className="flex items-start justify-between gap-3 border-b border-zinc-800 px-5 py-4">
+              <div>
+                <h2 className="text-lg font-semibold text-zinc-100">
+                  {activeModalType === "view"
+                    ? "Internship Application Details"
+                    : activeModalType === "delete"
+                    ? "Delete Internship Application"
+                    : "Transfer Payment Status"}
+                </h2>
+                <p className="mt-1 text-xs text-zinc-400">
+                  Applicant: {presentText(selectedApplication.full_name)}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeApplicationModal}
+                disabled={isDeletingApplication || isTransferringPaymentStatus}
+                aria-label="Close dialog"
+                className="rounded-md p-1 text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-200 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="max-h-[75vh] overflow-y-auto px-5 py-4">
+              {actionError && (
+                <div className="mb-4 rounded-md border border-rose-500/40 bg-rose-950/30 px-3 py-2 text-sm text-rose-200">
+                  {actionError}
+                </div>
+              )}
+
+              {activeModalType === "view" ? (
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-3">
+                    <p className="text-xs text-zinc-500">Application ID</p>
+                    <p className="mt-1 text-sm text-zinc-100">{selectedApplication.id}</p>
+                  </div>
+                  <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-3">
+                    <p className="text-xs text-zinc-500">Applicant Name</p>
+                    <p className="mt-1 text-sm text-zinc-100">{presentText(selectedApplication.full_name)}</p>
+                  </div>
+                  <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-3">
+                    <p className="text-xs text-zinc-500">Guardian Name</p>
+                    <p className="mt-1 text-sm text-zinc-100">{presentText(selectedApplication.guardian_name)}</p>
+                  </div>
+                  <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-3">
+                    <p className="text-xs text-zinc-500">Gender</p>
+                    <p className="mt-1 text-sm text-zinc-100">{presentText(selectedApplication.gender)}</p>
+                  </div>
+                  <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-3">
+                    <p className="text-xs text-zinc-500">Date of Birth</p>
+                    <p className="mt-1 text-sm text-zinc-100">{formatDate(selectedApplication.dob)}</p>
+                  </div>
+                  <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-3">
+                    <p className="text-xs text-zinc-500">Mobile Number</p>
+                    <p className="mt-1 text-sm text-zinc-100">{presentText(selectedApplication.mobile_number)}</p>
+                  </div>
+                  <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-3">
+                    <p className="text-xs text-zinc-500">Email</p>
+                    <p className="mt-1 text-sm text-zinc-100 break-all">{presentText(selectedApplication.email)}</p>
+                  </div>
+                  <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-3">
+                    <p className="text-xs text-zinc-500">Alternative Email</p>
+                    <p className="mt-1 text-sm text-zinc-100 break-all">
+                      {presentText(selectedApplication.alternative_email)}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-3 sm:col-span-2">
+                    <p className="text-xs text-zinc-500">Address</p>
+                    <p className="mt-1 text-sm text-zinc-100">{presentText(selectedApplication.address)}</p>
+                  </div>
+                  <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-3">
+                    <p className="text-xs text-zinc-500">City</p>
+                    <p className="mt-1 text-sm text-zinc-100">{presentText(selectedApplication.city)}</p>
+                  </div>
+                  <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-3">
+                    <p className="text-xs text-zinc-500">State</p>
+                    <p className="mt-1 text-sm text-zinc-100">{presentText(selectedApplication.state)}</p>
+                  </div>
+                  <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-3">
+                    <p className="text-xs text-zinc-500">PIN Code</p>
+                    <p className="mt-1 text-sm text-zinc-100">{presentText(selectedApplication.pin_code)}</p>
+                  </div>
+                  <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-3">
+                    <p className="text-xs text-zinc-500">Internship Type</p>
+                    <p className="mt-1 text-sm text-zinc-100">
+                      {selectedApplication.is_lateral ? "Lateral Registration" : "General Registration"}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-3 sm:col-span-2">
+                    <p className="text-xs text-zinc-500">Institution Name</p>
+                    <p className="mt-1 text-sm text-zinc-100">{presentText(selectedApplication.institution_name)}</p>
+                  </div>
+                  <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-3 sm:col-span-2">
+                    <p className="text-xs text-zinc-500">Educational Qualification</p>
+                    <p className="mt-1 text-sm text-zinc-100">
+                      {presentText(selectedApplication.educational_qualification)}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-3">
+                    <p className="text-xs text-zinc-500">Internship Name</p>
+                    <p className="mt-1 text-sm text-zinc-100">{presentText(selectedApplication.internship_name)}</p>
+                  </div>
+                  <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-3">
+                    <p className="text-xs text-zinc-500">Internship Designation</p>
+                    <p className="mt-1 text-sm text-zinc-100">
+                      {presentText(selectedApplication.internship_designation)}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-3">
+                    <p className="text-xs text-zinc-500">Declaration Accepted</p>
+                    <p className="mt-1 text-sm text-zinc-100">
+                      {selectedApplication.declaration_accepted ? "Yes" : "No"}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-3">
+                    <p className="text-xs text-zinc-500">Passport Photo</p>
+                    <p className="mt-1 text-sm text-zinc-100">
+                      {selectedApplication.has_passport_photo ? "Uploaded" : "Not uploaded"}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-3">
+                    <p className="text-xs text-zinc-500">Photo MIME Type</p>
+                    <p className="mt-1 text-sm text-zinc-100">
+                      {presentText(selectedApplication.passport_photo_mime_type)}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-3">
+                    <p className="text-xs text-zinc-500">Photo File Name</p>
+                    <p className="mt-1 text-sm text-zinc-100">
+                      {presentText(selectedApplication.passport_photo_file_name)}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-3">
+                    <p className="text-xs text-zinc-500">Payment Amount</p>
+                    <p className="mt-1 text-sm text-zinc-100">
+                      {formatMoney(
+                        selectedApplication.payment_amount,
+                        selectedApplication.payment_currency,
+                      )}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-3">
+                    <p className="text-xs text-zinc-500">Payment Status</p>
+                    <div className="mt-1">
+                      <Badge className={getPaymentBadgeClasses(selectedApplication.payment_status)}>
+                        {presentText(selectedApplication.payment_status)}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-3">
+                    <p className="text-xs text-zinc-500">Razorpay Order ID</p>
+                    <p className="mt-1 break-all text-sm text-zinc-100">
+                      {presentText(selectedApplication.razorpay_order_id)}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-3">
+                    <p className="text-xs text-zinc-500">Razorpay Payment ID</p>
+                    <p className="mt-1 break-all text-sm text-zinc-100">
+                      {presentText(selectedApplication.razorpay_payment_id)}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-3">
+                    <p className="text-xs text-zinc-500">Created At</p>
+                    <p className="mt-1 text-sm text-zinc-100">{formatDateTime(selectedApplication.created_at)}</p>
+                  </div>
+                  <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-3">
+                    <p className="text-xs text-zinc-500">Updated At</p>
+                    <p className="mt-1 text-sm text-zinc-100">{formatDateTime(selectedApplication.updated_at)}</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div
+                    className={`rounded-lg border px-4 py-3 text-sm ${
+                      activeModalType === "delete"
+                        ? "border-rose-500/40 bg-rose-950/30 text-rose-200"
+                        : "border-amber-500/40 bg-amber-950/30 text-amber-200"
+                    }`}
+                  >
+                    <p className="font-medium">
+                      {activeModalType === "delete"
+                        ? "Warning: this action permanently deletes this internship entry from the database."
+                        : "This action transfers payment status between failed and captured tags for this entry."}
+                    </p>
+                    {activeModalType === "transfer" && (
+                      <p className="mt-2 text-xs text-amber-100/90">
+                        Use this when an entry was marked with an incorrect payment tag and needs manual correction.
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-4">
+                    <p className="text-sm text-zinc-100">
+                      <span className="text-zinc-500">Applicant:</span>{" "}
+                      {presentText(selectedApplication.full_name)}
+                    </p>
+                    <p className="mt-1 text-sm text-zinc-100 break-all">
+                      <span className="text-zinc-500">Email:</span>{" "}
+                      {presentText(selectedApplication.email)}
+                    </p>
+                    <p className="mt-1 text-sm text-zinc-100">
+                      <span className="text-zinc-500">Payment Amount:</span>{" "}
+                      {formatMoney(
+                        selectedApplication.payment_amount,
+                        selectedApplication.payment_currency,
+                      )}
+                    </p>
+                    <p className="mt-1 text-sm text-zinc-100">
+                      <span className="text-zinc-500">Current Status:</span>{" "}
+                      <Badge className={getPaymentBadgeClasses(selectedApplication.payment_status)}>
+                        {presentText(selectedApplication.payment_status)}
+                      </Badge>
+                    </p>
+                    <p className="mt-1 text-sm text-zinc-100 break-all">
+                      <span className="text-zinc-500">Order ID:</span>{" "}
+                      {presentText(selectedApplication.razorpay_order_id)}
+                    </p>
+                    <p className="mt-1 text-sm text-zinc-100 break-all">
+                      <span className="text-zinc-500">Payment ID:</span>{" "}
+                      {presentText(selectedApplication.razorpay_payment_id)}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-center justify-end gap-2 border-t border-zinc-800 px-5 py-4">
+              {activeModalType !== "view" && (
+                <button
+                  type="button"
+                  onClick={closeApplicationModal}
+                  disabled={isDeletingApplication || isTransferringPaymentStatus}
+                  className="rounded-md border border-zinc-700 px-3 py-2 text-sm text-zinc-200 transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Cancel
+                </button>
+              )}
+
+              {activeModalType === "view" && (
+                <button
+                  type="button"
+                  onClick={closeApplicationModal}
+                  className="rounded-md bg-cyan-500 px-3 py-2 text-sm font-semibold text-black transition hover:bg-cyan-400"
+                >
+                  Close
+                </button>
+              )}
+
+              {activeModalType === "delete" && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    void handleDeleteApplication();
+                  }}
+                  disabled={isDeletingApplication}
+                  className="inline-flex items-center gap-2 rounded-md bg-rose-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-rose-500 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isDeletingApplication && <Loader2 className="h-4 w-4 animate-spin" />}
+                  Delete Entry
+                </button>
+              )}
+
+              {activeModalType === "transfer" && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void handleTransferPaymentStatus("failed");
+                    }}
+                    disabled={isTransferringPaymentStatus || selectedPaymentStatus === "failed"}
+                    className="inline-flex items-center gap-2 rounded-md bg-rose-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-rose-500 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isTransferringPaymentStatus && <Loader2 className="h-4 w-4 animate-spin" />}
+                    Transfer To Failed
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void handleTransferPaymentStatus("captured");
+                    }}
+                    disabled={isTransferringPaymentStatus || selectedPaymentStatus === "captured"}
+                    className="inline-flex items-center gap-2 rounded-md bg-emerald-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isTransferringPaymentStatus && <Loader2 className="h-4 w-4 animate-spin" />}
+                    Transfer To Captured
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
