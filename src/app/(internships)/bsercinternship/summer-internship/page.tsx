@@ -88,6 +88,20 @@ function isAlreadyRegisteredMessage(message: string): boolean {
   return message.toLowerCase().includes("already applied");
 }
 
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
+}
+
+function isRetryableVerificationError(error: unknown): boolean {
+  const message = getErrorMessage(error).toLowerCase();
+  return (
+    message.includes("payment is not successful yet")
+    || message.includes("unable to validate payment with razorpay")
+  );
+}
+
 function loadRazorpayScript(): Promise<boolean> {
   if (typeof window === "undefined") {
     return Promise.resolve(false);
@@ -492,6 +506,7 @@ export default function InternshipApplicationForm() {
       const paymentAttemptState = {
         completed: false,
         failureRecorded: false,
+        verificationStarted: false,
       };
 
       const recordFailedAttempt = async (details: {
@@ -499,7 +514,11 @@ export default function InternshipApplicationForm() {
         paymentId?: string;
         mode?: string;
       }) => {
-        if (paymentAttemptState.completed || paymentAttemptState.failureRecorded) {
+        if (
+          paymentAttemptState.completed
+          || paymentAttemptState.failureRecorded
+          || paymentAttemptState.verificationStarted
+        ) {
           return;
         }
 
@@ -541,13 +560,35 @@ export default function InternshipApplicationForm() {
         },
         handler: async (response) => {
           try {
-            await verifyInternshipPaymentAndRegister(
-              buildRegistrationFormData({
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
-              }),
-            );
+            paymentAttemptState.verificationStarted = true;
+
+            const verificationPayload = buildRegistrationFormData({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+            });
+
+            let lastError: unknown = null;
+
+            for (let attempt = 1; attempt <= 3; attempt += 1) {
+              try {
+                await verifyInternshipPaymentAndRegister(verificationPayload);
+                lastError = null;
+                break;
+              } catch (error) {
+                lastError = error;
+
+                if (!isRetryableVerificationError(error) || attempt === 3) {
+                  break;
+                }
+
+                await wait(1500);
+              }
+            }
+
+            if (lastError) {
+              throw lastError;
+            }
 
             paymentAttemptState.completed = true;
 
@@ -569,7 +610,7 @@ export default function InternshipApplicationForm() {
         },
         modal: {
           ondismiss: () => {
-            if (!paymentAttemptState.completed) {
+            if (!paymentAttemptState.completed && !paymentAttemptState.verificationStarted) {
               void recordFailedAttempt({
                 orderId: order.order_id,
                 mode: "cancelled",
@@ -585,6 +626,10 @@ export default function InternshipApplicationForm() {
       });
 
       razorpay.on("payment.failed", (response) => {
+        if (paymentAttemptState.verificationStarted || paymentAttemptState.completed) {
+          return;
+        }
+
         void recordFailedAttempt({
           orderId: response.error?.metadata?.order_id || order.order_id,
           paymentId: response.error?.metadata?.payment_id,
