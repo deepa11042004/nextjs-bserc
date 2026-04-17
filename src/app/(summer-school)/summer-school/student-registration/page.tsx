@@ -187,6 +187,24 @@ function getApiMessage(payload: unknown): string {
   return "";
 }
 
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
+}
+
+function isRetryableVerificationError(error: unknown): boolean {
+  const message =
+    error instanceof Error && error.message
+      ? error.message.toLowerCase()
+      : "";
+
+  return (
+    message.includes("payment is not successful yet")
+    || message.includes("unable to validate payment with razorpay")
+  );
+}
+
 const SectionCard = ({
   title,
   children,
@@ -542,6 +560,7 @@ export default function Page() {
 
       let hasFinalPaymentOutcome = false;
       let hasLoggedPaymentAttempt = false;
+      let hasVerificationStarted = false;
 
       const logPaymentAttempt = async (
         paymentStatus: "failed",
@@ -558,7 +577,7 @@ export default function Page() {
         hasLoggedPaymentAttempt = true;
 
         try {
-          await fetch(
+          const response = await fetch(
             "/api/summer-school/student-registration/log-payment-attempt",
             {
               method: "POST",
@@ -579,7 +598,12 @@ export default function Page() {
               }),
             },
           );
+
+          if (!response.ok) {
+            hasLoggedPaymentAttempt = false;
+          }
         } catch {
+          hasLoggedPaymentAttempt = false;
           // Do not block UX if payment-attempt logging fails.
         }
       };
@@ -617,31 +641,66 @@ export default function Page() {
         },
         handler: async (paymentResponse) => {
           hasFinalPaymentOutcome = true;
+          hasVerificationStarted = true;
 
           try {
-            const verifyResponse = await fetch(
-              "/api/summer-school/student-registration/verify-payment",
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  ...registrationPayload,
-                  razorpay_order_id: paymentResponse.razorpay_order_id,
-                  razorpay_payment_id: paymentResponse.razorpay_payment_id,
-                  razorpay_signature: paymentResponse.razorpay_signature,
-                }),
-              },
-            );
+            const verifyPayload = {
+              ...registrationPayload,
+              razorpay_order_id: paymentResponse.razorpay_order_id,
+              razorpay_payment_id: paymentResponse.razorpay_payment_id,
+              razorpay_signature: paymentResponse.razorpay_signature,
+            };
 
-            const verifyPayload = await verifyResponse.json().catch(() => ({}));
-            const verifyMessage = getApiMessage(verifyPayload);
+            let verifyMessage = "";
+            let lastError: unknown = null;
 
-            if (!verifyResponse.ok) {
-              throw new Error(
-                verifyMessage || "Unable to complete student registration.",
-              );
+            for (let attempt = 1; attempt <= 3; attempt += 1) {
+              try {
+                const verifyResponse = await fetch(
+                  "/api/summer-school/student-registration/verify-payment",
+                  {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(verifyPayload),
+                  },
+                );
+
+                const verifyResponsePayload = await verifyResponse
+                  .json()
+                  .catch(() => ({}));
+
+                verifyMessage = getApiMessage(verifyResponsePayload);
+
+                if (!verifyResponse.ok) {
+                  throw new Error(
+                    verifyMessage || "Unable to complete student registration.",
+                  );
+                }
+
+                lastError = null;
+                break;
+              } catch (error) {
+                lastError = error;
+
+                if (!isRetryableVerificationError(error) || attempt === 3) {
+                  break;
+                }
+
+                await wait(1500);
+              }
+            }
+
+            if (lastError) {
+              await logPaymentAttempt("failed", {
+                razorpayOrderId:
+                  paymentResponse.razorpay_order_id || createOrderPayload.order_id,
+                razorpayPaymentId: paymentResponse.razorpay_payment_id,
+                paymentMode: "verification_failed",
+              });
+
+              throw lastError;
             }
 
             handleSuccessfulRegistration(
@@ -661,7 +720,7 @@ export default function Page() {
         },
         modal: {
           ondismiss: () => {
-            if (!hasFinalPaymentOutcome) {
+            if (!hasFinalPaymentOutcome && !hasVerificationStarted) {
               void logPaymentAttempt("failed", {
                 razorpayOrderId: createOrderPayload.order_id,
                 paymentMode: "gateway_dismissed",
@@ -683,6 +742,10 @@ export default function Page() {
       });
 
       razorpay.on("payment.failed", (paymentFailure) => {
+        if (hasVerificationStarted || hasFinalPaymentOutcome) {
+          return;
+        }
+
         hasFinalPaymentOutcome = true;
 
         void logPaymentAttempt("failed", {

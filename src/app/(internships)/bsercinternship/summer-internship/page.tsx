@@ -534,6 +534,7 @@ export default function InternshipApplicationForm() {
             }),
           );
         } catch {
+          paymentAttemptState.failureRecorded = false;
           // Best effort only: do not block UI if failure logging fails.
         }
       };
@@ -599,6 +600,24 @@ export default function InternshipApplicationForm() {
                 "Payment successful and internship application submitted!",
             });
           } catch (error) {
+            if (!paymentAttemptState.completed && !paymentAttemptState.failureRecorded) {
+              paymentAttemptState.failureRecorded = true;
+
+              try {
+                await recordInternshipFailedPaymentAttempt(
+                  buildRegistrationFormData({
+                    razorpay_order_id: response.razorpay_order_id || order.order_id,
+                    razorpay_payment_id: response.razorpay_payment_id,
+                    payment_status: "failed",
+                    payment_mode: "verification_failed",
+                  }),
+                );
+              } catch {
+                paymentAttemptState.failureRecorded = false;
+                // Best effort only: verification error should still be shown to user.
+              }
+            }
+
             const message = getErrorMessage(error);
             setSubmitStatus({
               type: isAlreadyRegisteredMessage(message) ? "info" : "error",
