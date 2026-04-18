@@ -1,7 +1,5 @@
 import PMVision from "@/components/new/Pmvision";
 import SpaceSectorIndia from "@/components/new/SpaceSectorIndia";
-import DefSpaceSection from "@/components/new/DefSpaceSection";
-import BDSICFeatures from "@/components/new/BDSICFeatures";
 import SpaceWorkshop from "@/components/new/SpaceWorkshop";
 import BsercInitiative from "@/components/new/BsercInitiative";
 import HomePageClientEffects from "@/components/new/HomePageClientEffects";
@@ -27,8 +25,6 @@ export default function HomePage() {
       <Stats />
       <PMVision />
       <SpaceSectorIndia />
-      <DefSpaceSection />
-      <BDSICFeatures />
       <SpaceWorkshop />
       <BsercInitiative />
       <FeaturedWorkshops />

@@ -54,7 +54,7 @@ const socialLinks: SocialLink[] = [
 const companyLinks: CompanyLink[] = [
   { label: "Def-Space Summer School", href: "/summer-school" ,external:true},
   { label: "Def-Space Summer Internship", href: "/bsercinternship" ,external:true},
-  { label: "Def-Space Innovation Corridor", href: "/" ,external:false },
+  { label: "Def-Space Innovation Corridor", href: "/def-space-innovation-corridor" ,external:false },
   { label: "Workshop", href: "/results/winter-internship-results" ,external:false},
 ];
 

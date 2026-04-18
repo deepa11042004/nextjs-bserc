@@ -1,6 +1,17 @@
-import React from "react";
+"use client";
+import React, { useEffect, useRef, useState } from "react";
+import { Volume2, VolumeX } from "lucide-react";
 
 const SpaceSectorIndia: React.FC = () => {
+  const [isMuted, setIsMuted] = useState(true);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.muted = isMuted;
+    }
+  }, [isMuted]);
+
   return (
     <section className="w-full py-10 sm:py-14 lg:py-16 px-4 sm:px-6 lg:px-8 bg-black">
       <div className="max-w-7xl mx-auto">
@@ -56,16 +67,26 @@ const SpaceSectorIndia: React.FC = () => {
             
 
             
-            <div className="w-full aspect-video ">
+            <div className="w-full aspect-video relative">
               <video
+                ref={videoRef}
                 autoPlay
-                muted
+                muted={isMuted}
                 loop
                 playsInline
                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
               >
                 <source src="/video/pm.mp4" type="video/mp4" />
               </video>
+
+              <button
+                type="button"
+                onClick={() => setIsMuted((prev) => !prev)}
+                className="absolute left-4 top-4 z-20 inline-flex items-center justify-center rounded-full border border-white/20 bg-black/70 p-2 text-white shadow-lg transition hover:bg-black/90 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                aria-label={isMuted ? "Unmute video" : "Mute video"}
+              >
+                {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+              </button>
             </div>
 
             {/* Overlay */}

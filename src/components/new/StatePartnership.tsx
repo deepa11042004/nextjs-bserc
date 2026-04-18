@@ -101,7 +101,7 @@ export default function StatePartnership() {
           </div>
 
           <h2 className="text-4xl text-center font-bold font-serif text-white mb-5 pt-5 leading-tight lg:text-4xl">
-            State Governments Collaboration
+            Def-Space Innovation Supported by the State Government
           </h2>
 
           <p className="text-gray-400 max-w-3xl mx-auto leading-relaxed">

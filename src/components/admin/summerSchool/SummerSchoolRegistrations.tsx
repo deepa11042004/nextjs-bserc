@@ -469,13 +469,34 @@ export default function SummerSchoolRegistrations() {
     });
   }, [registrations, selectedClassFilter, selectedNationalityFilter]);
 
+  const filteredRegistrationRecords = useMemo(() => {
+    if (!selectedClassFilter && !selectedNationalityFilter) {
+      return registrationRecords;
+    }
+
+    return registrationRecords.filter((record) => {
+      const grade = toText(record.grade);
+      const nationality = toText(record.nationality);
+
+      const matchesClass = !selectedClassFilter || grade === selectedClassFilter;
+      const matchesNationality =
+        !selectedNationalityFilter || nationality === selectedNationalityFilter;
+
+      return matchesClass && matchesNationality;
+    });
+  }, [registrationRecords, selectedClassFilter, selectedNationalityFilter]);
+
   const handleExport = async () => {
     if (isExporting || isLoading) {
       return;
     }
 
-    if (registrationRecords.length === 0) {
-      setError("No registrations available to export.");
+    if (filteredRegistrationRecords.length === 0) {
+      setError(
+        selectedClassFilter || selectedNationalityFilter
+          ? "No registrations found for the selected filters to export."
+          : "No registrations available to export.",
+      );
       return;
     }
 
@@ -485,7 +506,7 @@ export default function SummerSchoolRegistrations() {
     try {
       const XLSX = await import("xlsx");
 
-      const { headers, rows } = buildDynamicExportRows(registrationRecords);
+      const { headers, rows } = buildDynamicExportRows(filteredRegistrationRecords);
 
       if (rows.length === 0) {
         setError("No registrations available to export.");
@@ -739,7 +760,7 @@ export default function SummerSchoolRegistrations() {
                 variant="ghost"
                 size="sm"
                 onClick={handleExport}
-                disabled={isLoading || isExporting || registrationRecords.length === 0}
+                disabled={isLoading || isExporting || filteredRegistrationRecords.length === 0}
                 className="text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100"
               >
                 {isExporting ? (

@@ -6,7 +6,7 @@ import UnifiedMentorListing from "@/components/mentors/UnifiedMentorListing";
 
 export default function OurMentors() {
   return (
-    <section className="bg-[#0d0d0d] text-zinc-300 py-16 px-4 selection:bg-orange-500 selection:text-black">
+    <section id="active-mentor-network" className="bg-[#0d0d0d] text-zinc-300 py-16 px-4 selection:bg-orange-500 selection:text-black">
       <div className="mx-auto w-full max-w-7xl">
         <UnifiedMentorListing
           badgeLabel="Mentors"

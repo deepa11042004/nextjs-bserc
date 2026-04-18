@@ -65,8 +65,8 @@ const NAV_ITEMS: {
       {
         type: "link",
         label: "Def-Space Innovation Corridor 2026",
-        href: "/",
-        external: true,
+        href: "/def-space-innovation-corridor",
+        external: false,
       },
     ],
   },
@@ -101,7 +101,7 @@ const NAV_ITEMS: {
       {
         type: "link",
         label: "Mentors",
-        href: "/",
+        href: "/careers/mentors",
         external: false,
       },
       {
@@ -195,7 +195,7 @@ const NAV_ITEMS: {
           { label: "UN-GGIM", href: "/tech-partner#un-ggim", external: false },
         ],
       },
-      { type: "link", label: "Mentor", href: "/", external: false },
+      { type: "link", label: "Mentor", href: "/more/mentor", external: false },
       { type: "link", label: "Speakers", href: "/", external: false },
       { type: "link", label: "Delegates", href: "/", external: false },
       {
