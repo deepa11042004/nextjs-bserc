@@ -6,7 +6,7 @@ const DEV_FALLBACK_BACKEND_URLS = [
 ];
 
 type ContactQueriesEndpoint = `/api/contact-queries${string}`;
-type ContactQueriesHttpMethod = "GET" | "POST" | "DELETE";
+type ContactQueriesHttpMethod = "GET" | "POST" | "DELETE" | "PUT";
 
 function isProductionRuntime(): boolean {
   return process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
@@ -100,6 +100,10 @@ async function buildForwardPayload(
   }
 
   const body = await parseIncomingBody(request);
+
+  if (body === null && method === "PUT") {
+    return {};
+  }
 
   if (!body || typeof body !== "object") {
     return null;

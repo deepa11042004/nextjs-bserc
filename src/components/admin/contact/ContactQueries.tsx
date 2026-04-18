@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Eye, Inbox, Loader2, Trash2 } from "lucide-react";
+import { CheckCircle2, Clock3, Eye, Inbox, Loader2, Trash2 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -20,6 +20,7 @@ type ContactQuery = {
   email: string;
   phone: string | null;
   subject: string;
+  is_solved: boolean;
   created_at: string | null;
 };
 
@@ -74,6 +75,23 @@ function toPositiveInt(value: unknown): number {
   return numeric;
 }
 
+function toBoolean(value: unknown): boolean {
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  if (typeof value === "number") {
+    return value === 1;
+  }
+
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    return normalized === "1" || normalized === "true" || normalized === "yes";
+  }
+
+  return false;
+}
+
 function formatDate(value: string | null): string {
   if (!value) {
     return "-";
@@ -114,6 +132,7 @@ function mapContactQuery(record: Record<string, unknown>): ContactQuery {
     email: toText(record.email),
     phone: toNullableText(record.phone),
     subject: toText(record.subject || record.subject_name),
+    is_solved: toBoolean(record.is_solved),
     created_at: toNullableText(record.created_at),
   };
 }
@@ -266,7 +285,6 @@ export default function ContactQueries() {
                 <TableHeader>
                   <TableRow className="border-zinc-800">
                     <TableHead className="text-white min-w-[220px]">Name</TableHead>
-                    <TableHead className="text-white min-w-[260px]">Email</TableHead>
                     <TableHead className="text-white min-w-[160px]">Phone</TableHead>
                     <TableHead className="text-white min-w-[220px]">Subject</TableHead>
                     <TableHead className="text-white min-w-[160px]">Submitted</TableHead>
@@ -276,7 +294,7 @@ export default function ContactQueries() {
                 <TableBody>
                   {queries.length === 0 ? (
                     <TableRow className="border-zinc-800">
-                      <TableCell colSpan={6} className="text-center text-zinc-400 py-8">
+                      <TableCell colSpan={5} className="text-center text-zinc-400 py-8">
                         No contact queries found.
                       </TableCell>
                     </TableRow>
@@ -284,10 +302,12 @@ export default function ContactQueries() {
                     queries.map((query) => (
                       <TableRow key={`${query.id}-${query.email}`} className="border-zinc-800">
                         <TableCell className="align-top text-zinc-200 text-sm font-medium">
-                          {query.full_name || "-"}
-                        </TableCell>
-                        <TableCell className="align-top text-zinc-300 text-sm">
-                          {query.email || "-"}
+                          <div className="flex flex-col gap-1">
+                            <span>{query.full_name || "-"}</span>
+                            <span className="text-zinc-400 text-xs break-words">
+                              {query.email || "-"}
+                            </span>
+                          </div>
                         </TableCell>
                         <TableCell className="align-top text-zinc-300 text-sm">
                           {query.phone || "-"}
@@ -303,6 +323,20 @@ export default function ContactQueries() {
                         </TableCell>
                         <TableCell className="align-top text-right">
                           <div className="inline-flex items-center gap-2">
+                            <span
+                              title={query.is_solved ? "Solved" : "Pending"}
+                              aria-label={query.is_solved ? "Solved" : "Pending"}
+                              className={`inline-flex items-center justify-center rounded-md border px-2 py-1 ${query.is_solved
+                                ? "border-emerald-500/50 bg-emerald-500/15 text-emerald-300"
+                                : "border-amber-500/50 bg-amber-500/15 text-amber-300"
+                                }`}
+                            >
+                              {query.is_solved ? (
+                                <CheckCircle2 className="h-3.5 w-3.5" />
+                              ) : (
+                                <Clock3 className="h-3.5 w-3.5" />
+                              )}
+                            </span>
                             <Link
                               href={`/admin/contact-queries/${query.id}`}
                               className="inline-flex items-center gap-1 rounded-md border border-zinc-700 px-2 py-1 text-xs text-zinc-200 hover:bg-zinc-800 transition-colors"
