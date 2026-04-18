@@ -24,6 +24,8 @@ type Participant = {
   contact_number: string;
   institution: string;
   designation: string;
+  payment_amount?: number | null;
+  razorpay_payment_id?: string | null;
   payment_status?: string | null;
 };
 
@@ -60,6 +62,14 @@ function getPaymentBadgeClasses(status: string | null | undefined): string {
   }
 
   return "bg-zinc-800 text-zinc-200 border border-zinc-700";
+}
+
+function formatCurrency(value: number | null | undefined) {
+  if (value === null || value === undefined || Number.isNaN(value)) {
+    return "-";
+  }
+
+  return `₹${value.toFixed(2)}`;
 }
 
 export default function WorkshopParticipantsPage() {
@@ -154,7 +164,9 @@ export default function WorkshopParticipantsPage() {
         full_name: participant.full_name,
         email: participant.email,
         contact_number: participant.contact_number,
+        payment_amount: participant.payment_amount ?? "-",
         payment_status: participant.payment_status || "-",
+        razorpay_payment_id: participant.razorpay_payment_id || "-",
         designation: participant.designation,
       }));
 
@@ -163,7 +175,9 @@ export default function WorkshopParticipantsPage() {
         "full_name",
         "email",
         "contact_number",
+        "payment_amount",
         "payment_status",
+        "razorpay_payment_id",
         "designation",
       ];
 
@@ -292,9 +306,17 @@ export default function WorkshopParticipantsPage() {
                       <TableCell className="text-zinc-300">{participant.email}</TableCell>
                       <TableCell className="text-zinc-300">{participant.contact_number}</TableCell>
                       <TableCell className="text-zinc-300">
-                        <Badge className={getPaymentBadgeClasses(participant.payment_status)}>
-                          {participant.payment_status || "-"}
-                        </Badge>
+                        <div className="flex flex-col gap-2 text-sm text-zinc-300">
+                          <span className="font-medium text-zinc-100">
+                            {formatCurrency(participant.payment_amount ?? null)}
+                          </span>
+                          <Badge className={getPaymentBadgeClasses(participant.payment_status)}>
+                            {participant.payment_status || "-"}
+                          </Badge>
+                          <span className="text-zinc-500 text-xs">
+                            ID: {participant.razorpay_payment_id || "-"}
+                          </span>
+                        </div>
                       </TableCell>
                       <TableCell className="text-zinc-300">{participant.designation}</TableCell>
                     </TableRow>

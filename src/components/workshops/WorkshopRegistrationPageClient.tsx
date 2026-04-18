@@ -721,6 +721,7 @@ export default function WorkshopRegistrationPageClient({
       const paymentAttemptState = {
         completed: false,
         failureRecorded: false,
+        verificationStarted: false,
       };
 
       const recordFailedAttempt = async (details: {
@@ -728,7 +729,11 @@ export default function WorkshopRegistrationPageClient({
         paymentId?: string;
         mode?: string;
       }) => {
-        if (paymentAttemptState.completed || paymentAttemptState.failureRecorded) {
+        if (
+          paymentAttemptState.completed
+          || paymentAttemptState.failureRecorded
+          || paymentAttemptState.verificationStarted
+        ) {
           return;
         }
 
@@ -743,6 +748,7 @@ export default function WorkshopRegistrationPageClient({
             payment_mode: details.mode || "failed",
           });
         } catch {
+          paymentAttemptState.failureRecorded = false;
           // Best effort only: checkout UX should not fail if this logging call fails.
         }
       };
@@ -770,6 +776,8 @@ export default function WorkshopRegistrationPageClient({
         },
         handler: async (response) => {
           try {
+            paymentAttemptState.verificationStarted = true;
+
             const verificationPayload = {
               ...registrationPayload,
               razorpay_order_id: response.razorpay_order_id,
@@ -807,6 +815,23 @@ export default function WorkshopRegistrationPageClient({
               message: "Payment successful and registration completed!",
             });
           } catch (error) {
+            if (!paymentAttemptState.completed && !paymentAttemptState.failureRecorded) {
+              paymentAttemptState.failureRecorded = true;
+
+              try {
+                await recordWorkshopFailedPaymentAttempt({
+                  ...registrationPayload,
+                  razorpay_order_id: response.razorpay_order_id || order.order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  payment_status: "failed",
+                  payment_mode: "verification_failed",
+                });
+              } catch {
+                paymentAttemptState.failureRecorded = false;
+                // Best effort only: verification error should still be shown to user.
+              }
+            }
+
             setSubmitStatus({
               type: "error",
               message: getErrorMessage(error),
@@ -817,7 +842,7 @@ export default function WorkshopRegistrationPageClient({
         },
         modal: {
           ondismiss: () => {
-            if (!paymentAttemptState.completed) {
+            if (!paymentAttemptState.completed && !paymentAttemptState.verificationStarted) {
               void recordFailedAttempt({
                 orderId: order.order_id,
                 mode: "cancelled",
@@ -833,6 +858,10 @@ export default function WorkshopRegistrationPageClient({
       });
 
       razorpay.on("payment.failed", (response) => {
+        if (paymentAttemptState.verificationStarted || paymentAttemptState.completed) {
+          return;
+        }
+
         void recordFailedAttempt({
           orderId: response.error?.metadata?.order_id || order.order_id,
           paymentId: response.error?.metadata?.payment_id,

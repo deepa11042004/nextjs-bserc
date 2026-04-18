@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Download, Loader2, Users } from "lucide-react";
+import { ArrowLeft, Download, Eye, Loader2, Trash2, Users } from "lucide-react";
 
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,10 +23,18 @@ type Participant = {
   full_name: string;
   email: string;
   contact_number: string;
+  alternative_email?: string | null;
   institution: string;
+  nationality?: string | null;
   designation: string;
+  payment_amount?: number | null;
+  payment_currency?: string | null;
+  razorpay_order_id?: string | null;
   payment_status: string | null;
+  payment_mode?: string | null;
   razorpay_payment_id: string | null;
+  agree_recording?: boolean;
+  agree_terms?: boolean;
   created_at: string | null;
 };
 
@@ -105,27 +113,62 @@ function buildDynamicExportRows(records: Record<string, unknown>[]) {
   return { headers, rows };
 }
 
-function formatDate(value: string | null): { date: string; time: string } {
+function formatDateTime(value: string | null): string {
   if (!value) {
-    return { date: "-", time: "-" };
+    return "-";
   }
 
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) {
-    return { date: "-", time: "-" };
+    return "-";
   }
 
-  return {
-    date: parsed.toLocaleDateString("en-IN", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    }),
-    time: parsed.toLocaleTimeString("en-IN", {
-      hour: "2-digit",
-      minute: "2-digit",
-    }),
-  };
+  return parsed.toLocaleString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function formatCurrency(value: number | null | undefined): string {
+  if (value === null || value === undefined || Number.isNaN(value)) {
+    return "-";
+  }
+
+  return `Rs ${Number(value).toFixed(2)}`;
+}
+
+function presentText(value: string | number | null | undefined): string {
+  if (value === null || value === undefined) {
+    return "-";
+  }
+
+  const text = String(value).trim();
+  return text || "-";
+}
+
+function formatBoolean(value: boolean | null | undefined): string {
+  if (value === null || value === undefined) {
+    return "-";
+  }
+
+  return value ? "Yes" : "No";
+}
+
+function getRecordId(record: Record<string, unknown>): number | null {
+  const rawId = record.id;
+  if (typeof rawId === "number" && Number.isFinite(rawId)) {
+    return rawId;
+  }
+
+  if (typeof rawId === "string") {
+    const parsed = Number(rawId);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  return null;
 }
 
 function getPaymentBadgeClasses(status: string | null): string {
@@ -149,8 +192,10 @@ function getPaymentBadgeClasses(status: string | null): string {
 export default function AdminParticipantsPage() {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [participantRecords, setParticipantRecords] = useState<Record<string, unknown>[]>([]);
+  const [selectedParticipant, setSelectedParticipant] = useState<Participant | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
+  const [deletingParticipantId, setDeletingParticipantId] = useState<number | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -186,6 +231,7 @@ export default function AdminParticipantsPage() {
 
         setParticipantRecords(extractParticipantRecords(payload));
         setParticipants(extractParticipants(payload));
+        setSelectedParticipant(null);
       } catch (err) {
         if (!isMounted) {
           return;
@@ -193,6 +239,7 @@ export default function AdminParticipantsPage() {
 
         setParticipantRecords([]);
         setParticipants([]);
+        setSelectedParticipant(null);
         setError(
           err instanceof Error && err.message
             ? err.message
@@ -213,6 +260,66 @@ export default function AdminParticipantsPage() {
   }, []);
 
   const totalParticipants = useMemo(() => participants.length, [participants]);
+
+  const handleDeleteParticipant = async (participant: Participant) => {
+    if (deletingParticipantId !== null) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Delete registration for ${participant.full_name || "this participant"}?`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setError("");
+    setDeletingParticipantId(participant.id);
+
+    try {
+      const response = await fetch(
+        `/api/workshop-list/participants/${encodeURIComponent(String(participant.id))}`,
+        {
+          method: "DELETE",
+          cache: "no-store",
+        },
+      );
+
+      const payload = (await response.json().catch(() => ({}))) as unknown;
+
+      if (!response.ok) {
+        const message =
+          payload
+          && typeof payload === "object"
+          && "message" in payload
+          && typeof (payload as { message?: unknown }).message === "string"
+            ? (payload as { message: string }).message
+            : "Unable to delete participant";
+
+        throw new Error(message);
+      }
+
+      setParticipants((current) => current.filter((item) => item.id !== participant.id));
+      setParticipantRecords((current) =>
+        current.filter((record) => {
+          const recordId = getRecordId(record);
+          return recordId === null || recordId !== participant.id;
+        }),
+      );
+      setSelectedParticipant((current) =>
+        current && current.id === participant.id ? null : current,
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error && err.message
+          ? err.message
+          : "Unable to delete participant",
+      );
+    } finally {
+      setDeletingParticipantId(null);
+    }
+  };
 
   const handleExport = async () => {
     if (isExporting || isLoading) {
@@ -337,6 +444,7 @@ export default function AdminParticipantsPage() {
                   <TableHead className="text-white">Workshop</TableHead>
                   <TableHead className="text-white">Payment</TableHead>
                   <TableHead className="text-white">Registered At</TableHead>
+                  <TableHead className="text-white">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -351,7 +459,7 @@ export default function AdminParticipantsPage() {
                   </TableRow>
                 ) : (
                   participants.map((participant) => {
-                    const registeredAt = formatDate(participant.created_at);
+                    const registeredAt = formatDateTime(participant.created_at);
 
                     return (
                       <TableRow key={participant.id} className="border-zinc-800">
@@ -363,9 +471,19 @@ export default function AdminParticipantsPage() {
                             <span className="text-zinc-500 text-xs">{participant.email}</span>
                           </div>
                         </TableCell>
-                        <TableCell className="text-zinc-300">{participant.workshop_title}</TableCell>
+                        <TableCell className="text-zinc-300">
+                          <span
+                            className="block max-w-[240px] truncate"
+                            title={participant.workshop_title || "-"}
+                          >
+                            {participant.workshop_title || "-"}
+                          </span>
+                        </TableCell>
                         <TableCell className="text-zinc-300">
                           <div className="flex flex-col gap-2 text-sm text-zinc-300">
+                            <span className="font-medium text-zinc-100">
+                              Amount: {formatCurrency(participant.payment_amount)}
+                            </span>
                             <Badge className={getPaymentBadgeClasses(participant.payment_status)}>
                               {participant.payment_status || "-"}
                             </Badge>
@@ -374,10 +492,38 @@ export default function AdminParticipantsPage() {
                             </span>
                           </div>
                         </TableCell>
-                        <TableCell className="text-zinc-400">
-                          <div className="flex flex-col gap-1">
-                            <span className="text-zinc-300">{registeredAt.date}</span>
-                            <span className="text-zinc-500 text-xs">{registeredAt.time}</span>
+                        <TableCell className="text-zinc-300 whitespace-nowrap">
+                          {registeredAt}
+                        </TableCell>
+                        <TableCell className="text-zinc-300">
+                          <div className="flex items-center gap-2">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100"
+                              title="View participant details"
+                              onClick={() => setSelectedParticipant(participant)}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-rose-300 hover:bg-rose-950/40 hover:text-rose-200"
+                              title="Delete participant"
+                              onClick={() => {
+                                void handleDeleteParticipant(participant);
+                              }}
+                              disabled={deletingParticipantId === participant.id}
+                            >
+                              {deletingParticipantId === participant.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
+                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -389,6 +535,103 @@ export default function AdminParticipantsPage() {
           )}
         </CardContent>
       </Card>
+
+      {selectedParticipant && (
+        <Card className="mt-6 bg-zinc-900 border-zinc-800">
+          <CardHeader>
+            <div className="flex items-center justify-between gap-3">
+              <CardTitle className="text-zinc-100 text-lg">
+                Participant Details
+              </CardTitle>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedParticipant(null)}
+                className="text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100"
+              >
+                Close
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-3">
+              <div>
+                <p className="text-zinc-500 text-xs">Participant ID</p>
+                <p className="text-zinc-100">{selectedParticipant.id}</p>
+              </div>
+              <div>
+                <p className="text-zinc-500 text-xs">Workshop</p>
+                <p className="text-zinc-100">{presentText(selectedParticipant.workshop_title)}</p>
+              </div>
+              <div>
+                <p className="text-zinc-500 text-xs">Registered At</p>
+                <p className="text-zinc-100">{formatDateTime(selectedParticipant.created_at)}</p>
+              </div>
+              <div>
+                <p className="text-zinc-500 text-xs">Full Name</p>
+                <p className="text-zinc-100">{presentText(selectedParticipant.full_name)}</p>
+              </div>
+              <div>
+                <p className="text-zinc-500 text-xs">Email</p>
+                <p className="text-zinc-100">{presentText(selectedParticipant.email)}</p>
+              </div>
+              <div>
+                <p className="text-zinc-500 text-xs">Alternative Email</p>
+                <p className="text-zinc-100">{presentText(selectedParticipant.alternative_email)}</p>
+              </div>
+              <div>
+                <p className="text-zinc-500 text-xs">Contact Number</p>
+                <p className="text-zinc-100">{presentText(selectedParticipant.contact_number)}</p>
+              </div>
+              <div>
+                <p className="text-zinc-500 text-xs">Institution</p>
+                <p className="text-zinc-100">{presentText(selectedParticipant.institution)}</p>
+              </div>
+              <div>
+                <p className="text-zinc-500 text-xs">Designation</p>
+                <p className="text-zinc-100">{presentText(selectedParticipant.designation)}</p>
+              </div>
+              <div>
+                <p className="text-zinc-500 text-xs">Nationality</p>
+                <p className="text-zinc-100">{presentText(selectedParticipant.nationality)}</p>
+              </div>
+              <div>
+                <p className="text-zinc-500 text-xs">Payment Amount</p>
+                <p className="text-zinc-100">{formatCurrency(selectedParticipant.payment_amount)}</p>
+              </div>
+              <div>
+                <p className="text-zinc-500 text-xs">Payment Status</p>
+                <p className="text-zinc-100">{presentText(selectedParticipant.payment_status)}</p>
+              </div>
+              <div>
+                <p className="text-zinc-500 text-xs">Payment ID</p>
+                <p className="text-zinc-100">{presentText(selectedParticipant.razorpay_payment_id)}</p>
+              </div>
+              <div>
+                <p className="text-zinc-500 text-xs">Order ID</p>
+                <p className="text-zinc-100">{presentText(selectedParticipant.razorpay_order_id)}</p>
+              </div>
+              <div>
+                <p className="text-zinc-500 text-xs">Payment Currency</p>
+                <p className="text-zinc-100">{presentText(selectedParticipant.payment_currency)}</p>
+              </div>
+              <div>
+                <p className="text-zinc-500 text-xs">Payment Mode</p>
+                <p className="text-zinc-100">{presentText(selectedParticipant.payment_mode)}</p>
+              </div>
+              <div>
+                <p className="text-zinc-500 text-xs">Recording Consent</p>
+                <p className="text-zinc-100">{formatBoolean(selectedParticipant.agree_recording)}</p>
+              </div>
+              <div>
+                <p className="text-zinc-500 text-xs">Terms Accepted</p>
+                <p className="text-zinc-100">{formatBoolean(selectedParticipant.agree_terms)}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
