@@ -195,6 +195,7 @@ export default function AdminParticipantsPage() {
   const [selectedParticipant, setSelectedParticipant] = useState<Participant | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
+  const [isExportingSelectedParticipant, setIsExportingSelectedParticipant] = useState(false);
   const [deletingParticipantId, setDeletingParticipantId] = useState<number | null>(null);
   const [error, setError] = useState("");
 
@@ -260,6 +261,78 @@ export default function AdminParticipantsPage() {
   }, []);
 
   const totalParticipants = useMemo(() => participants.length, [participants]);
+
+  const handleViewParticipant = (participant: Participant) => {
+    // Spread into a fresh object so repeated clicks on the same row still update the panel.
+    setSelectedParticipant({ ...participant });
+  };
+
+  const handleExportSelectedParticipant = async () => {
+    if (!selectedParticipant || isExportingSelectedParticipant) {
+      return;
+    }
+
+    setError("");
+    setIsExportingSelectedParticipant(true);
+
+    try {
+      const XLSX = await import("xlsx");
+
+      const row = {
+        participant_id: selectedParticipant.id,
+        workshop_id: selectedParticipant.workshop_id ?? "-",
+        workshop_title: presentText(selectedParticipant.workshop_title),
+        full_name: presentText(selectedParticipant.full_name),
+        email: presentText(selectedParticipant.email),
+        alternative_email: presentText(selectedParticipant.alternative_email),
+        contact_number: presentText(selectedParticipant.contact_number),
+        institution: presentText(selectedParticipant.institution),
+        designation: presentText(selectedParticipant.designation),
+        nationality: presentText(selectedParticipant.nationality),
+        payment_amount: formatCurrency(selectedParticipant.payment_amount),
+        payment_status: presentText(selectedParticipant.payment_status),
+        payment_currency: presentText(selectedParticipant.payment_currency),
+        payment_mode: presentText(selectedParticipant.payment_mode),
+        razorpay_order_id: presentText(selectedParticipant.razorpay_order_id),
+        razorpay_payment_id: presentText(selectedParticipant.razorpay_payment_id),
+        agree_recording: formatBoolean(selectedParticipant.agree_recording),
+        agree_terms: formatBoolean(selectedParticipant.agree_terms),
+        registered_at: formatDateTime(selectedParticipant.created_at),
+      };
+
+      const headers = Object.keys(row);
+      const worksheet = XLSX.utils.json_to_sheet([row], { header: headers });
+
+      worksheet["!cols"] = headers.map((header) => ({
+        wch: Math.max(16, Math.min(42, header.length + 4)),
+      }));
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Participant Details");
+
+      const now = new Date();
+      const safeName = (selectedParticipant.full_name || "participant")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "") || "participant";
+
+      const filename = `participant-${safeName}-${selectedParticipant.id}-${now.getFullYear()}-${String(
+        now.getMonth() + 1,
+      ).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}_${String(
+        now.getHours(),
+      ).padStart(2, "0")}-${String(now.getMinutes()).padStart(2, "0")}.xlsx`;
+
+      XLSX.writeFile(workbook, filename);
+    } catch (err) {
+      setError(
+        err instanceof Error && err.message
+          ? err.message
+          : "Unable to export participant details.",
+      );
+    } finally {
+      setIsExportingSelectedParticipant(false);
+    }
+  };
 
   const handleDeleteParticipant = async (participant: Participant) => {
     if (deletingParticipantId !== null) {
@@ -503,7 +576,7 @@ export default function AdminParticipantsPage() {
                               size="icon"
                               className="h-8 w-8 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100"
                               title="View participant details"
-                              onClick={() => setSelectedParticipant(participant)}
+                              onClick={() => handleViewParticipant(participant)}
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
@@ -537,24 +610,48 @@ export default function AdminParticipantsPage() {
       </Card>
 
       {selectedParticipant && (
-        <Card className="mt-6 bg-zinc-900 border-zinc-800">
+        <Card className="fixed inset-x-2 bottom-2 z-50 max-h-[88vh] overflow-hidden border border-zinc-700 bg-zinc-900/95 shadow-2xl backdrop-blur sm:inset-x-auto sm:right-4 sm:w-[720px] lg:w-[920px]">
           <CardHeader>
             <div className="flex items-center justify-between gap-3">
               <CardTitle className="text-zinc-100 text-lg">
                 Participant Details
               </CardTitle>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setSelectedParticipant(null)}
-                className="text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100"
-              >
-                Close
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    void handleExportSelectedParticipant();
+                  }}
+                  disabled={isExportingSelectedParticipant}
+                  className="text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100"
+                >
+                  {isExportingSelectedParticipant ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Exporting...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="mr-2 h-4 w-4" />
+                      Export
+                    </>
+                  )}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedParticipant(null)}
+                  className="text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100"
+                >
+                  Close
+                </Button>
+              </div>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="max-h-[74vh] overflow-y-auto pb-6">
             <div className="grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-3">
               <div>
                 <p className="text-zinc-500 text-xs">Participant ID</p>
