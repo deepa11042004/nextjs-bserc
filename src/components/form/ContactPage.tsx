@@ -453,7 +453,7 @@ export default function ContactPage() {
                 name="phone"
                 label="Phone Number (Optional)"
                 type="tel"
-                placeholder="+91-XXXXXXXXXX"
+                placeholder="Enter phone number"
                 value={formData.phone}
                 onChange={(e) => handleChange("phone", e.target.value)}
               />

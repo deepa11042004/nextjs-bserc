@@ -492,18 +492,18 @@ export default function WorkshopParticipantsPage() {
                           <div className="flex items-center gap-2">
                             <button
                               type="button"
-                              onClick={() => handleViewParticipant(participant)}
                               title="View participant details"
+                              onClick={() => handleViewParticipant(participant)}
                               className="rounded-md bg-cyan-500 p-1.5 text-black transition hover:bg-cyan-400"
                             >
                               <Eye className="h-3.5 w-3.5" />
                             </button>
                             <button
                               type="button"
+                              title="Delete participant"
                               onClick={() => {
                                 void handleDeleteParticipant(participant);
                               }}
-                              title="Delete participant"
                               disabled={deletingParticipantId === participant.id}
                               className="rounded-md bg-rose-500 p-1.5 text-black transition hover:bg-rose-400 disabled:cursor-not-allowed disabled:opacity-50"
                             >

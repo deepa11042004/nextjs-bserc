@@ -570,33 +570,29 @@ export default function AdminParticipantsPage() {
                         </TableCell>
                         <TableCell className="text-zinc-300">
                           <div className="flex items-center gap-2">
-                            <Button
+                            <button
                               type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100"
                               title="View participant details"
                               onClick={() => handleViewParticipant(participant)}
+                              className="rounded-md bg-cyan-500 p-1.5 text-black transition hover:bg-cyan-400"
                             >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button
+                              <Eye className="h-3.5 w-3.5" />
+                            </button>
+                            <button
                               type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-rose-300 hover:bg-rose-950/40 hover:text-rose-200"
                               title="Delete participant"
                               onClick={() => {
                                 void handleDeleteParticipant(participant);
                               }}
                               disabled={deletingParticipantId === participant.id}
+                              className="rounded-md bg-rose-500 p-1.5 text-black transition hover:bg-rose-400 disabled:cursor-not-allowed disabled:opacity-50"
                             >
                               {deletingParticipantId === participant.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
                               ) : (
-                                <Trash2 className="h-4 w-4" />
+                                <Trash2 className="h-3.5 w-3.5" />
                               )}
-                            </Button>
+                            </button>
                           </div>
                         </TableCell>
                       </TableRow>

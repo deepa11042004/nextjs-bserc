@@ -126,10 +126,6 @@ function validateEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-function validatePhone(phone: string): boolean {
-  return phone === "" || /^[+]?[0-9\s\-()]{10,20}$/.test(phone);
-}
-
 function validatePinCode(pin: string): boolean {
   return pin === "" || /^[0-9]{6}$/.test(pin);
 }
@@ -873,8 +869,6 @@ export default function ProjectListingForm() {
       e.primaryEmail = "Invalid email format";
     if (formData.alternativeEmail && !validateEmail(formData.alternativeEmail))
       e.alternativeEmail = "Invalid email format";
-    if (formData.whatsappNumber && !validatePhone(formData.whatsappNumber))
-      e.whatsappNumber = "Invalid phone format";
     if (!formData.institution.trim())
       e.institution = "Institution name is required";
     if (!formData.department.trim()) e.department = "Department is required";

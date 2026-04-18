@@ -599,8 +599,6 @@ export default function RequestMentorshipPage() {
 
     if (!formData.phone.trim()) {
       newErrors.phone = "Mobile number is required";
-    } else if (!/^[+]?[0-9\s\-()]{10,20}$/.test(formData.phone)) {
-      newErrors.phone = "Please enter a valid phone number with country code";
     }
 
     if (!formData.domain)
@@ -814,9 +812,9 @@ export default function RequestMentorshipPage() {
               <FormInput
                 id="phone"
                 name="phone"
-                label="Mobile Number (with country code)"
+                label="Mobile Number"
                 type="tel"
-                placeholder="+91 XXXXX XXXXX or +1-XXXXX"
+                placeholder="Enter mobile number"
                 required
                 value={formData.phone}
                 onChange={(e) => handleChange("phone", e.target.value)}

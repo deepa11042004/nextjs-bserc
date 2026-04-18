@@ -640,15 +640,6 @@ export default function WorkshopRegistrationPageClient({
       return;
     }
 
-    if (!/^[0-9]{10}$/.test(formData.contact.trim())) {
-      setSubmitStatus({
-        type: "error",
-        message: "Contact number must be exactly 10 digits.",
-      });
-      setIsSubmitting(false);
-      return;
-    }
-
     const normalizedNationality = normalizeNationalityForApi(formData.nationality);
     if (normalizedNationality !== "Indian" && normalizedNationality !== "Others") {
       setSubmitStatus({
@@ -913,7 +904,7 @@ export default function WorkshopRegistrationPageClient({
     setSubmitStatus({
       type: "info",
       message:
-        "Payment was not completed. Your details were saved as failed payment and the form has been cleared.",
+        "Payment was not completed. Your registration has not been saved.",
     });
   };
 
@@ -1076,9 +1067,6 @@ export default function WorkshopRegistrationPageClient({
               value={formData.contact}
               onChange={handleChange}
               inputMode="numeric"
-              pattern="[0-9]{10}"
-              title="Contact number must be exactly 10 digits"
-              maxLength={10}
             />
 
             <FormInput

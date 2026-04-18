@@ -148,9 +148,6 @@ min-h-[300px] sm:min-h-[400px] lg:min-h-[500px]"
               कार्यशाला का आयोजन
             </h2>
 
-            <p className="text-[#FF6B35] font-semibold mb-4">
-              भारत अंतरिक्ष प्रयोगशाला 2024-25
-            </p>
 
             {/* Speaker Box */}
             <div className="bg-blue-500/10 border border-blue-500 rounded-lg p-5 mb-6">

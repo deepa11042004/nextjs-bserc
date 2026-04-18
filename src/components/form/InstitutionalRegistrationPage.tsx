@@ -585,8 +585,6 @@ export default function InstitutionalRegistrationPage() {
 
     if (!formData.phone.trim()) {
       newErrors.phone = "Contact number is required";
-    } else if (!/^[+]?[0-9\s\-]{10,15}$/.test(formData.phone)) {
-      newErrors.phone = "Please enter a valid phone number";
     }
 
     if (!formData.studentCount)
@@ -909,7 +907,7 @@ export default function InstitutionalRegistrationPage() {
                   name="phone"
                   label="Contact Number"
                   type="tel"
-                  placeholder="+91 XXXXX XXXXX"
+                  placeholder="Enter contact number"
                   required
                   value={formData.phone}
                   onChange={(e) => handleChange("phone", e.target.value)}
@@ -952,7 +950,7 @@ export default function InstitutionalRegistrationPage() {
                   name="headPhone"
                   label="Institutional Head Phone"
                   type="tel"
-                  placeholder="+91 XXXXX XXXXX"
+                  placeholder="Enter institutional head phone"
                   value={formData.headPhone}
                   onChange={(e) => handleChange("headPhone", e.target.value)}
                   error={errors.headPhone}

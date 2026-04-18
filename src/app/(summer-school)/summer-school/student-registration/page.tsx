@@ -1078,7 +1078,7 @@ export default function Page() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
               <InputField
                 label="Parent / Guardian Mobile Number"
-                placeholder="+91-XXXXXXXXXX"
+                placeholder="Enter parent or guardian mobile number"
                 type="tel"
                 required
                 name="guardianPhone"
@@ -1087,7 +1087,7 @@ export default function Page() {
               />
               <InputField
                 label="Alternative Contact Number (Optional)"
-                placeholder="+91-XXXXXXXXXX"
+                placeholder="Enter alternative contact number"
                 type="tel"
                 name="altPhone"
                 value={formData.altPhone}

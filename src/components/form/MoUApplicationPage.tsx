@@ -497,8 +497,6 @@ export default function MoUApplicationPage() {
 
     if (!formData.officialPhone.trim()) {
       newErrors.officialPhone = "Official phone number is required";
-    } else if (!/^[+]?[0-9\s\-()]{10,20}$/.test(formData.officialPhone)) {
-      newErrors.officialPhone = "Please enter a valid phone number with country code";
     }
 
     if (!formData.alternativeEmail.trim()) {
@@ -739,9 +737,9 @@ export default function MoUApplicationPage() {
               <FormInput
                 id="officialPhone"
                 name="officialPhone"
-                label="Official Phone (with Country Code)"
+                label="Official Phone"
                 type="tel"
-                placeholder="+91-XXXXXXXXXX"
+                placeholder="Enter phone number"
                 required
                 value={formData.officialPhone}
                 onChange={(e) => handleChange("officialPhone", e.target.value)}

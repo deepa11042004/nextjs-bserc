@@ -693,7 +693,7 @@ export default function InternshipApplicationForm() {
     setSubmitStatus({
       type: "info",
       message:
-        "Payment was not completed. Your details were saved as failed payment and the form has been cleared.",
+        "Payment was not completed. Your application has not been submitted.",
     });
   };
 
@@ -851,7 +851,7 @@ export default function InternshipApplicationForm() {
                 name="mobile"
                 type="tel"
                 label="Mobile Number / मोबाइल नंबर"
-                placeholder="+91 XXXXX XXXXX"
+                placeholder="Enter mobile number"
                 required
                 value={formData.mobile}
                 onChange={handleChange}

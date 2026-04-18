@@ -760,7 +760,7 @@ export default function MentorRegistrationForm() {
             <InputField
               type="tel"
               label="Phone Number / फोन नंबर "
-              placeholder="+91 XXXXX XXXXX"
+              placeholder="Enter phone number"
               name="phone"
               id="phone"
               required

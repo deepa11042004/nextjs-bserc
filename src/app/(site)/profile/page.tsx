@@ -68,10 +68,6 @@ function validateProfileForm(form: ProfileFormState): string {
     return "Please enter a valid email address.";
   }
 
-  if (form.phone?.trim() && !/^[0-9+\-()\s]{8,16}$/.test(form.phone.trim())) {
-    return "Please enter a valid phone number.";
-  }
-
   if ((form.bio || "").length > 320) {
     return "Bio must be 320 characters or fewer.";
   }

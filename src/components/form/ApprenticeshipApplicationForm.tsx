@@ -832,7 +832,7 @@ export default function ApprenticeshipApplicationForm() {
                 name="mobile"
                 label="Mobile Number"
                 type="tel"
-                placeholder="+91 XXXXXXXXXX"
+                placeholder="Enter mobile number"
                 required
                 value={formData.mobile}
                 onChange={(e) => handleInputChange("mobile", e.target.value)}
