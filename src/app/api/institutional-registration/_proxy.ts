@@ -9,8 +9,9 @@ type InstitutionalRegistrationEndpoint =
   | "/api/institutional-registration"
   | "/api/institutional-registration/create-order"
   | "/api/institutional-registration/verify-payment"
-  | "/api/institutional-registration/log-payment-attempt";
-type InstitutionalRegistrationHttpMethod = "GET" | "POST";
+  | "/api/institutional-registration/log-payment-attempt"
+  | `/api/institutional-registration/${string}`;
+type InstitutionalRegistrationHttpMethod = "GET" | "POST" | "DELETE";
 
 function isProductionRuntime(): boolean {
   return process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
@@ -99,7 +100,7 @@ async function buildForwardPayload(
   request: Request,
   method: InstitutionalRegistrationHttpMethod,
 ): Promise<ForwardPayload | null> {
-  if (method === "GET") {
+  if (method === "GET" || method === "DELETE") {
     return {};
   }
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Building2, Loader2, NotebookPen } from "lucide-react";
+import { Download, Eye, Loader2, NotebookPen, Trash2, X } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -20,6 +20,7 @@ type InstitutionalApplication = {
   city: string;
   state: string;
   pin_code: string | null;
+  country: string;
   contact_name: string;
   designation: string;
   email: string;
@@ -29,7 +30,13 @@ type InstitutionalApplication = {
   head_email: string;
   head_phone: string | null;
   message: string | null;
+  payment_status: string;
+  payment_amount: number | null;
+  payment_currency: string | null;
+  transaction_id: string | null;
+  failure_reason: string | null;
   created_at: string | null;
+  updated_at: string | null;
 };
 
 function getApiMessage(payload: unknown): string {
@@ -116,6 +123,35 @@ function formatTime(value: string | null): string {
   });
 }
 
+function formatSubmittedDateTime(value: string | null): string {
+  const date = formatDate(value);
+  const time = formatTime(value);
+
+  if (date === "-" && time === "-") {
+    return "-";
+  }
+
+  return `${date} | ${time}`;
+}
+
+function toCsvValue(value: unknown): string {
+  if (value === null || value === undefined) {
+    return "";
+  }
+
+  const text = String(value);
+  if (
+    text.includes(",")
+    || text.includes("\"")
+    || text.includes("\n")
+    || text.includes("\r")
+  ) {
+    return `"${text.replace(/\"/g, '""')}"`;
+  }
+
+  return text;
+}
+
 function mapApplication(record: Record<string, unknown>): InstitutionalApplication {
   return {
     id: toPositiveInt(record.id),
@@ -124,6 +160,7 @@ function mapApplication(record: Record<string, unknown>): InstitutionalApplicati
     city: toText(record.city),
     state: toText(record.state),
     pin_code: toNullableText(record.pin_code),
+    country: toText(record.country),
     contact_name: toText(record.contact_name),
     designation: toText(record.designation),
     email: toText(record.email),
@@ -133,7 +170,13 @@ function mapApplication(record: Record<string, unknown>): InstitutionalApplicati
     head_email: toText(record.head_email),
     head_phone: toNullableText(record.head_phone),
     message: toNullableText(record.message),
+    payment_status: toText(record.payment_status),
+    payment_amount: toNumberOrNull(record.payment_amount),
+    payment_currency: toNullableText(record.payment_currency),
+    transaction_id: toNullableText(record.transaction_id),
+    failure_reason: toNullableText(record.failure_reason),
     created_at: toNullableText(record.created_at),
+    updated_at: toNullableText(record.updated_at),
   };
 }
 
@@ -159,6 +202,8 @@ export default function InstitutionalApplications() {
   const [applications, setApplications] = useState<InstitutionalApplication[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [selectedApplication, setSelectedApplication] = useState<InstitutionalApplication | null>(null);
+  const [deletingApplicationId, setDeletingApplicationId] = useState<number | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -214,6 +259,136 @@ export default function InstitutionalApplications() {
 
   const totalApplications = useMemo(() => applications.length, [applications]);
 
+  const handleExportApplications = () => {
+    if (!applications.length) {
+      return;
+    }
+
+    const headers = [
+      "id",
+      "institute_name",
+      "board",
+      "city",
+      "state",
+      "pin_code",
+      "country",
+      "contact_name",
+      "designation",
+      "email",
+      "phone",
+      "student_count",
+      "head_name",
+      "head_email",
+      "head_phone",
+      "message",
+      "payment_status",
+      "payment_amount",
+      "payment_currency",
+      "transaction_id",
+      "failure_reason",
+      "created_at",
+      "updated_at",
+    ];
+
+    const rows = applications.map((application) => [
+      application.id,
+      application.institute_name,
+      application.board,
+      application.city,
+      application.state,
+      application.pin_code,
+      application.country,
+      application.contact_name,
+      application.designation,
+      application.email,
+      application.phone,
+      application.student_count,
+      application.head_name,
+      application.head_email,
+      application.head_phone,
+      application.message,
+      application.payment_status,
+      application.payment_amount,
+      application.payment_currency,
+      application.transaction_id,
+      application.failure_reason,
+      application.created_at,
+      application.updated_at,
+    ]);
+
+    const csv = [
+      headers.map((header) => toCsvValue(header)).join(","),
+      ...rows.map((row) => row.map((cell) => toCsvValue(cell)).join(",")),
+    ].join("\n");
+
+    const blob = new Blob([csv], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const timestamp = new Date().toISOString().replace(/[.:]/g, "-");
+
+    link.href = url;
+    link.download = `institutional-applications-${timestamp}.csv`;
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleViewApplication = (application: InstitutionalApplication) => {
+    setSelectedApplication(application);
+  };
+
+  const handleDeleteApplication = async (application: InstitutionalApplication) => {
+    if (deletingApplicationId !== null) {
+      return;
+    }
+
+    const confirmDelete = window.confirm(
+      `Delete application for ${application.institute_name || application.contact_name || 'this institution'}?`,
+    );
+
+    if (!confirmDelete) {
+      return;
+    }
+
+    setError("");
+    setDeletingApplicationId(application.id);
+
+    try {
+      const response = await fetch(
+        `/api/institutional-registration/${encodeURIComponent(application.id.toString())}`,
+        {
+          method: "DELETE",
+          cache: "no-store",
+        },
+      );
+
+      const payload = (await response.json().catch(() => ({}))) as unknown;
+
+      if (!response.ok) {
+        throw new Error(
+          getApiMessage(payload) || "Unable to delete institutional application.",
+        );
+      }
+
+      setApplications((prev) => prev.filter((item) => item.id !== application.id));
+      setSelectedApplication((prev) =>
+        prev?.id === application.id ? null : prev,
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error && err.message
+          ? err.message
+          : "Unable to delete institutional application.",
+      );
+    } finally {
+      setDeletingApplicationId(null);
+    }
+  };
+
   return (
     <div className="min-h-screen container mx-auto max-w-8xl text-zinc-100">
       <div className="flex flex-col gap-4 pt-3 pb-5 mb-6 border-b border-zinc-800 sm:flex-row sm:items-center sm:justify-between">
@@ -234,7 +409,18 @@ export default function InstitutionalApplications() {
               <NotebookPen className="h-4 w-4 text-blue-400" />
               Application List
             </CardTitle>
-            <span className="text-sm text-zinc-400">Total: {totalApplications}</span>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-zinc-400">Total: {totalApplications}</span>
+              <button
+                type="button"
+                onClick={handleExportApplications}
+                disabled={isLoading || applications.length === 0}
+                className="inline-flex items-center gap-1.5 rounded-md bg-blue-500 px-3 py-1.5 text-xs font-semibold uppercase text-black transition hover:bg-blue-400 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Download className="h-3.5 w-3.5" />
+                Export
+              </button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -275,7 +461,10 @@ export default function InstitutionalApplications() {
                       >
                         <TableCell className="align-top">
                           <div className="flex flex-col text-zinc-300 text-sm">
-                            <span className="text-zinc-100 font-medium">
+                            <span
+                              className="max-w-[260px] truncate text-zinc-100 font-medium"
+                              title={application.institute_name || "-"}
+                            >
                               {application.institute_name || "-"}
                             </span>
                             <span>{application.board || "-"}</span>
@@ -306,9 +495,39 @@ export default function InstitutionalApplications() {
                           {application.student_count || "-"}
                         </TableCell>
                         <TableCell className="text-zinc-400 align-top">
-                          <div className="flex flex-col text-sm">
-                            <span>{formatDate(application.created_at)}</span>
-                            <span className="text-zinc-500">{formatTime(application.created_at)}</span>
+                          <div className="flex flex-col gap-3 text-sm">
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => handleViewApplication(application)}
+                                className="rounded-md bg-cyan-500 px-2 py-1 text-xs font-semibold uppercase text-black transition hover:bg-cyan-400"
+                              >
+                                <span className="inline-flex items-center gap-1">
+                                  <Eye className="h-3.5 w-3.5" />
+                                  View
+                                </span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteApplication(application)}
+                                disabled={deletingApplicationId === application.id}
+                                className="rounded-md bg-rose-500 px-2 py-1 text-xs font-semibold uppercase text-black transition hover:bg-rose-400 disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                {deletingApplicationId === application.id ? (
+                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                ) : (
+                                  <span className="inline-flex items-center gap-1">
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                    Delete
+                                  </span>
+                                )}
+                              </button>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2 text-zinc-500">
+                              <span>{formatDate(application.created_at)}</span>
+                              <span>|</span>
+                              <span>{formatTime(application.created_at)}</span>
+                            </div>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -320,6 +539,75 @@ export default function InstitutionalApplications() {
           )}
         </CardContent>
       </Card>
+
+      {selectedApplication && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 px-4 py-6 sm:py-10">
+          <div className="w-full max-w-3xl overflow-hidden rounded-2xl border border-zinc-700 bg-zinc-950 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-zinc-800 px-5 py-4">
+              <div>
+                <h2 className="text-lg font-semibold text-white">Institutional Application Details</h2>
+                <p className="text-sm text-zinc-400">Review submitted details for the selected institution.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedApplication(null)}
+                className="rounded-full border border-zinc-700 bg-zinc-900 p-2 text-zinc-300 transition hover:bg-zinc-800"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="max-h-[70vh] overflow-y-auto px-5 py-5 text-sm text-zinc-300">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <div className="text-zinc-500 text-xs uppercase tracking-[0.2em] mb-1">Institute</div>
+                  <div className="text-white font-medium">{selectedApplication.institute_name || '-'}</div>
+                  <div className="text-zinc-500 mt-1">{selectedApplication.board || '-'}</div>
+                  <div className="text-zinc-500">{selectedApplication.city || '-'}, {selectedApplication.state || '-'}</div>
+                  <div className="text-zinc-500">Country: {selectedApplication.country || '-'}</div>
+                  <div className="text-zinc-500">PIN: {selectedApplication.pin_code || '-'}</div>
+                  <div className="text-zinc-500">Students: {selectedApplication.student_count || '-'}</div>
+                </div>
+                <div>
+                  <div className="text-zinc-500 text-xs uppercase tracking-[0.2em] mb-1">Primary Contact</div>
+                  <div className="text-white font-medium">{selectedApplication.contact_name || '-'}</div>
+                  <div className="text-zinc-500">{selectedApplication.designation || '-'}</div>
+                  <div className="text-zinc-500">{selectedApplication.email || '-'}</div>
+                  <div className="text-zinc-500">{selectedApplication.phone || '-'}</div>
+                </div>
+                <div>
+                  <div className="text-zinc-500 text-xs uppercase tracking-[0.2em] mb-1">Institution Head</div>
+                  <div className="text-white font-medium">{selectedApplication.head_name || '-'}</div>
+                  <div className="text-zinc-500">{selectedApplication.head_email || '-'}</div>
+                  <div className="text-zinc-500">{selectedApplication.head_phone || '-'}</div>
+                </div>
+                <div>
+                  <div className="text-zinc-500 text-xs uppercase tracking-[0.2em] mb-1">Registration & Payment</div>
+                  <div className="text-zinc-500">ID: {selectedApplication.id}</div>
+                  <div className="text-zinc-500">Submitted: {formatSubmittedDateTime(selectedApplication.created_at)}</div>
+                  <div className="text-zinc-500">Updated: {formatSubmittedDateTime(selectedApplication.updated_at)}</div>
+                  <div className="text-zinc-500">Payment Status: {selectedApplication.payment_status || '-'}</div>
+                  <div className="text-zinc-500">
+                    Payment Amount: {
+                      selectedApplication.payment_amount === null
+                        ? '-'
+                        : `${selectedApplication.payment_amount}${selectedApplication.payment_currency ? ` ${selectedApplication.payment_currency}` : ''}`
+                    }
+                  </div>
+                  <div className="text-zinc-500">Payment Currency: {selectedApplication.payment_currency || '-'}</div>
+                  <div className="text-zinc-500">Transaction ID: {selectedApplication.transaction_id || '-'}</div>
+                  <div className="text-zinc-500">Failure Reason: {selectedApplication.failure_reason || '-'}</div>
+                </div>
+              </div>
+              <div className="mt-5 rounded-2xl border border-zinc-800 bg-zinc-900 p-4">
+                <div className="text-zinc-500 text-xs uppercase tracking-[0.2em] mb-2">Message</div>
+                <p className="whitespace-pre-wrap text-sm text-zinc-300">
+                  {selectedApplication.message || 'No additional message provided.'}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
