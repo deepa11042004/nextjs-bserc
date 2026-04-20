@@ -37,12 +37,15 @@ function splitConfiguredApiUrls(): string[] {
   );
 }
 
-function getBackendBaseUrls(): string[] {
+function getBackendBaseUrls(options?: { preferLocal?: boolean }): string[] {
   const envUrls = splitConfiguredApiUrls();
+  const preferLocal = Boolean(options?.preferLocal);
   const raw = isProductionRuntime()
     ? envUrls
     : envUrls.length > 0
-      ? [...envUrls, ...DEV_FALLBACK_BACKEND_URLS]
+      ? preferLocal
+        ? [...DEV_FALLBACK_BACKEND_URLS, ...envUrls]
+        : [...envUrls, ...DEV_FALLBACK_BACKEND_URLS]
       : DEV_FALLBACK_BACKEND_URLS;
 
   const normalized = raw.filter((value): value is string => Boolean(value));
@@ -140,7 +143,20 @@ export async function forwardAdminHeroSlidesRequest(
   endpoint: AdminHeroSlidesEndpoint,
   method: AdminHeroSlidesHttpMethod,
 ): Promise<NextResponse> {
-  const backendUrls = getBackendBaseUrls();
+  let preferLocal = false;
+
+  try {
+    const requestUrl = new URL(request.url);
+    preferLocal = (
+      requestUrl.hostname === "localhost"
+      || requestUrl.hostname === "127.0.0.1"
+      || requestUrl.hostname === "::1"
+    );
+  } catch {
+    preferLocal = false;
+  }
+
+  const backendUrls = getBackendBaseUrls({ preferLocal });
 
   if (!backendUrls.length) {
     return NextResponse.json(
