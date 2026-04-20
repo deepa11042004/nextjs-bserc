@@ -152,7 +152,7 @@ function formatDateTime(value: string | null | undefined): string {
 
 function validateSelectedMedia(file: File | null, mediaType: HeroMediaType): string {
   if (!file) {
-    return "Hero media file is required.";
+    return "";
   }
 
   const mimeType = file.type.toLowerCase();
@@ -331,32 +331,10 @@ export default function HeroSlidesManager() {
       return;
     }
 
-    if (!form.title.trim()) {
-      setError("Title is required.");
+    const mediaValidationError = validateSelectedMedia(selectedFile, form.mediaType);
+    if (mediaValidationError) {
+      setError(mediaValidationError);
       return;
-    }
-
-    if (!isEditMode && !selectedFile) {
-      setError("Hero media file is required.");
-      return;
-    }
-
-    if (
-      isEditMode
-      && !selectedFile
-      && editingSlide
-      && form.mediaType !== editingSlide.media_type
-    ) {
-      setError("To change media type, upload a new media file.");
-      return;
-    }
-
-    if (selectedFile) {
-      const mediaValidationError = validateSelectedMedia(selectedFile, form.mediaType);
-      if (mediaValidationError) {
-        setError(mediaValidationError);
-        return;
-      }
     }
 
     setIsSubmitting(true);
@@ -555,7 +533,7 @@ export default function HeroSlidesManager() {
             <div className="space-y-1">
               <label htmlFor="hero-media" className="text-sm text-zinc-300">
                 Media File ({form.mediaType === "image" ? "max 2MB" : "max 20MB"}
-                {editingSlideId ? ", optional on edit" : ", required"})
+                {editingSlideId ? ", optional on edit" : ", optional on create"})
               </label>
               <input
                 ref={fileInputRef}
