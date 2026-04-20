@@ -35,6 +35,110 @@ function getApiMessage(payload: unknown): string {
   return "";
 }
 
+type RazorpaySuccessResponse = {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+};
+
+type RazorpayFailureResponse = {
+  error?: {
+    description?: string;
+    reason?: string;
+    metadata?: {
+      order_id?: string;
+      payment_id?: string;
+    };
+  };
+};
+
+type RazorpayOptions = {
+  key: string;
+  amount: number;
+  currency: string;
+  name: string;
+  description?: string;
+  order_id: string;
+  prefill?: {
+    name?: string;
+    email?: string;
+    contact?: string;
+  };
+  theme?: {
+    color?: string;
+  };
+  handler: (response: RazorpaySuccessResponse) => void | Promise<void>;
+  modal?: {
+    ondismiss?: () => void;
+  };
+};
+
+type RazorpayInstance = {
+  open: () => void;
+  on: (
+    event: "payment.failed",
+    handler: (response: RazorpayFailureResponse) => void,
+  ) => void;
+};
+
+type RazorpayConstructor = new (options: RazorpayOptions) => RazorpayInstance;
+
+type InstitutionalCreateOrderResponse = {
+  success?: boolean;
+  requires_payment?: boolean;
+  key_id?: string;
+  order_id?: string;
+  amount?: number;
+  currency?: string;
+  registration_fee?: number;
+  country?: string;
+  partnership_type?: string;
+  message?: string;
+  error?: string;
+};
+
+function getRazorpayConstructor(): RazorpayConstructor | undefined {
+  if (typeof window === "undefined") {
+    return undefined;
+  }
+
+  return (window as unknown as { Razorpay?: RazorpayConstructor }).Razorpay;
+}
+
+function loadRazorpayScript(): Promise<boolean> {
+  if (typeof window === "undefined") {
+    return Promise.resolve(false);
+  }
+
+  const razorpayConstructor = getRazorpayConstructor();
+  if (razorpayConstructor) {
+    return Promise.resolve(true);
+  }
+
+  return new Promise((resolve) => {
+    const existingScript = document.querySelector(
+      'script[src="https://checkout.razorpay.com/v1/checkout.js"]',
+    );
+
+    if (existingScript) {
+      existingScript.addEventListener("load", () => resolve(true), {
+        once: true,
+      });
+      existingScript.addEventListener("error", () => resolve(false), {
+        once: true,
+      });
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+}
+
 // ─────────────────────────────────────────────────────────────
 // UI Components - Def-Space Design System
 // ─────────────────────────────────────────────────────────────
@@ -49,6 +153,7 @@ interface InputProps {
   value?: string;
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   error?: string;
+  containerClassName?: string;
 }
 
 function FormInput({
@@ -61,9 +166,10 @@ function FormInput({
   value,
   onChange,
   error,
+  containerClassName,
 }: InputProps) {
   return (
-    <div className="mb-5 w-full">
+    <div className={`mb-5 w-full ${containerClassName || ""}`}>
       <label
         htmlFor={id}
         className="block text-zinc-100 text-[13px] font-semibold mb-2.5"
@@ -83,10 +189,9 @@ function FormInput({
           w-full px-4 py-3 rounded-md bg-[#111111] border text-zinc-100 
           placeholder-zinc-600 focus:outline-none focus:border-orange-500/50 
           transition-colors text-sm
-          ${
-            error
-              ? "border-red-500 focus:border-red-500/50"
-              : "border-[#2a2a2a] hover:border-[#3a3a3a]"
+          ${error
+            ? "border-red-500 focus:border-red-500/50"
+            : "border-[#2a2a2a] hover:border-[#3a3a3a]"
           }
         `}
       />
@@ -147,10 +252,9 @@ function FormSelect({
           className={`
             w-full px-4 py-3 rounded-md bg-[#111111] border text-zinc-100 
             focus:outline-none focus:border-orange-500/50 transition-colors text-sm appearance-none
-            ${
-              error
-                ? "border-red-500 focus:border-red-500/50"
-                : "border-[#2a2a2a] hover:border-[#3a3a3a]"
+            ${error
+              ? "border-red-500 focus:border-red-500/50"
+              : "border-[#2a2a2a] hover:border-[#3a3a3a]"
             }
           `}
         >
@@ -239,10 +343,9 @@ function FormTextarea({
           w-full px-4 py-3 rounded-md bg-[#111111] border text-zinc-100 
           placeholder-zinc-600 focus:outline-none focus:border-orange-500/50 
           transition-colors text-sm resize-none
-          ${
-            error
-              ? "border-red-500 focus:border-red-500/50"
-              : "border-[#2a2a2a] hover:border-[#3a3a3a]"
+          ${error
+            ? "border-red-500 focus:border-red-500/50"
+            : "border-[#2a2a2a] hover:border-[#3a3a3a]"
           }
         `}
       />
@@ -458,11 +561,11 @@ const PartnershipOptionCard = ({
   </div>
 );
 
- 
+
 
 // ─────────────────────────────────────────────────────────────
 
- 
+
 
 // ─────────────────────────────────────────────────────────────
 // MAIN PAGE COMPONENT
@@ -473,6 +576,7 @@ type InstitutionalFormData = {
   board: string;
   city: string;
   state: string;
+  country: string;
   pinCode: string;
   contactName: string;
   designation: string;
@@ -491,6 +595,7 @@ function createInitialFormData(): InstitutionalFormData {
     board: "",
     city: "",
     state: "",
+    country: "India",
     pinCode: "",
     contactName: "",
     designation: "",
@@ -534,6 +639,11 @@ export default function InstitutionalRegistrationPage() {
     { value: "other", label: "Other" },
   ];
 
+  const countryOptions = [
+    { value: "India", label: "India" },
+    { value: "Others", label: "Others" },
+  ];
+
   const studentRangeOptions = [
     { value: "1-100", label: "1-100 students" },
     { value: "101-200", label: "101-200 students" },
@@ -572,6 +682,7 @@ export default function InstitutionalRegistrationPage() {
     if (!formData.board) newErrors.board = "Please select a board";
     if (!formData.city.trim()) newErrors.city = "City is required";
     if (!formData.state.trim()) newErrors.state = "State is required";
+    if (!formData.country.trim()) newErrors.country = "Country is required";
     if (!formData.contactName.trim())
       newErrors.contactName = "Contact person name is required";
     if (!formData.designation.trim())
@@ -601,6 +712,24 @@ export default function InstitutionalRegistrationPage() {
     return newErrors;
   };
 
+  const buildRegistrationPayload = () => ({
+    institute_name: formData.schoolName.trim(),
+    board: formData.board,
+    city: formData.city.trim(),
+    state: formData.state.trim(),
+    country: formData.country.trim(),
+    pin_code: formData.pinCode.trim(),
+    contact_name: formData.contactName.trim(),
+    designation: formData.designation.trim(),
+    email: formData.email.trim(),
+    phone: formData.phone.trim(),
+    student_count: formData.studentCount,
+    head_name: formData.headName.trim(),
+    head_email: formData.headEmail.trim(),
+    head_phone: formData.headPhone.trim(),
+    message: formData.message.trim(),
+  });
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
@@ -619,40 +748,208 @@ export default function InstitutionalRegistrationPage() {
     setSubmitErrorMessage("");
     setErrors({});
 
+    const registrationPayload = buildRegistrationPayload();
+
     try {
-      const response = await fetch("/api/institutional-registration", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const orderResponse = await fetch(
+        "/api/institutional-registration/create-order",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(registrationPayload),
         },
-        body: JSON.stringify(formData),
-      });
+      );
 
-      const payload = (await response.json().catch(() => ({}))) as unknown;
+      const orderPayload = (await orderResponse
+        .json()
+        .catch(() => ({}))) as InstitutionalCreateOrderResponse;
 
-      if (!response.ok) {
+      if (!orderResponse.ok) {
         throw new Error(
-          getApiMessage(payload)
-            || "Unable to submit institutional registration. Please try again.",
+          getApiMessage(orderPayload)
+          || "Unable to initialize payment. Please try again.",
         );
       }
 
-      setSuccessSnapshot({
-        contactName: formData.contactName,
-        instituteName: formData.schoolName,
+      if (
+        !orderPayload.requires_payment
+        || !orderPayload.key_id
+        || !orderPayload.order_id
+        || !orderPayload.amount
+        || !orderPayload.currency
+      ) {
+        throw new Error(
+          orderPayload.message
+          || "Payment setup is incomplete. Please try again.",
+        );
+      }
+
+      const razorpayLoaded = await loadRazorpayScript();
+      const Razorpay = getRazorpayConstructor();
+
+      if (!razorpayLoaded || !Razorpay) {
+        throw new Error(
+          "Unable to load secure payment gateway. Please try again.",
+        );
+      }
+
+      let flowCompleted = false;
+      let failureHandled = false;
+
+      const persistFailedPaymentLead = async (
+        reason: string,
+        transactionId?: string,
+        orderId?: string,
+      ) => {
+        try {
+          await fetch("/api/institutional-registration/log-payment-attempt", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              ...registrationPayload,
+              payment_status: "failed",
+              failure_reason: reason,
+              transaction_id: transactionId || undefined,
+              razorpay_order_id: orderId || undefined,
+            }),
+          });
+        } catch {
+          // Intentionally ignored: primary flow should still show a clear error.
+        }
+      };
+
+      const handlePaymentFailure = async (
+        reason: string,
+        transactionId?: string,
+        orderId?: string,
+      ) => {
+        if (flowCompleted || failureHandled) {
+          return;
+        }
+
+        failureHandled = true;
+
+        const failureMessage = reason.trim() || "Payment was not completed";
+
+        await persistFailedPaymentLead(failureMessage, transactionId, orderId);
+
+        setSubmitStatus("error");
+        setSuccessSnapshot(null);
+        setSubmitErrorMessage(
+          `${failureMessage}. Your details were saved with failed payment status.`,
+        );
+        setIsSubmitting(false);
+      };
+
+      const razorpay = new Razorpay({
+        key: orderPayload.key_id,
+        amount: orderPayload.amount,
+        currency: orderPayload.currency,
+        name: "BSERC",
+        description:
+          `${orderPayload.partnership_type || "Institutional Partnership"} Registration Fee`,
+        order_id: orderPayload.order_id,
+        prefill: {
+          name: formData.contactName,
+          email: formData.email,
+          contact: formData.phone,
+        },
+        theme: {
+          color: "#f97316",
+        },
+        handler: async (paymentResponse) => {
+          try {
+            const verifyResponse = await fetch(
+              "/api/institutional-registration/verify-payment",
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  ...registrationPayload,
+                  ...paymentResponse,
+                  payment_status: "success",
+                  transaction_id: paymentResponse.razorpay_payment_id,
+                }),
+              },
+            );
+
+            const verifyPayload = (await verifyResponse
+              .json()
+              .catch(() => ({}))) as unknown;
+
+            if (!verifyResponse.ok) {
+              throw new Error(
+                getApiMessage(verifyPayload)
+                || "Payment verification failed. Please contact support.",
+              );
+            }
+
+            flowCompleted = true;
+            setSuccessSnapshot({
+              contactName: formData.contactName,
+              instituteName: formData.schoolName,
+            });
+            setFormData(createInitialFormData());
+            setErrors({});
+            setSubmitErrorMessage("");
+            setSubmitStatus("success");
+            setIsSubmitting(false);
+          } catch (err) {
+            const message =
+              err instanceof Error && err.message
+                ? err.message
+                : "Payment verification failed";
+
+            await handlePaymentFailure(
+              message,
+              paymentResponse.razorpay_payment_id,
+              paymentResponse.razorpay_order_id,
+            );
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            void handlePaymentFailure(
+              "Payment was cancelled before completion",
+              undefined,
+              orderPayload.order_id,
+            );
+          },
+        },
       });
-      setFormData(createInitialFormData());
-      setErrors({});
-      setSubmitStatus("success");
+
+      razorpay.on("payment.failed", (failureResponse) => {
+        const paymentFailureReason =
+          failureResponse.error?.description
+          || failureResponse.error?.reason
+          || "Payment failed";
+
+        const failedPaymentId = failureResponse.error?.metadata?.payment_id;
+        const failedOrderId =
+          failureResponse.error?.metadata?.order_id || orderPayload.order_id;
+
+        void handlePaymentFailure(
+          paymentFailureReason,
+          failedPaymentId,
+          failedOrderId,
+        );
+      });
+
+      razorpay.open();
     } catch (err) {
       setSubmitStatus("error");
       setSuccessSnapshot(null);
       setSubmitErrorMessage(
         err instanceof Error && err.message
           ? err.message
-          : "Unable to submit institutional registration. Please try again.",
+          : "Unable to initialize institutional registration payment. Please try again.",
       );
-    } finally {
       setIsSubmitting(false);
     }
   };
@@ -749,8 +1046,8 @@ export default function InstitutionalRegistrationPage() {
           </div>
         </div>
 
-      
-        
+
+
 
         {/* Why Partner Section (old version - can be removed) */}
         <SectionCard
@@ -840,15 +1137,29 @@ export default function InstitutionalRegistrationPage() {
                   onChange={(e) => handleChange("state", e.target.value)}
                   error={errors.state}
                 />
-                <FormInput
-                  id="pinCode"
-                  name="pinCode"
-                  label="PIN Code"
-                  type="text"
-                  placeholder="Enter PIN code"
-                  value={formData.pinCode}
-                  onChange={(e) => handleChange("pinCode", e.target.value)}
-                />
+                <div className="flex flex-col md:flex-row gap-4">
+                  <FormInput
+                    id="pinCode"
+                    name="pinCode"
+                    label="PIN Code"
+                    type="text"
+                    placeholder="Enter PIN code"
+                    value={formData.pinCode}
+                    onChange={(e) => handleChange("pinCode", e.target.value)}
+                    error={errors.pinCode}
+                  />
+                  <FormSelect
+                    id="country"
+                    name="country"
+                    label="Country"
+                    options={countryOptions}
+                    placeholder="Select Country"
+                    required={true}
+                    value={formData.country}
+                    onChange={(e) => handleChange("country", e.target.value)}
+                    error={errors.country}
+                  />
+                </div>
                 <FormSelect
                   id="studentCount"
                   name="studentCount"
@@ -975,7 +1286,7 @@ export default function InstitutionalRegistrationPage() {
             <div className="pt-4 flex flex-col md:flex-row justify-center items-center gap-6">
               <SubmitButton
                 isSubmitting={isSubmitting}
-                label="Register"
+                label="Proceed to Secure Payment"
               />
             </div>
           </form>

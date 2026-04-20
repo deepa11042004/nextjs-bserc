@@ -7,11 +7,12 @@ const DEV_FALLBACK_BACKEND_URLS = [
 
 type SummerSchoolEndpoint =
   | "/api/summer-school/student-registration"
+  | `/api/summer-school/student-registration/${string}`
   | "/api/summer-school/student-registration/create-order"
   | "/api/summer-school/student-registration/verify-payment"
   | "/api/summer-school/student-registration/log-payment-attempt"
   | "/api/summer-school/student-registration/settings";
-type SummerSchoolHttpMethod = "GET" | "POST" | "PUT";
+type SummerSchoolHttpMethod = "GET" | "POST" | "PUT" | "DELETE";
 
 function isProductionRuntime(): boolean {
   return process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
@@ -100,7 +101,7 @@ async function buildForwardPayload(
   request: Request,
   method: SummerSchoolHttpMethod,
 ): Promise<ForwardPayload | null> {
-  if (method === "GET") {
+  if (method === "GET" || method === "DELETE") {
     return {};
   }
 

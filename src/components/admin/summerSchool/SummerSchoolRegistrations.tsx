@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Download, Filter, Loader2, NotebookPen } from "lucide-react";
+import { Download, Eye, Filter, Loader2, NotebookPen, Trash2, X } from "lucide-react";
 
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -141,6 +141,25 @@ function formatTime(value: string | null): string {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function formatSubmittedDateTime(value: string | null): string {
+  const date = formatDate(value);
+  const time = formatTime(value);
+
+  if (date === "-" && time === "-") {
+    return "-";
+  }
+
+  if (date === "-") {
+    return time;
+  }
+
+  if (time === "-") {
+    return date;
+  }
+
+  return `${date} | ${time}`;
 }
 
 function formatPayment(amount: number | null, currency: string | null): string {
@@ -308,6 +327,9 @@ export default function SummerSchoolRegistrations() {
   const [isSettingsLoading, setIsSettingsLoading] = useState(true);
   const [isSettingsSaving, setIsSettingsSaving] = useState(false);
   const [settingsStatus, setSettingsStatus] = useState<SettingsStatus | null>(null);
+  const [selectedRegistration, setSelectedRegistration] =
+    useState<SummerSchoolStudentRegistration | null>(null);
+  const [deletingRegistrationId, setDeletingRegistrationId] = useState<number | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -628,6 +650,64 @@ export default function SummerSchoolRegistrations() {
     }
   };
 
+  const handleViewRegistration = (registration: SummerSchoolStudentRegistration) => {
+    setSelectedRegistration(registration);
+  };
+
+  const handleDeleteRegistration = async (registration: SummerSchoolStudentRegistration) => {
+    if (deletingRegistrationId !== null) {
+      return;
+    }
+
+    const confirmDelete = window.confirm(
+      `Delete registration for ${registration.full_name || registration.email || "this student"}?`,
+    );
+
+    if (!confirmDelete) {
+      return;
+    }
+
+    setError("");
+    setDeletingRegistrationId(registration.id);
+
+    try {
+      const response = await fetch(
+        `/api/summer-school/student-registration/${registration.id}`,
+        {
+          method: "DELETE",
+          cache: "no-store",
+        },
+      );
+
+      const payload = (await response.json().catch(() => ({}))) as unknown;
+
+      if (!response.ok) {
+        throw new Error(
+          getApiMessage(payload) || "Unable to delete summer school registration.",
+        );
+      }
+
+      setRegistrations((prev) =>
+        prev.filter((item) => item.id !== registration.id),
+      );
+      setRegistrationRecords((prev) =>
+        prev.filter((record) => toPositiveInt(record.id) !== registration.id),
+      );
+
+      setSelectedRegistration((prev) =>
+        prev && prev.id === registration.id ? null : prev,
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error && err.message
+          ? err.message
+          : "Unable to delete summer school registration.",
+      );
+    } finally {
+      setDeletingRegistrationId(null);
+    }
+  };
+
   return (
     <div className="min-h-screen container mx-auto max-w-8xl text-zinc-100">
       <div className="flex flex-col gap-4 pt-3 pb-5 mb-6 border-b border-zinc-800 sm:flex-row sm:items-center sm:justify-between">
@@ -864,7 +944,7 @@ export default function SummerSchoolRegistrations() {
                     <TableHead className="text-white min-w-[240px]">Academic</TableHead>
                     <TableHead className="text-white min-w-[200px]">Batch / Nationality</TableHead>
                     <TableHead className="text-white min-w-[260px]">Payment</TableHead>
-                    <TableHead className="text-white min-w-[170px]">Submitted</TableHead>
+                    <TableHead className="text-white min-w-[220px]">Actions / Submitted</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -902,7 +982,12 @@ export default function SummerSchoolRegistrations() {
                         <TableCell className="align-top">
                           <div className="flex flex-col text-zinc-300 text-sm">
                             <span>{registration.grade || "-"}</span>
-                            <span>{registration.school || "-"}</span>
+                            <span
+                              className="max-w-[220px] truncate"
+                              title={registration.school || "-"}
+                            >
+                              {registration.school || "-"}
+                            </span>
                             <span className="text-zinc-500">
                               Board: {registration.board || "-"}
                             </span>
@@ -941,10 +1026,36 @@ export default function SummerSchoolRegistrations() {
                           </div>
                         </TableCell>
                         <TableCell className="text-zinc-400 align-top">
-                          <div className="flex flex-col text-sm">
-                            <span>{formatDate(registration.created_at)}</span>
+                          <div className="flex flex-col gap-2 text-sm">
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => handleViewRegistration(registration)}
+                                aria-label="View registration"
+                                title="View complete registration details"
+                                className="rounded-md bg-cyan-500 p-1.5 text-black transition hover:bg-cyan-400"
+                              >
+                                <Eye className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  void handleDeleteRegistration(registration);
+                                }}
+                                aria-label="Delete registration"
+                                title="Delete this registration"
+                                disabled={deletingRegistrationId === registration.id}
+                                className="rounded-md bg-rose-500 p-1.5 text-black transition hover:bg-rose-400 disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                {deletingRegistrationId === registration.id ? (
+                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                ) : (
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                )}
+                              </button>
+                            </div>
                             <span className="text-zinc-500">
-                              {formatTime(registration.created_at)}
+                              {formatSubmittedDateTime(registration.created_at)}
                             </span>
                           </div>
                         </TableCell>
@@ -957,6 +1068,139 @@ export default function SummerSchoolRegistrations() {
           )}
         </CardContent>
       </Card>
+
+      {selectedRegistration && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 px-4 py-6 sm:py-10">
+          <div className="w-full max-w-4xl overflow-hidden rounded-xl border border-zinc-700 bg-zinc-900 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-zinc-800 px-5 py-4">
+              <div>
+                <h2 className="text-lg font-semibold text-white">
+                  Summer School Registration Details
+                </h2>
+                <p className="text-xs text-zinc-400">
+                  Complete information for {selectedRegistration.full_name || "selected student"}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedRegistration(null)}
+                className="rounded-md bg-zinc-800 p-2 text-zinc-200 transition hover:bg-zinc-700"
+                aria-label="Close details"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="max-h-[75vh] overflow-y-auto px-5 py-4">
+              <div className="grid grid-cols-1 gap-4 text-sm text-zinc-300 md:grid-cols-2">
+                <div>
+                  <span className="text-zinc-500">Full Name</span>
+                  <p className="text-zinc-100">{selectedRegistration.full_name || "-"}</p>
+                </div>
+                <div>
+                  <span className="text-zinc-500">Email</span>
+                  <p className="text-zinc-100 break-all">{selectedRegistration.email || "-"}</p>
+                </div>
+                <div>
+                  <span className="text-zinc-500">Date of Birth</span>
+                  <p className="text-zinc-100">{selectedRegistration.dob || "-"}</p>
+                </div>
+                <div>
+                  <span className="text-zinc-500">Gender</span>
+                  <p className="text-zinc-100">{selectedRegistration.gender || "-"}</p>
+                </div>
+                <div>
+                  <span className="text-zinc-500">Category</span>
+                  <p className="text-zinc-100">{selectedRegistration.category || "-"}</p>
+                </div>
+                <div>
+                  <span className="text-zinc-500">Nationality</span>
+                  <p className="text-zinc-100">{selectedRegistration.nationality || "-"}</p>
+                </div>
+                <div>
+                  <span className="text-zinc-500">Grade</span>
+                  <p className="text-zinc-100">{selectedRegistration.grade || "-"}</p>
+                </div>
+                <div>
+                  <span className="text-zinc-500">Board</span>
+                  <p className="text-zinc-100">{selectedRegistration.board || "-"}</p>
+                </div>
+                <div className="md:col-span-2">
+                  <span className="text-zinc-500">School / Institution Name</span>
+                  <p className="text-zinc-100">{selectedRegistration.school || "-"}</p>
+                </div>
+                <div>
+                  <span className="text-zinc-500">Batch</span>
+                  <p className="text-zinc-100">{selectedRegistration.batch || "-"}</p>
+                </div>
+                <div>
+                  <span className="text-zinc-500">Experience</span>
+                  <p className="text-zinc-100">{selectedRegistration.experience || "-"}</p>
+                </div>
+                <div>
+                  <span className="text-zinc-500">Guardian Name</span>
+                  <p className="text-zinc-100">{selectedRegistration.guardian_name || "-"}</p>
+                </div>
+                <div>
+                  <span className="text-zinc-500">Relationship</span>
+                  <p className="text-zinc-100">{selectedRegistration.relationship || "-"}</p>
+                </div>
+                <div>
+                  <span className="text-zinc-500">Guardian Email</span>
+                  <p className="text-zinc-100 break-all">{selectedRegistration.guardian_email || "-"}</p>
+                </div>
+                <div>
+                  <span className="text-zinc-500">Guardian Phone</span>
+                  <p className="text-zinc-100">{selectedRegistration.guardian_phone || "-"}</p>
+                </div>
+                <div>
+                  <span className="text-zinc-500">Alternative Phone</span>
+                  <p className="text-zinc-100">{selectedRegistration.alt_phone || "-"}</p>
+                </div>
+                <div>
+                  <span className="text-zinc-500">Submitted</span>
+                  <p className="text-zinc-100">{formatSubmittedDateTime(selectedRegistration.created_at)}</p>
+                </div>
+                <div>
+                  <span className="text-zinc-500">Payment Amount</span>
+                  <p className="text-zinc-100">
+                    {formatPayment(
+                      selectedRegistration.payment_amount,
+                      selectedRegistration.payment_currency,
+                    )}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-zinc-500">Payment Status</span>
+                  <p className="text-zinc-100">{selectedRegistration.payment_status || "-"}</p>
+                </div>
+                <div>
+                  <span className="text-zinc-500">Payment Mode</span>
+                  <p className="text-zinc-100">{selectedRegistration.payment_mode || "-"}</p>
+                </div>
+                <div>
+                  <span className="text-zinc-500">Razorpay Order ID</span>
+                  <p className="text-zinc-100 break-all">{selectedRegistration.razorpay_order_id || "-"}</p>
+                </div>
+                <div>
+                  <span className="text-zinc-500">Razorpay Payment ID</span>
+                  <p className="text-zinc-100 break-all">{selectedRegistration.razorpay_payment_id || "-"}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end border-t border-zinc-800 px-5 py-4">
+              <button
+                type="button"
+                onClick={() => setSelectedRegistration(null)}
+                className="rounded-md bg-zinc-800 px-4 py-2 text-sm font-medium text-zinc-200 transition hover:bg-zinc-700"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

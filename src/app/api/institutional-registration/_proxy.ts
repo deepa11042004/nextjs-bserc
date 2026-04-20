@@ -5,7 +5,11 @@ const DEV_FALLBACK_BACKEND_URLS = [
   "http://localhost:5000",
 ];
 
-type InstitutionalRegistrationEndpoint = "/api/institutional-registration";
+type InstitutionalRegistrationEndpoint =
+  | "/api/institutional-registration"
+  | "/api/institutional-registration/create-order"
+  | "/api/institutional-registration/verify-payment"
+  | "/api/institutional-registration/log-payment-attempt";
 type InstitutionalRegistrationHttpMethod = "GET" | "POST";
 
 function isProductionRuntime(): boolean {
