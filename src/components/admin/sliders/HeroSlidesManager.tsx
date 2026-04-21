@@ -42,7 +42,7 @@ const RECOMMENDED_HERO_RESOLUTION = "1920 x 1080";
 
 function createInitialForm(): HeroSlideForm {
   return {
-    badgeText: "NATIONAL SPACE DAY",
+    badgeText: "",
     title: "",
     subtitle: "",
     description: "",

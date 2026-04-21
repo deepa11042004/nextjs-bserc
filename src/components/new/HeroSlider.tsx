@@ -13,15 +13,6 @@ type HeroSlidesResponse = {
 
 const HERO_SECTION_SIZE_CLASS =
   "w-full aspect-[16/9] min-h-[420px] max-h-[90vh] md:min-h-[560px]";
-const DEFAULT_BADGE_TEXT = "NATIONAL SPACE DAY";
-const DEFAULT_HEADING_TEXT = "India's Def-Space\nSector Revolution";
-const DEFAULT_SUBHEADING_TEXT = "Transforming India's Defence & Space Sector";
-const DEFAULT_DESCRIPTION_TEXT =
-  "Advancing scientific innovation, Defence & Space literacy, and research excellence for Viksit Bharat 2047";
-const DEFAULT_PRIMARY_CTA_TEXT = "Explore";
-const DEFAULT_PRIMARY_CTA_LINK = "/programs";
-const DEFAULT_SECONDARY_CTA_TEXT = "Internships";
-const DEFAULT_SECONDARY_CTA_LINK = "/bsercinternship/summer-internship";
 
 function toText(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
@@ -260,14 +251,22 @@ export default function HeroSlider() {
       onMouseLeave={() => setIsHoveringNav(false)}
     >
       {slides.map((slide, index) => {
-        const badgeText = slide.badge_text || DEFAULT_BADGE_TEXT;
-        const headingText = slide.title || DEFAULT_HEADING_TEXT;
-        const subheadingText = slide.subtitle || DEFAULT_SUBHEADING_TEXT;
-        const descriptionText = slide.description || DEFAULT_DESCRIPTION_TEXT;
-        const primaryCtaText = slide.cta_text || DEFAULT_PRIMARY_CTA_TEXT;
-        const primaryCtaLink = toSafeHref(slide.cta_link, DEFAULT_PRIMARY_CTA_LINK);
-        const secondaryCtaText = slide.secondary_cta_text || DEFAULT_SECONDARY_CTA_TEXT;
-        const secondaryCtaLink = toSafeHref(slide.secondary_cta_link, DEFAULT_SECONDARY_CTA_LINK);
+        const badgeText = toText(slide.badge_text);
+        const headingText = toText(slide.title);
+        const subheadingText = toText(slide.subtitle);
+        const descriptionText = toText(slide.description);
+        const primaryCtaText = toText(slide.cta_text);
+        const primaryCtaLink = toSafeHref(slide.cta_link, "#");
+        const secondaryCtaText = toText(slide.secondary_cta_text);
+        const secondaryCtaLink = toSafeHref(slide.secondary_cta_link, "#");
+        const hasOverlayContent = Boolean(
+          badgeText
+          || headingText
+          || subheadingText
+          || descriptionText
+          || primaryCtaText
+          || secondaryCtaText,
+        );
 
         return (
           <div
@@ -296,48 +295,66 @@ export default function HeroSlider() {
               />
             )}
 
-            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/40 to-black/50" />
+            {hasOverlayContent ? (
+              <>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/40 to-black/50" />
 
-            <div className="absolute inset-0 z-20 flex items-center justify-center px-6">
-              <div className="relative mx-auto max-w-5xl text-center text-white">
-                <div
-                  aria-hidden="true"
-                  className="pointer-events-none absolute left-1/2 top-3 h-32 w-56 -translate-x-1/2 rounded-full bg-cyan-400/25 blur-3xl"
-                />
+                <div className="absolute inset-0 z-20 flex items-center justify-center px-6">
+                  <div className="relative mx-auto max-w-5xl text-center text-white">
+                    <div
+                      aria-hidden="true"
+                      className="pointer-events-none absolute left-1/2 top-3 h-32 w-56 -translate-x-1/2 rounded-full bg-cyan-400/25 blur-3xl"
+                    />
 
-                <p className="relative inline-flex items-center rounded-full border border-cyan-300/40 bg-cyan-400/5 px-7 py-2 text-[11px] sm:text-xs font-semibold uppercase tracking-[0.22em] text-cyan-200/95">
-                  {badgeText}
-                </p>
+                    {badgeText ? (
+                      <p className="relative inline-flex items-center rounded-full border border-cyan-300/40 bg-cyan-400/5 px-7 py-2 text-[11px] sm:text-xs font-semibold uppercase tracking-[0.22em] text-cyan-200/95">
+                        {badgeText}
+                      </p>
+                    ) : null}
 
-                <h1 className="mt-7 whitespace-pre-line font-serif text-4xl sm:text-5xl md:text-6xl lg:text-7xl leading-[0.95] font-bold tracking-tight text-white">
-                  {headingText}
-                </h1>
+                    {headingText ? (
+                      <h1 className="mt-7 whitespace-pre-line font-serif text-4xl sm:text-5xl md:text-6xl lg:text-7xl leading-[0.95] font-bold tracking-tight text-white">
+                        {headingText}
+                      </h1>
+                    ) : null}
 
-                <h2 className="mt-6 text-xl sm:text-2xl md:text-4xl font-semibold text-yellow-400">
-                  {subheadingText}
-                </h2>
+                    {subheadingText ? (
+                      <h2 className="mt-6 text-xl sm:text-2xl md:text-4xl font-semibold text-yellow-400">
+                        {subheadingText}
+                      </h2>
+                    ) : null}
 
-                <p className="mt-6 mx-auto max-w-3xl whitespace-pre-line text-sm sm:text-base md:text-lg leading-relaxed text-zinc-300/95">
-                  {descriptionText}
-                </p>
+                    {descriptionText ? (
+                      <p className="mt-6 mx-auto max-w-3xl whitespace-pre-line text-sm sm:text-base md:text-lg leading-relaxed text-zinc-300/95">
+                        {descriptionText}
+                      </p>
+                    ) : null}
 
-                <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-                  <Link
-                    href={primaryCtaLink}
-                    className="inline-flex items-center rounded-xl bg-cyan-400 px-9 py-3.5 text-lg font-semibold text-black shadow-[0_0_26px_rgba(34,211,238,0.38)] transition hover:bg-cyan-300"
-                  >
-                    {primaryCtaText}
-                  </Link>
+                    {primaryCtaText || secondaryCtaText ? (
+                      <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
+                        {primaryCtaText ? (
+                          <Link
+                            href={primaryCtaLink}
+                            className="inline-flex items-center rounded-xl bg-cyan-400 px-9 py-3.5 text-lg font-semibold text-black shadow-[0_0_26px_rgba(34,211,238,0.38)] transition hover:bg-cyan-300"
+                          >
+                            {primaryCtaText}
+                          </Link>
+                        ) : null}
 
-                  <Link
-                    href={secondaryCtaLink}
-                    className="inline-flex items-center rounded-xl border border-white/25 bg-black/35 px-9 py-3.5 text-lg font-semibold text-white transition hover:border-cyan-300/55 hover:bg-black/50"
-                  >
-                    {secondaryCtaText}
-                  </Link>
+                        {secondaryCtaText ? (
+                          <Link
+                            href={secondaryCtaLink}
+                            className="inline-flex items-center rounded-xl border border-white/25 bg-black/35 px-9 py-3.5 text-lg font-semibold text-white transition hover:border-cyan-300/55 hover:bg-black/50"
+                          >
+                            {secondaryCtaText}
+                          </Link>
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
-              </div>
-            </div>
+              </>
+            ) : null}
           </div>
         );
       })}
