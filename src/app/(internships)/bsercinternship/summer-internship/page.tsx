@@ -5,7 +5,7 @@ import React, { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   createInternshipPaymentOrder,
-  recordInternshipFailedPaymentAttempt,
+  recordInternshipPaymentAttempt,
   registerInternshipWithoutPayment,
   verifyInternshipPaymentAndRegister,
 } from "@/services/internshipRegistration";
@@ -503,6 +503,14 @@ export default function InternshipApplicationForm() {
         throw new Error("Unable to load Razorpay checkout. Please try again.");
       }
 
+      await recordInternshipPaymentAttempt(
+        buildRegistrationFormData({
+          razorpay_order_id: order.order_id,
+          payment_status: "pending",
+          payment_mode: "order_created",
+        }),
+      );
+
       const paymentAttemptState = {
         completed: false,
         failureRecorded: false,
@@ -525,7 +533,7 @@ export default function InternshipApplicationForm() {
         paymentAttemptState.failureRecorded = true;
 
         try {
-          await recordInternshipFailedPaymentAttempt(
+          await recordInternshipPaymentAttempt(
             buildRegistrationFormData({
               razorpay_order_id: details.orderId || order.order_id,
               razorpay_payment_id: details.paymentId,
@@ -604,7 +612,7 @@ export default function InternshipApplicationForm() {
               paymentAttemptState.failureRecorded = true;
 
               try {
-                await recordInternshipFailedPaymentAttempt(
+                await recordInternshipPaymentAttempt(
                   buildRegistrationFormData({
                     razorpay_order_id: response.razorpay_order_id || order.order_id,
                     razorpay_payment_id: response.razorpay_payment_id,
@@ -693,7 +701,7 @@ export default function InternshipApplicationForm() {
     setSubmitStatus({
       type: "info",
       message:
-        "Payment was not completed. Your application has not been submitted.",
+        "Payment was not completed. Your attempt has been saved, and you can try again anytime.",
     });
   };
 

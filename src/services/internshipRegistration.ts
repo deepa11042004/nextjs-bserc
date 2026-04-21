@@ -214,11 +214,15 @@ export function registerInternshipWithoutPayment(payload: FormData) {
   );
 }
 
-export function recordInternshipFailedPaymentAttempt(payload: FormData) {
+export function recordInternshipPaymentAttempt(payload: FormData) {
   return postFormData<{ message: string }>(
     "/api/internship-registration/register",
     payload,
   );
+}
+
+export function recordInternshipFailedPaymentAttempt(payload: FormData) {
+  return recordInternshipPaymentAttempt(payload);
 }
 
 export function getInternshipFeeSettings() {
