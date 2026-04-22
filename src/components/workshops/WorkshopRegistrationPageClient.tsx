@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import type { Workshop } from "@/types/workshop";
 import {
   createWorkshopPaymentOrder,
-  recordWorkshopFailedPaymentAttempt,
+  recordWorkshopPaymentAttempt,
   registerWorkshopWithoutPayment,
   verifyWorkshopPaymentAndRegister,
   type WorkshopRegistrationPayload,
@@ -709,6 +709,13 @@ export default function WorkshopRegistrationPageClient({
         throw new Error("Unable to load Razorpay checkout. Please try again.");
       }
 
+      await recordWorkshopPaymentAttempt({
+        ...registrationPayload,
+        razorpay_order_id: order.order_id,
+        payment_status: "pending",
+        payment_mode: "order_created",
+      });
+
       const paymentAttemptState = {
         completed: false,
         failureRecorded: false,
@@ -731,7 +738,7 @@ export default function WorkshopRegistrationPageClient({
         paymentAttemptState.failureRecorded = true;
 
         try {
-          await recordWorkshopFailedPaymentAttempt({
+          await recordWorkshopPaymentAttempt({
             ...registrationPayload,
             razorpay_order_id: details.orderId || order.order_id,
             razorpay_payment_id: details.paymentId,
@@ -810,7 +817,7 @@ export default function WorkshopRegistrationPageClient({
               paymentAttemptState.failureRecorded = true;
 
               try {
-                await recordWorkshopFailedPaymentAttempt({
+                await recordWorkshopPaymentAttempt({
                   ...registrationPayload,
                   razorpay_order_id: response.razorpay_order_id || order.order_id,
                   razorpay_payment_id: response.razorpay_payment_id,
@@ -904,7 +911,7 @@ export default function WorkshopRegistrationPageClient({
     setSubmitStatus({
       type: "info",
       message:
-        "Payment was not completed. Your registration has not been saved.",
+        "Payment was not completed. Your attempt has been saved, and you can try again anytime.",
     });
   };
 

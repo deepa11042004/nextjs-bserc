@@ -786,11 +786,6 @@ export default function InstitutionalRegistrationPage() {
         );
       }
 
-      const resolvedRegistrationFee =
-        orderPayload.registration_fee !== undefined
-          ? Number(orderPayload.registration_fee)
-          : Number(orderPayload.amount) / 100;
-
       const razorpayLoaded = await loadRazorpayScript();
       const Razorpay = getRazorpayConstructor();
 
@@ -803,55 +798,29 @@ export default function InstitutionalRegistrationPage() {
       let flowCompleted = false;
       let failureHandled = false;
 
-      const persistPaymentAttempt = async (
-        paymentStatus: "pending" | "failed",
-        options?: {
-          reason?: string;
-          transactionId?: string;
-          orderId?: string;
-          paymentMode?: string;
-        },
+      const persistFailedPaymentLead = async (
+        reason: string,
+        transactionId?: string,
+        orderId?: string,
       ) => {
         try {
-          const response = await fetch(
-            "/api/institutional-registration/log-payment-attempt",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                ...registrationPayload,
-                payment_status: paymentStatus,
-                payment_amount: resolvedRegistrationFee,
-                payment_currency: orderPayload.currency,
-                payment_mode: options?.paymentMode,
-                failure_reason:
-                  paymentStatus === "failed"
-                    ? options?.reason || "Payment failed or cancelled by user"
-                    : undefined,
-                transaction_id: options?.transactionId || undefined,
-                razorpay_order_id: options?.orderId || undefined,
-              }),
+          await fetch("/api/institutional-registration/log-payment-attempt", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
             },
-          );
-
-          return response.ok;
+            body: JSON.stringify({
+              ...registrationPayload,
+              payment_status: "failed",
+              failure_reason: reason,
+              transaction_id: transactionId || undefined,
+              razorpay_order_id: orderId || undefined,
+            }),
+          });
         } catch {
-          return false;
+          // Intentionally ignored: primary flow should still show a clear error.
         }
       };
-
-      const pendingAttemptSaved = await persistPaymentAttempt("pending", {
-        orderId: orderPayload.order_id,
-        paymentMode: "order_created",
-      });
-
-      if (!pendingAttemptSaved) {
-        throw new Error(
-          "Unable to initialize payment attempt. Please try again.",
-        );
-      }
 
       const handlePaymentFailure = async (
         reason: string,
@@ -866,12 +835,7 @@ export default function InstitutionalRegistrationPage() {
 
         const failureMessage = reason.trim() || "Payment was not completed";
 
-        await persistPaymentAttempt("failed", {
-          reason: failureMessage,
-          transactionId,
-          orderId,
-          paymentMode: "gateway_failed",
-        });
+        await persistFailedPaymentLead(failureMessage, transactionId, orderId);
 
         setSubmitStatus("error");
         setSuccessSnapshot(null);

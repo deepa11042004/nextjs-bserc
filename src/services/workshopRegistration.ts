@@ -112,11 +112,17 @@ export function registerWorkshopWithoutPayment(
   );
 }
 
-export function recordWorkshopFailedPaymentAttempt(
+export function recordWorkshopPaymentAttempt(
   payload: RecordWorkshopFailedPaymentPayload,
 ) {
   return postJson<{ message: string }>(
     "/api/workshop-registration/register",
     payload,
   );
+}
+
+export function recordWorkshopFailedPaymentAttempt(
+  payload: RecordWorkshopFailedPaymentPayload,
+) {
+  return recordWorkshopPaymentAttempt(payload);
 }

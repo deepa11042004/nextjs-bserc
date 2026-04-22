@@ -559,22 +559,31 @@ export default function Page() {
           : Number(createOrderPayload.amount) / 100;
 
       let hasFinalPaymentOutcome = false;
-      let hasLoggedPaymentAttempt = false;
+      let hasPendingPaymentAttemptLogged = false;
+      let hasFinalPaymentAttemptLogged = false;
       let hasVerificationStarted = false;
 
       const logPaymentAttempt = async (
-        paymentStatus: "failed",
+        paymentStatus: "failed" | "pending",
         options?: {
           razorpayOrderId?: string;
           razorpayPaymentId?: string;
           paymentMode?: string;
         },
       ) => {
-        if (hasLoggedPaymentAttempt) {
+        if (paymentStatus === "pending" && hasPendingPaymentAttemptLogged) {
           return;
         }
 
-        hasLoggedPaymentAttempt = true;
+        if (paymentStatus === "failed" && hasFinalPaymentAttemptLogged) {
+          return;
+        }
+
+        if (paymentStatus === "pending") {
+          hasPendingPaymentAttemptLogged = true;
+        } else {
+          hasFinalPaymentAttemptLogged = true;
+        }
 
         try {
           const response = await fetch(
@@ -600,10 +609,18 @@ export default function Page() {
           );
 
           if (!response.ok) {
-            hasLoggedPaymentAttempt = false;
+            if (paymentStatus === "pending") {
+              hasPendingPaymentAttemptLogged = false;
+            } else {
+              hasFinalPaymentAttemptLogged = false;
+            }
           }
         } catch {
-          hasLoggedPaymentAttempt = false;
+          if (paymentStatus === "pending") {
+            hasPendingPaymentAttemptLogged = false;
+          } else {
+            hasFinalPaymentAttemptLogged = false;
+          }
           // Do not block UX if payment-attempt logging fails.
         }
       };
@@ -614,6 +631,11 @@ export default function Page() {
       if (!loaded || !razorpayConstructor) {
         throw new Error("Unable to load Razorpay checkout. Please try again.");
       }
+
+      await logPaymentAttempt("pending", {
+        razorpayOrderId: createOrderPayload.order_id,
+        paymentMode: "order_created",
+      });
 
       const amountDisplayCurrency =
         createOrderPayload.currency === "USD" ? "$" : "₹";
