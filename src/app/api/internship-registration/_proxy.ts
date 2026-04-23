@@ -93,7 +93,7 @@ function getBackendBaseUrls(options?: { preferLocal?: boolean }): string[] {
   const raw = shouldIncludeDevFallback
     ? isLoopbackUrl(envUrl)
       ? [envUrl, ...DEV_FALLBACK_BACKEND_URLS]
-      : [...DEV_FALLBACK_BACKEND_URLS, envUrl]
+      : [envUrl, ...DEV_FALLBACK_BACKEND_URLS]
     : [envUrl];
 
   const normalized = raw.filter((value): value is string => Boolean(value));
@@ -189,7 +189,7 @@ export async function forwardInternshipRegistrationRequest(
     return NextResponse.json(
       {
         message:
-          "API_URL (or API_URL) is missing on the server. Configure API_URL in deployment environment variables.",
+          "API_URL (or NEXT_PUBLIC_API_URL) is missing on the server. Configure API_URL in deployment environment variables.",
       },
       { status: 500 },
     );
