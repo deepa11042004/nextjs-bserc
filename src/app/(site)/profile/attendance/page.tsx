@@ -12,18 +12,18 @@ function formatDate(value: string | null): string {
     return "Schedule pending";
   }
 
-  const parsed = new Date(value);
+  const normalizedValue = String(value).includes('T') ? String(value) : String(value).replace(' ', 'T');
+  const utcValue = normalizedValue.endsWith('Z') ? normalizedValue : `${normalizedValue}Z`;
+  const parsed = new Date(utcValue);
   if (Number.isNaN(parsed.getTime())) {
     return "Schedule pending";
   }
 
-  return parsed.toLocaleString("en-IN", {
-    day: "2-digit",
+  return parsed.toLocaleString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit",
     month: "short",
     year: "numeric",
     hour: "2-digit",
-    minute: "2-digit",
-  });
+    minute: "2-digit", hour12: true });
 }
 
 export default function AttendancePage() {

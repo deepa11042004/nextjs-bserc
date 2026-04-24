@@ -8,6 +8,7 @@ import { ArrowLeft, Download, Eye, Loader2, Trash2, Users } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { formatDateTime } from "@/lib/formatDate";
 import {
   Table,
   TableBody,
@@ -76,24 +77,7 @@ function formatCurrency(value: number | null | undefined) {
   return `₹${value.toFixed(2)}`;
 }
 
-function formatDateTime(value: string | null | undefined): string {
-  if (!value) {
-    return "-";
-  }
-
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) {
-    return "-";
-  }
-
-  return parsed.toLocaleString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
+// using shared formatter from src/lib/formatDate
 
 function presentText(value: string | number | null | undefined): string {
   if (value === null || value === undefined) {

@@ -14,16 +14,16 @@ function formatDate(value: string | null): string {
     return "Saved recently";
   }
 
-  const parsed = new Date(value);
+  const normalizedValue = String(value).includes('T') ? String(value) : String(value).replace(' ', 'T');
+  const utcValue = normalizedValue.endsWith('Z') ? normalizedValue : `${normalizedValue}Z`;
+  const parsed = new Date(utcValue);
   if (Number.isNaN(parsed.getTime())) {
     return "Saved recently";
   }
 
-  return parsed.toLocaleDateString("en-IN", {
-    day: "2-digit",
+  return parsed.toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit",
     month: "short",
-    year: "numeric",
-  });
+    year: "numeric", });
 }
 
 function formatFee(value: number | null): string {

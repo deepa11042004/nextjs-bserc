@@ -88,16 +88,16 @@ function formatDate(value: string | null): string {
     return "-";
   }
 
-  const date = new Date(value);
+  const normalizedValue = String(value).includes('T') ? String(value) : String(value).replace(' ', 'T');
+  const utcValue = normalizedValue.endsWith('Z') ? normalizedValue : `${normalizedValue}Z`;
+  const date = new Date(utcValue);
   if (Number.isNaN(date.getTime())) {
     return value;
   }
 
-  return date.toLocaleDateString("en-IN", {
-    year: "numeric",
+  return date.toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", year: "numeric",
     month: "short",
-    day: "2-digit",
-  });
+    day: "2-digit", });
 }
 
 function formatTime(value: string | null): string {
@@ -105,15 +105,15 @@ function formatTime(value: string | null): string {
     return "-";
   }
 
-  const date = new Date(value);
+  const normalizedValue = String(value).includes('T') ? String(value) : String(value).replace(' ', 'T');
+  const utcValue = normalizedValue.endsWith('Z') ? normalizedValue : `${normalizedValue}Z`;
+  const date = new Date(utcValue);
   if (Number.isNaN(date.getTime())) {
     return "-";
   }
 
-  return date.toLocaleTimeString("en-IN", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return date.toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour: "2-digit",
+    minute: "2-digit", hour12: true });
 }
 
 function formatFileSize(bytes: number | null): string {

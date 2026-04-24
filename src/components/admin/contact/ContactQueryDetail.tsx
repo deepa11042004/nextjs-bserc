@@ -129,18 +129,18 @@ function formatDate(value: string | null): string {
         return "-";
     }
 
-    const date = new Date(value);
+    const normalizedValue = String(value).includes('T') ? String(value) : String(value).replace(' ', 'T');
+  const utcValue = normalizedValue.endsWith('Z') ? normalizedValue : `${normalizedValue}Z`;
+  const date = new Date(utcValue);
     if (Number.isNaN(date.getTime())) {
         return value;
     }
 
-    return date.toLocaleString("en-IN", {
-        day: "2-digit",
+    return date.toLocaleString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit",
         month: "short",
         year: "numeric",
         hour: "2-digit",
-        minute: "2-digit",
-    });
+        minute: "2-digit", hour12: true });
 }
 
 function createMailToHref(email: string, subject: string): string {

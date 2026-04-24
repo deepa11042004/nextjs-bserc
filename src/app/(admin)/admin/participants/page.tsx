@@ -7,6 +7,7 @@ import { ArrowLeft, Download, Eye, Filter, Loader2, Trash2, Users } from "lucide
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/Button";
+import { formatDateTime } from "@/lib/formatDate";
 import {
   Table,
   TableBody,
@@ -121,24 +122,7 @@ function buildDynamicExportRows(records: Record<string, unknown>[]) {
   return { headers, rows };
 }
 
-function formatDateTime(value: string | null): string {
-  if (!value) {
-    return "-";
-  }
-
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) {
-    return "-";
-  }
-
-  return parsed.toLocaleString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
+// using shared formatter from src/lib/formatDate
 
 function formatCurrency(value: number | null | undefined): string {
   if (value === null || value === undefined || Number.isNaN(value)) {

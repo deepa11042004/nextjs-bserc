@@ -150,16 +150,16 @@ function formatDateLabel(value: string): string {
     return "TBA";
   }
 
-  const date = new Date(value);
+  const normalizedValue = String(value).includes('T') ? String(value) : String(value).replace(' ', 'T');
+  const utcValue = normalizedValue.endsWith('Z') ? normalizedValue : `${normalizedValue}Z`;
+  const date = new Date(utcValue);
   if (Number.isNaN(date.getTime())) {
     return value;
   }
 
-  return date.toLocaleDateString("en-IN", {
-    day: "2-digit",
+  return date.toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit",
     month: "long",
-    year: "numeric",
-  });
+    year: "numeric", });
 }
 
 function formatTimeLabel(value?: string): string {
@@ -182,11 +182,9 @@ function formatTimeLabel(value?: string): string {
   const date = new Date();
   date.setHours(hours, minutes, 0, 0);
 
-  return date.toLocaleTimeString("en-IN", {
-    hour: "2-digit",
+  return date.toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour: "2-digit",
     minute: "2-digit",
-    hour12: true,
-  });
+    hour12: true, });
 }
 
 function formatTimeRange(startTime: string, endTime?: string): string {

@@ -13,16 +13,16 @@ function formatDate(value: string | null): string {
     return "Pending issuance";
   }
 
-  const date = new Date(value);
+  const normalizedValue = String(value).includes('T') ? String(value) : String(value).replace(' ', 'T');
+  const utcValue = normalizedValue.endsWith('Z') ? normalizedValue : `${normalizedValue}Z`;
+  const date = new Date(utcValue);
   if (Number.isNaN(date.getTime())) {
     return "Pending issuance";
   }
 
-  return date.toLocaleDateString("en-IN", {
-    day: "2-digit",
+  return date.toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit",
     month: "short",
-    year: "numeric",
-  });
+    year: "numeric", });
 }
 
 export default function CertificatesPage() {

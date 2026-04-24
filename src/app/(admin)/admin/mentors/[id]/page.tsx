@@ -61,13 +61,11 @@ function formatFieldValue(fieldName: string, value: unknown): string {
     if (fieldName === "dob" || fieldName.endsWith("_at")) {
       const parsed = new Date(trimmed);
       if (!Number.isNaN(parsed.getTime())) {
-        return parsed.toLocaleString("en-IN", {
-          day: "2-digit",
+        return parsed.toLocaleString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit",
           month: "short",
           year: "numeric",
           hour: fieldName.endsWith("_at") ? "2-digit" : undefined,
-          minute: fieldName.endsWith("_at") ? "2-digit" : undefined,
-        });
+          minute: fieldName.endsWith("_at") ? "2-digit" : undefined, hour12: true });
       }
     }
 

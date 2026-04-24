@@ -1,4 +1,5 @@
 import type { MentorProfile } from "@/types/mentor";
+import { formatDate as sharedFormatDate } from "@/lib/formatDate";
 
 function toNullableString(value: unknown): string | null {
   if (typeof value !== "string") {
@@ -102,20 +103,7 @@ export function getApiMessage(payload: unknown): string | null {
 }
 
 export function formatMentorDate(value: string | null): string {
-  if (!value) {
-    return "-";
-  }
-
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) {
-    return "-";
-  }
-
-  return parsed.toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+  return sharedFormatDate(value);
 }
 
 export function getStatusBadgeClasses(status: string): string {

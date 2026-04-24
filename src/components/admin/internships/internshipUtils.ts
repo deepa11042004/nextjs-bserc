@@ -1,4 +1,5 @@
 import type { InternshipApplication } from "@/types/internshipApplication";
+import { formatDate as sharedFormatDate, formatDateTime as sharedFormatDateTime } from "@/lib/formatDate";
 
 function toNullableString(value: unknown): string | null {
   if (typeof value !== "string") {
@@ -117,39 +118,11 @@ export function getApiMessage(payload: unknown): string | null {
 }
 
 export function formatDate(value: string | null): string {
-  if (!value) {
-    return "-";
-  }
-
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) {
-    return "-";
-  }
-
-  return parsed.toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+  return sharedFormatDate(value);
 }
 
 export function formatDateTime(value: string | null): string {
-  if (!value) {
-    return "-";
-  }
-
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) {
-    return "-";
-  }
-
-  return parsed.toLocaleString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return sharedFormatDateTime(value);
 }
 
 export function formatMoney(amount: number | null, currency: string | null): string {
