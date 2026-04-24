@@ -122,6 +122,23 @@ function getMentorRegisterEndpoint(): string {
   return `${normalizedBase}/api/mentor/register`;
 }
 
+function getMentorLogPaymentAttemptEndpoint(registerEndpoint: string): string {
+  const normalized = registerEndpoint.trim();
+
+  if (!normalized) {
+    return "/api/mentor/log-payment-attempt";
+  }
+
+  if (/\/mentor\/register$/i.test(normalized)) {
+    return normalized.replace(
+      /\/mentor\/register$/i,
+      "/mentor/log-payment-attempt",
+    );
+  }
+
+  return "/api/mentor/log-payment-attempt";
+}
+
 function getFileFromFormData(data: FormData, key: string): File | null {
   const value = data.get(key);
   if (!(value instanceof File)) {
@@ -514,6 +531,8 @@ export default function MentorRegistrationForm() {
     formDataObj.set("accepted_code_of_conduct", String(conductAccepted));
 
     const registerEndpoint = getMentorRegisterEndpoint();
+    const logPaymentAttemptEndpoint =
+      getMentorLogPaymentAttemptEndpoint(registerEndpoint);
     const resumeFile = getFileFromFormData(formDataObj, "resume");
     const profilePhotoFile = getFileFromFormData(formDataObj, "profile_photo");
 
@@ -601,6 +620,72 @@ export default function MentorRegistrationForm() {
         );
       }
 
+      const persistPaymentAttempt = async (
+        paymentStatus: "pending" | "failed",
+        options?: {
+          reason?: string;
+          paymentId?: string;
+          orderId?: string;
+          paymentMode?: string;
+        },
+      ): Promise<boolean> => {
+        try {
+          const payload = cloneFormData(formDataObj);
+          payload.set("payment_status", paymentStatus);
+          payload.set(
+            "payment_mode",
+            options?.paymentMode
+              || (paymentStatus === "pending"
+                ? "order_created"
+                : "gateway_failed"),
+          );
+
+          const resolvedOrderId = options?.orderId || orderPayload.order_id;
+          if (resolvedOrderId) {
+            payload.set("razorpay_order_id", resolvedOrderId);
+          }
+
+          if (options?.paymentId) {
+            payload.set("razorpay_payment_id", options.paymentId);
+          }
+
+          if (paymentStatus === "failed" && options?.reason) {
+            payload.set("failure_reason", options.reason);
+          }
+
+          let attemptResponse = await fetch(logPaymentAttemptEndpoint, {
+            method: "POST",
+            body: payload,
+          });
+
+          if (
+            !attemptResponse.ok
+            && attemptResponse.status === 404
+            && logPaymentAttemptEndpoint !== "/api/mentor/log-payment-attempt"
+          ) {
+            attemptResponse = await fetch("/api/mentor/log-payment-attempt", {
+              method: "POST",
+              body: payload,
+            });
+          }
+
+          return attemptResponse.ok;
+        } catch {
+          return false;
+        }
+      };
+
+      const pendingAttemptSaved = await persistPaymentAttempt("pending", {
+        orderId: orderPayload.order_id,
+        paymentMode: "order_created",
+      });
+
+      if (!pendingAttemptSaved) {
+        throw new Error(
+          "Unable to initialize payment attempt. Please try again.",
+        );
+      }
+
       const loaded = await loadRazorpayScript();
       if (!loaded || !window.Razorpay) {
         throw new Error("Unable to load Razorpay checkout. Please try again.");
@@ -612,6 +697,42 @@ export default function MentorRegistrationForm() {
         orderPayload.registration_fee !== undefined
           ? `${amountDisplayCurrency}${orderPayload.registration_fee}`
           : `${amountDisplayCurrency}${(orderPayload.amount / 100).toFixed(2)}`;
+
+      let flowCompleted = false;
+      let failureHandled = false;
+
+      const handlePaymentFailure = async (
+        reason: string,
+        paymentId?: string,
+        orderId?: string,
+      ) => {
+        if (flowCompleted || failureHandled) {
+          return;
+        }
+
+        failureHandled = true;
+
+        const failureMessage = reason.trim() || "Payment was not completed";
+
+        const failedAttemptSaved = await persistPaymentAttempt("failed", {
+          reason: failureMessage,
+          paymentId,
+          orderId: orderId || orderPayload.order_id,
+          paymentMode: "gateway_failed",
+        });
+
+        if (failedAttemptSaved) {
+          setSubmitError(
+            `${failureMessage}. Your details were saved with failed payment status.`,
+          );
+        } else {
+          setSubmitError(
+            `${failureMessage}. Unable to persist failed payment attempt automatically. Please contact support with your order details.`,
+          );
+        }
+
+        setIsSubmitting(false);
+      };
 
       const razorpay = new window.Razorpay({
         key: orderPayload.key_id,
@@ -659,28 +780,53 @@ export default function MentorRegistrationForm() {
               throw new Error(message || "Unable to submit mentor registration.");
             }
 
+            flowCompleted = true;
+
             setSubmitSuccess(
               message || "Payment successful and mentor registration completed.",
             );
             resetForm(form);
           } catch (error: unknown) {
-            setSubmitError(getErrorMessage(error));
-          } finally {
-            setIsSubmitting(false);
+            await handlePaymentFailure(
+              getErrorMessage(error),
+              response.razorpay_payment_id,
+              response.razorpay_order_id,
+            );
           }
+
+          setIsSubmitting(false);
         },
         modal: {
           ondismiss: () => {
-            setIsSubmitting(false);
+            void handlePaymentFailure(
+              "Payment was cancelled before completion",
+              undefined,
+              orderPayload.order_id,
+            );
           },
         },
       });
 
       razorpay.on("payment.failed", (response) => {
-        setSubmitError(
+        void handlePaymentFailure(
           response.error?.description || "Payment failed. Please try again.",
+          (response as RazorpayFailureResponse & {
+            error?: {
+              metadata?: {
+                payment_id?: string;
+                order_id?: string;
+              };
+            };
+          }).error?.metadata?.payment_id,
+          (response as RazorpayFailureResponse & {
+            error?: {
+              metadata?: {
+                payment_id?: string;
+                order_id?: string;
+              };
+            };
+          }).error?.metadata?.order_id || orderPayload.order_id,
         );
-        setIsSubmitting(false);
       });
 
       razorpay.open();

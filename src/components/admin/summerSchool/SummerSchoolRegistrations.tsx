@@ -317,6 +317,7 @@ export default function SummerSchoolRegistrations() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [selectedClassFilter, setSelectedClassFilter] = useState("");
   const [selectedNationalityFilter, setSelectedNationalityFilter] = useState("");
+  const [emailSearch, setEmailSearch] = useState("");
   const [error, setError] = useState("");
   const [indianFeeInput, setIndianFeeInput] = useState("1350");
   const [ewsFeeInput, setEwsFeeInput] = useState("750");
@@ -476,7 +477,9 @@ export default function SummerSchoolRegistrations() {
   }, [registrations]);
 
   const filteredRegistrations = useMemo(() => {
-    if (!selectedClassFilter && !selectedNationalityFilter) {
+    const normalizedEmailSearch = emailSearch.trim().toLowerCase();
+
+    if (!selectedClassFilter && !selectedNationalityFilter && !normalizedEmailSearch) {
       return registrations;
     }
 
@@ -486,27 +489,34 @@ export default function SummerSchoolRegistrations() {
       const matchesNationality =
         !selectedNationalityFilter
         || registration.nationality.trim() === selectedNationalityFilter;
+      const matchesEmail =
+        !normalizedEmailSearch
+        || registration.email.trim().toLowerCase().includes(normalizedEmailSearch);
 
-      return matchesClass && matchesNationality;
+      return matchesClass && matchesNationality && matchesEmail;
     });
-  }, [registrations, selectedClassFilter, selectedNationalityFilter]);
+  }, [emailSearch, registrations, selectedClassFilter, selectedNationalityFilter]);
 
   const filteredRegistrationRecords = useMemo(() => {
-    if (!selectedClassFilter && !selectedNationalityFilter) {
+    const normalizedEmailSearch = emailSearch.trim().toLowerCase();
+
+    if (!selectedClassFilter && !selectedNationalityFilter && !normalizedEmailSearch) {
       return registrationRecords;
     }
 
     return registrationRecords.filter((record) => {
       const grade = toText(record.grade);
       const nationality = toText(record.nationality);
+      const email = toText(record.email).toLowerCase();
 
       const matchesClass = !selectedClassFilter || grade === selectedClassFilter;
       const matchesNationality =
         !selectedNationalityFilter || nationality === selectedNationalityFilter;
+      const matchesEmail = !normalizedEmailSearch || email.includes(normalizedEmailSearch);
 
-      return matchesClass && matchesNationality;
+      return matchesClass && matchesNationality && matchesEmail;
     });
-  }, [registrationRecords, selectedClassFilter, selectedNationalityFilter]);
+  }, [emailSearch, registrationRecords, selectedClassFilter, selectedNationalityFilter]);
 
   const handleExport = async () => {
     if (isExporting || isLoading) {
@@ -514,8 +524,13 @@ export default function SummerSchoolRegistrations() {
     }
 
     if (filteredRegistrationRecords.length === 0) {
+      const hasActiveFilters =
+        Boolean(selectedClassFilter)
+        || Boolean(selectedNationalityFilter)
+        || Boolean(emailSearch.trim());
+
       setError(
-        selectedClassFilter || selectedNationalityFilter
+        hasActiveFilters
           ? "No registrations found for the selected filters to export."
           : "No registrations available to export.",
       );
@@ -909,14 +924,32 @@ export default function SummerSchoolRegistrations() {
                   </select>
                 </div>
 
+                <div className="w-full sm:w-72">
+                  <label
+                    htmlFor="summer-school-email-filter"
+                    className="mb-1 block text-xs font-medium uppercase tracking-wide text-zinc-400"
+                  >
+                    Search by Email
+                  </label>
+                  <input
+                    id="summer-school-email-filter"
+                    type="text"
+                    value={emailSearch}
+                    onChange={(event) => setEmailSearch(event.target.value)}
+                    placeholder="Enter email"
+                    className="h-9 w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 text-sm text-zinc-100 outline-none focus:border-blue-500"
+                  />
+                </div>
+
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => {
                     setSelectedClassFilter("");
                     setSelectedNationalityFilter("");
+                    setEmailSearch("");
                   }}
-                  disabled={!selectedClassFilter && !selectedNationalityFilter}
+                  disabled={!selectedClassFilter && !selectedNationalityFilter && !emailSearch.trim()}
                   className="text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100"
                 >
                   Clear
@@ -954,7 +987,7 @@ export default function SummerSchoolRegistrations() {
                         colSpan={5}
                         className="text-center text-zinc-400 py-8"
                       >
-                        {selectedClassFilter || selectedNationalityFilter
+                        {selectedClassFilter || selectedNationalityFilter || emailSearch.trim()
                           ? "No registrations found for the selected filters."
                           : "No summer school student registrations found."}
                       </TableCell>

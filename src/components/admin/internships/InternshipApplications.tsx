@@ -123,6 +123,7 @@ export default function InternshipApplications() {
     useState<RegistrationTypeFilter>("all");
   const [paymentStatusFilter, setPaymentStatusFilter] =
     useState<PaymentStatusFilter>("all");
+  const [emailSearch, setEmailSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState("");
@@ -140,6 +141,8 @@ export default function InternshipApplications() {
   const [actionNotice, setActionNotice] = useState("");
 
   const filteredApplications = useMemo(() => {
+    const normalizedEmailSearch = emailSearch.trim().toLowerCase();
+
     return applications.filter((application) => {
       const matchesRegistrationType =
         registrationTypeFilter === "all"
@@ -153,9 +156,13 @@ export default function InternshipApplications() {
           ? true
           : (application.payment_status || "").toLowerCase() === paymentStatusFilter;
 
-      return matchesRegistrationType && matchesPaymentStatus;
+      const matchesEmail =
+        !normalizedEmailSearch
+        || (application.email || "").toLowerCase().includes(normalizedEmailSearch);
+
+      return matchesRegistrationType && matchesPaymentStatus && matchesEmail;
     });
-  }, [applications, paymentStatusFilter, registrationTypeFilter]);
+  }, [applications, emailSearch, paymentStatusFilter, registrationTypeFilter]);
 
   useEffect(() => {
     let isMounted = true;
@@ -303,8 +310,13 @@ export default function InternshipApplications() {
     }
 
     if (filteredApplications.length === 0) {
+      const hasActiveFilters =
+        registrationTypeFilter !== "all"
+        || paymentStatusFilter !== "all"
+        || emailSearch.trim().length > 0;
+
       setError(
-        registrationTypeFilter === "all" && paymentStatusFilter === "all"
+        !hasActiveFilters
           ? "No internship applications available to export."
           : "No applications available to export for the selected filters.",
       );
@@ -599,6 +611,41 @@ export default function InternshipApplications() {
                   );
                 })}
               </div>
+
+              <div className="w-full sm:w-64">
+                <label
+                  htmlFor="internship-email-search"
+                  className="mb-1 block text-xs font-medium uppercase tracking-wide text-zinc-400"
+                >
+                  Search by Email
+                </label>
+                <input
+                  id="internship-email-search"
+                  type="text"
+                  value={emailSearch}
+                  onChange={(event) => setEmailSearch(event.target.value)}
+                  placeholder="Enter email"
+                  className="h-9 w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 text-sm text-zinc-100 outline-none focus:border-blue-500"
+                />
+              </div>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setRegistrationTypeFilter("all");
+                  setPaymentStatusFilter("all");
+                  setEmailSearch("");
+                }}
+                disabled={
+                  registrationTypeFilter === "all"
+                  && paymentStatusFilter === "all"
+                  && !emailSearch.trim()
+                }
+                className="text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100"
+              >
+                Clear
+              </Button>
             </div>
             <div className="flex items-center gap-2">
               <Button

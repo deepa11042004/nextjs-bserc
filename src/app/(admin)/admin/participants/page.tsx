@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Download, Eye, Loader2, Trash2, Users } from "lucide-react";
+import { ArrowLeft, Download, Eye, Filter, Loader2, Trash2, Users } from "lucide-react";
 
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -63,6 +63,14 @@ function extractParticipantRecords(payload: unknown): Record<string, unknown>[] 
 
 function extractParticipants(payload: unknown): Participant[] {
   return extractParticipantRecords(payload) as Participant[];
+}
+
+function toText(value: unknown): string {
+  if (value === null || value === undefined) {
+    return "";
+  }
+
+  return String(value).trim();
 }
 
 function toExportCellValue(value: unknown): string | number | boolean {
@@ -189,6 +197,12 @@ function getPaymentBadgeClasses(status: string | null): string {
   return "bg-zinc-800 text-zinc-200 border border-zinc-700";
 }
 
+function formatFilterLabel(value: string): string {
+  return value
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
 export default function AdminParticipantsPage() {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [participantRecords, setParticipantRecords] = useState<Record<string, unknown>[]>([]);
@@ -196,6 +210,10 @@ export default function AdminParticipantsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
   const [isExportingSelectedParticipant, setIsExportingSelectedParticipant] = useState(false);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [selectedWorkshopFilter, setSelectedWorkshopFilter] = useState("");
+  const [selectedPaymentStatusFilter, setSelectedPaymentStatusFilter] = useState("");
+  const [emailSearch, setEmailSearch] = useState("");
   const [deletingParticipantId, setDeletingParticipantId] = useState<number | null>(null);
   const [error, setError] = useState("");
 
@@ -260,7 +278,88 @@ export default function AdminParticipantsPage() {
     };
   }, []);
 
-  const totalParticipants = useMemo(() => participants.length, [participants]);
+  const workshopOptions = useMemo(() => {
+    const workshopSet = new Set<string>();
+
+    participants.forEach((participant) => {
+      const workshopTitle = participant.workshop_title.trim();
+      if (workshopTitle) {
+        workshopSet.add(workshopTitle);
+      }
+    });
+
+    return Array.from(workshopSet).sort((a, b) =>
+      a.localeCompare(b, undefined, { sensitivity: "base" }),
+    );
+  }, [participants]);
+
+  const paymentStatusOptions = useMemo(() => {
+    const paymentStatusSet = new Set<string>();
+
+    participants.forEach((participant) => {
+      const paymentStatus = (participant.payment_status || "").trim().toLowerCase();
+      if (paymentStatus) {
+        paymentStatusSet.add(paymentStatus);
+      }
+    });
+
+    return Array.from(paymentStatusSet).sort((a, b) =>
+      a.localeCompare(b, undefined, { sensitivity: "base" }),
+    );
+  }, [participants]);
+
+  const filteredParticipants = useMemo(() => {
+    const normalizedEmailSearch = emailSearch.trim().toLowerCase();
+
+    if (!selectedWorkshopFilter && !selectedPaymentStatusFilter && !normalizedEmailSearch) {
+      return participants;
+    }
+
+    return participants.filter((participant) => {
+      const workshopTitle = participant.workshop_title.trim();
+      const paymentStatus = (participant.payment_status || "").trim().toLowerCase();
+      const participantEmail = participant.email.trim().toLowerCase();
+
+      const matchesWorkshop =
+        !selectedWorkshopFilter || workshopTitle === selectedWorkshopFilter;
+      const matchesPaymentStatus =
+        !selectedPaymentStatusFilter || paymentStatus === selectedPaymentStatusFilter;
+      const matchesEmail =
+        !normalizedEmailSearch || participantEmail.includes(normalizedEmailSearch);
+
+      return matchesWorkshop && matchesPaymentStatus && matchesEmail;
+    });
+  }, [emailSearch, participants, selectedPaymentStatusFilter, selectedWorkshopFilter]);
+
+  const filteredParticipantRecords = useMemo(() => {
+    const normalizedEmailSearch = emailSearch.trim().toLowerCase();
+
+    if (!selectedWorkshopFilter && !selectedPaymentStatusFilter && !normalizedEmailSearch) {
+      return participantRecords;
+    }
+
+    return participantRecords.filter((record) => {
+      const workshopTitle = toText(record.workshop_title);
+      const paymentStatus = toText(record.payment_status).toLowerCase();
+      const email = toText(record.email).toLowerCase();
+
+      const matchesWorkshop =
+        !selectedWorkshopFilter || workshopTitle === selectedWorkshopFilter;
+      const matchesPaymentStatus =
+        !selectedPaymentStatusFilter || paymentStatus === selectedPaymentStatusFilter;
+      const matchesEmail = !normalizedEmailSearch || email.includes(normalizedEmailSearch);
+
+      return matchesWorkshop && matchesPaymentStatus && matchesEmail;
+    });
+  }, [
+    emailSearch,
+    participantRecords,
+    selectedPaymentStatusFilter,
+    selectedWorkshopFilter,
+  ]);
+
+  const totalParticipants = useMemo(() => filteredParticipants.length, [filteredParticipants]);
+  const totalParticipantsAll = useMemo(() => participants.length, [participants]);
 
   const handleViewParticipant = (participant: Participant) => {
     // Spread into a fresh object so repeated clicks on the same row still update the panel.
@@ -399,8 +498,17 @@ export default function AdminParticipantsPage() {
       return;
     }
 
-    if (participantRecords.length === 0) {
-      setError("No participants available to export.");
+    if (filteredParticipantRecords.length === 0) {
+      const hasActiveFilters =
+        Boolean(selectedWorkshopFilter)
+        || Boolean(selectedPaymentStatusFilter)
+        || Boolean(emailSearch.trim());
+
+      setError(
+        hasActiveFilters
+          ? "No participants found for the selected filters to export."
+          : "No participants available to export.",
+      );
       return;
     }
 
@@ -410,7 +518,7 @@ export default function AdminParticipantsPage() {
     try {
       const XLSX = await import("xlsx");
 
-      const { headers, rows } = buildDynamicExportRows(participantRecords);
+      const { headers, rows } = buildDynamicExportRows(filteredParticipantRecords);
 
       if (rows.length === 0) {
         setError("No participants available to export.");
@@ -475,8 +583,17 @@ export default function AdminParticipantsPage() {
               <Button
                 variant="ghost"
                 size="sm"
+                onClick={() => setIsFilterOpen((prev) => !prev)}
+                className="text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100"
+              >
+                <Filter className="mr-2 h-4 w-4" />
+                Filter
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={handleExport}
-                disabled={isLoading || isExporting || participants.length === 0}
+                disabled={isLoading || isExporting || filteredParticipantRecords.length === 0}
                 className="text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100"
               >
                 {isExporting ? (
@@ -492,12 +609,97 @@ export default function AdminParticipantsPage() {
                 )}
               </Button>
               <span className="text-sm text-zinc-400">
-                Total: {totalParticipants}
+                Total: {totalParticipants}/{totalParticipantsAll}
               </span>
             </div>
           </div>
         </CardHeader>
         <CardContent>
+          {isFilterOpen && (
+            <div className="mb-4 rounded-md border border-zinc-700 bg-zinc-950/40 p-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+                <div className="w-full sm:w-72">
+                  <label
+                    htmlFor="participants-workshop-filter"
+                    className="mb-1 block text-xs font-medium uppercase tracking-wide text-zinc-400"
+                  >
+                    Filter by Workshop
+                  </label>
+                  <select
+                    id="participants-workshop-filter"
+                    value={selectedWorkshopFilter}
+                    onChange={(event) => setSelectedWorkshopFilter(event.target.value)}
+                    className="h-9 w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 text-sm text-zinc-100 outline-none focus:border-blue-500"
+                  >
+                    <option value="">All Workshops</option>
+                    {workshopOptions.map((workshopOption) => (
+                      <option key={workshopOption} value={workshopOption}>
+                        {workshopOption}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="w-full sm:w-64">
+                  <label
+                    htmlFor="participants-payment-filter"
+                    className="mb-1 block text-xs font-medium uppercase tracking-wide text-zinc-400"
+                  >
+                    Filter by Payment
+                  </label>
+                  <select
+                    id="participants-payment-filter"
+                    value={selectedPaymentStatusFilter}
+                    onChange={(event) => setSelectedPaymentStatusFilter(event.target.value)}
+                    className="h-9 w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 text-sm text-zinc-100 outline-none focus:border-blue-500"
+                  >
+                    <option value="">All Statuses</option>
+                    {paymentStatusOptions.map((statusOption) => (
+                      <option key={statusOption} value={statusOption}>
+                        {formatFilterLabel(statusOption)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="w-full sm:w-72">
+                  <label
+                    htmlFor="participants-email-search"
+                    className="mb-1 block text-xs font-medium uppercase tracking-wide text-zinc-400"
+                  >
+                    Search by Email
+                  </label>
+                  <input
+                    id="participants-email-search"
+                    type="text"
+                    value={emailSearch}
+                    onChange={(event) => setEmailSearch(event.target.value)}
+                    placeholder="Enter email"
+                    className="h-9 w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 text-sm text-zinc-100 outline-none focus:border-blue-500"
+                  />
+                </div>
+
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedWorkshopFilter("");
+                    setSelectedPaymentStatusFilter("");
+                    setEmailSearch("");
+                  }}
+                  disabled={
+                    !selectedWorkshopFilter
+                    && !selectedPaymentStatusFilter
+                    && !emailSearch.trim()
+                  }
+                  className="text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100"
+                >
+                  Clear
+                </Button>
+              </div>
+            </div>
+          )}
+
           {error && (
             <div className="mb-4 rounded-md border border-rose-500/40 bg-rose-950/30 px-3 py-2 text-sm text-rose-200">
               {error}
@@ -521,17 +723,19 @@ export default function AdminParticipantsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {participants.length === 0 ? (
+                {filteredParticipants.length === 0 ? (
                   <TableRow className="border-zinc-800">
                     <TableCell
                       colSpan={6}
                       className="py-8 text-center text-zinc-500"
                     >
-                      No participants found.
+                      {participants.length === 0
+                        ? "No participants found."
+                        : "No participants found for the selected filters."}
                     </TableCell>
                   </TableRow>
                 ) : (
-                  participants.map((participant) => {
+                  filteredParticipants.map((participant) => {
                     const registeredAt = formatDateTime(participant.created_at);
 
                     return (
