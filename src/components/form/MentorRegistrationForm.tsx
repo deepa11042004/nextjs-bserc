@@ -367,7 +367,7 @@ export default function MentorRegistrationForm() {
           error.message,
         )
       ) {
-        return "Uploaded files are too large for this deployment route. Keep resume <= 5MB and profile photo <= 2MB, or configure NEXT_PUBLIC_API_URL to send uploads directly to backend.";
+        return "Uploaded files are too large. Keep resume <= 5MB and profile photo <= 2MB";
       }
 
       return error.message;
