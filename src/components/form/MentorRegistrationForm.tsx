@@ -367,7 +367,7 @@ export default function MentorRegistrationForm() {
           error.message,
         )
       ) {
-        return "Uploaded files are too large. Keep resume <= 5MB and profile photo <= 2MB";
+        return "Upload request is too large for this route. Even if each file is under its limit, the combined multipart payload can exceed gateway limits.";
       }
 
       return error.message;
@@ -636,6 +636,9 @@ export default function MentorRegistrationForm() {
       ): Promise<PaymentAttemptResult> => {
         try {
           const payload = cloneFormData(formDataObj);
+          // Payment-attempt records do not need files and can exceed proxy payload limits.
+          payload.delete("resume");
+          payload.delete("profile_photo");
           payload.set("payment_status", paymentStatus);
           payload.set(
             "payment_mode",
