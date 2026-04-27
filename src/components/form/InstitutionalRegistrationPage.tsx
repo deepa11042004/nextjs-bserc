@@ -631,11 +631,13 @@ export default function InstitutionalRegistrationPage() {
   };
 
   const boardOptions = [
-    { value: "cbse", label: "CBSE" },
-    { value: "icse", label: "ICSE" },
-    { value: "state", label: "State Board" },
-    { value: "ib", label: "International Baccalaureate" },
-    { value: "cambridge", label: "Cambridge International" },
+    { value: "university", label: "University" },
+    { value: "college", label: "College" },
+    { value: "autonomous college", label: "Autonomous College" },
+    { value: "school", label: "School" },
+    { value: "cambridge", label: "Company" },
+    { value: "startup", label: "Startup" },
+    { value: "organization", label: "Organization" },
     { value: "other", label: "Other" },
   ];
 
