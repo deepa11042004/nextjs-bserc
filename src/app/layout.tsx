@@ -33,7 +33,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" data-scroll-behavior="smooth"  >
-      <body  >
+      <body suppressHydrationWarning>
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

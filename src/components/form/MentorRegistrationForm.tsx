@@ -56,6 +56,11 @@ type CreateMentorOrderResponse = {
   message?: string;
 };
 
+type PaymentAttemptResult = {
+  ok: boolean;
+  errorMessage?: string;
+};
+
 const MAX_RESUME_BYTES = 5 * 1024 * 1024;
 const MAX_PROFILE_PHOTO_BYTES = 2 * 1024 * 1024;
 const MAX_PROXY_UPLOAD_BYTES = 4 * 1024 * 1024;
@@ -628,7 +633,7 @@ export default function MentorRegistrationForm() {
           orderId?: string;
           paymentMode?: string;
         },
-      ): Promise<boolean> => {
+      ): Promise<PaymentAttemptResult> => {
         try {
           const payload = cloneFormData(formDataObj);
           payload.set("payment_status", paymentStatus);
@@ -669,20 +674,31 @@ export default function MentorRegistrationForm() {
             });
           }
 
-          return attemptResponse.ok;
-        } catch {
-          return false;
+          if (!attemptResponse.ok) {
+            return {
+              ok: false,
+              errorMessage: await parseApiMessage(attemptResponse),
+            };
+          }
+
+          return { ok: true };
+        } catch (error: unknown) {
+          return {
+            ok: false,
+            errorMessage: getErrorMessage(error),
+          };
         }
       };
 
-      const pendingAttemptSaved = await persistPaymentAttempt("pending", {
+      const pendingAttemptResult = await persistPaymentAttempt("pending", {
         orderId: orderPayload.order_id,
         paymentMode: "order_created",
       });
 
-      if (!pendingAttemptSaved) {
+      if (!pendingAttemptResult.ok) {
         throw new Error(
-          "Unable to initialize payment attempt. Please try again.",
+          pendingAttemptResult.errorMessage
+            || "Unable to initialize payment attempt. Please try again.",
         );
       }
 
@@ -714,20 +730,23 @@ export default function MentorRegistrationForm() {
 
         const failureMessage = reason.trim() || "Payment was not completed";
 
-        const failedAttemptSaved = await persistPaymentAttempt("failed", {
+        const failedAttemptResult = await persistPaymentAttempt("failed", {
           reason: failureMessage,
           paymentId,
           orderId: orderId || orderPayload.order_id,
           paymentMode: "gateway_failed",
         });
 
-        if (failedAttemptSaved) {
+        if (failedAttemptResult.ok) {
           setSubmitError(
             `${failureMessage}. Your details were saved with failed payment status.`,
           );
         } else {
           setSubmitError(
-            `${failureMessage}. Unable to persist failed payment attempt automatically. Please contact support with your order details.`,
+            `${failureMessage}. ${
+              failedAttemptResult.errorMessage
+                || "Unable to persist failed payment attempt automatically."
+            } Please contact support with your order details.`,
           );
         }
 

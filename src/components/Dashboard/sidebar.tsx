@@ -296,6 +296,15 @@ export default function Sidebar() {
           <div className="px-4 py-4 border-t border-[#1F1F23]">
             <div className="space-y-1">
               <NavItem
+                href="/admin/mailing"
+                icon={MessagesSquare}
+                onClick={() => setIsMobileMenuOpen(false)}
+                isActive={normalizedPath.startsWith('/admin/mailing')}
+              >
+                Mailing
+              </NavItem>
+
+              <NavItem
                 //LMS Dashboard link (replace with actual URL if different) 
                 href="https://bserc-frontend.vercel.app/"
                 icon={ExternalLink}

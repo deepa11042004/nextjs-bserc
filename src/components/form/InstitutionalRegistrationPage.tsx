@@ -751,8 +751,8 @@ export default function InstitutionalRegistrationPage() {
     const registrationPayload = buildRegistrationPayload();
 
     try {
-      const orderResponse = await fetch(
-        "/api/institutional-registration/create-order",
+      const registrationResponse = await fetch(
+        "/api/institutional-registration",
         {
           method: "POST",
           headers: {
@@ -762,229 +762,33 @@ export default function InstitutionalRegistrationPage() {
         },
       );
 
-      const orderPayload = (await orderResponse
+      const registrationResult = (await registrationResponse
         .json()
         .catch(() => ({}))) as InstitutionalCreateOrderResponse;
 
-      if (!orderResponse.ok) {
+      if (!registrationResponse.ok) {
         throw new Error(
-          getApiMessage(orderPayload)
-          || "Unable to initialize payment. Please try again.",
+          getApiMessage(registrationResult)
+          || "Unable to submit registration. Please try again.",
         );
       }
 
-      if (
-        !orderPayload.requires_payment
-        || !orderPayload.key_id
-        || !orderPayload.order_id
-        || !orderPayload.amount
-        || !orderPayload.currency
-      ) {
-        throw new Error(
-          orderPayload.message
-          || "Payment setup is incomplete. Please try again.",
-        );
-      }
-
-      const resolvedRegistrationFee =
-        orderPayload.registration_fee !== undefined
-          ? Number(orderPayload.registration_fee)
-          : Number(orderPayload.amount) / 100;
-
-      const razorpayLoaded = await loadRazorpayScript();
-      const Razorpay = getRazorpayConstructor();
-
-      if (!razorpayLoaded || !Razorpay) {
-        throw new Error(
-          "Unable to load secure payment gateway. Please try again.",
-        );
-      }
-
-      let flowCompleted = false;
-      let failureHandled = false;
-
-      const persistPaymentAttempt = async (
-        paymentStatus: "pending" | "failed",
-        options?: {
-          reason?: string;
-          transactionId?: string;
-          orderId?: string;
-          paymentMode?: string;
-        },
-      ) => {
-        try {
-          const response = await fetch(
-            "/api/institutional-registration/log-payment-attempt",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                ...registrationPayload,
-                payment_status: paymentStatus,
-                payment_amount: resolvedRegistrationFee,
-                payment_currency: orderPayload.currency,
-                payment_mode: options?.paymentMode,
-                failure_reason:
-                  paymentStatus === "failed"
-                    ? options?.reason || "Payment failed or cancelled by user"
-                    : undefined,
-                transaction_id: options?.transactionId || undefined,
-                razorpay_order_id: options?.orderId || undefined,
-              }),
-            },
-          );
-
-          return response.ok;
-        } catch {
-          return false;
-        }
-      };
-
-      const pendingAttemptSaved = await persistPaymentAttempt("pending", {
-        orderId: orderPayload.order_id,
-        paymentMode: "order_created",
+      setSuccessSnapshot({
+        contactName: formData.contactName,
+        instituteName: formData.schoolName,
       });
-
-      if (!pendingAttemptSaved) {
-        throw new Error(
-          "Unable to initialize payment attempt. Please try again.",
-        );
-      }
-
-      const handlePaymentFailure = async (
-        reason: string,
-        transactionId?: string,
-        orderId?: string,
-      ) => {
-        if (flowCompleted || failureHandled) {
-          return;
-        }
-
-        failureHandled = true;
-
-        const failureMessage = reason.trim() || "Payment was not completed";
-
-        await persistPaymentAttempt("failed", {
-          reason: failureMessage,
-          transactionId,
-          orderId,
-          paymentMode: "gateway_failed",
-        });
-
-        setSubmitStatus("error");
-        setSuccessSnapshot(null);
-        setSubmitErrorMessage(
-          `${failureMessage}. Your details were saved with failed payment status.`,
-        );
-        setIsSubmitting(false);
-      };
-
-      const razorpay = new Razorpay({
-        key: orderPayload.key_id,
-        amount: orderPayload.amount,
-        currency: orderPayload.currency,
-        name: "BSERC",
-        description:
-          `${orderPayload.partnership_type || "Institutional Partnership"} Registration Fee`,
-        order_id: orderPayload.order_id,
-        prefill: {
-          name: formData.contactName,
-          email: formData.email,
-          contact: formData.phone,
-        },
-        theme: {
-          color: "#f97316",
-        },
-        handler: async (paymentResponse) => {
-          try {
-            const verifyResponse = await fetch(
-              "/api/institutional-registration/verify-payment",
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  ...registrationPayload,
-                  ...paymentResponse,
-                  payment_status: "success",
-                  transaction_id: paymentResponse.razorpay_payment_id,
-                }),
-              },
-            );
-
-            const verifyPayload = (await verifyResponse
-              .json()
-              .catch(() => ({}))) as unknown;
-
-            if (!verifyResponse.ok) {
-              throw new Error(
-                getApiMessage(verifyPayload)
-                || "Payment verification failed. Please contact support.",
-              );
-            }
-
-            flowCompleted = true;
-            setSuccessSnapshot({
-              contactName: formData.contactName,
-              instituteName: formData.schoolName,
-            });
-            setFormData(createInitialFormData());
-            setErrors({});
-            setSubmitErrorMessage("");
-            setSubmitStatus("success");
-            setIsSubmitting(false);
-          } catch (err) {
-            const message =
-              err instanceof Error && err.message
-                ? err.message
-                : "Payment verification failed";
-
-            await handlePaymentFailure(
-              message,
-              paymentResponse.razorpay_payment_id,
-              paymentResponse.razorpay_order_id,
-            );
-          }
-        },
-        modal: {
-          ondismiss: () => {
-            void handlePaymentFailure(
-              "Payment was cancelled before completion",
-              undefined,
-              orderPayload.order_id,
-            );
-          },
-        },
-      });
-
-      razorpay.on("payment.failed", (failureResponse) => {
-        const paymentFailureReason =
-          failureResponse.error?.description
-          || failureResponse.error?.reason
-          || "Payment failed";
-
-        const failedPaymentId = failureResponse.error?.metadata?.payment_id;
-        const failedOrderId =
-          failureResponse.error?.metadata?.order_id || orderPayload.order_id;
-
-        void handlePaymentFailure(
-          paymentFailureReason,
-          failedPaymentId,
-          failedOrderId,
-        );
-      });
-
-      razorpay.open();
+      setFormData(createInitialFormData());
+      setErrors({});
+      setSubmitErrorMessage("");
+      setSubmitStatus("success");
+      setIsSubmitting(false);
     } catch (err) {
       setSubmitStatus("error");
       setSuccessSnapshot(null);
       setSubmitErrorMessage(
         err instanceof Error && err.message
           ? err.message
-          : "Unable to initialize institutional registration payment. Please try again.",
+          : "Unable to submit institutional registration. Please try again.",
       );
       setIsSubmitting(false);
     }
@@ -1050,7 +854,7 @@ export default function InstitutionalRegistrationPage() {
           </p>
         </div>
 
-        {/* Partnership Options Section */}
+        {/* Partnership Options Section
         <div className="mb-12">
           <h2 className="text-2xl md:text-3xl font-bold text-orange-400 font-serif mb-8">
             Partnership Options
@@ -1080,14 +884,14 @@ export default function InstitutionalRegistrationPage() {
               feeAmount="Γé╣ 2,500/year"
             />
           </div>
-        </div>
+        </div> */}
 
 
 
 
         {/* Why Partner Section (old version - can be removed) */}
         <SectionCard
-          title="Why Partner With BSERC"
+          title="Partner With BSERC"
           subtitle="Elevate your institution's academic standing and provide students access to India's premier defence and space sector ecosystem"
         >
           <div className="grid md:grid-cols-3 gap-4">
@@ -1322,7 +1126,7 @@ export default function InstitutionalRegistrationPage() {
             <div className="pt-4 flex flex-col md:flex-row justify-center items-center gap-6">
               <SubmitButton
                 isSubmitting={isSubmitting}
-                label="Proceed to Secure Payment"
+                label="Submit Registration"
               />
             </div>
           </form>
