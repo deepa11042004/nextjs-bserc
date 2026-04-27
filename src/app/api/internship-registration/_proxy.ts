@@ -105,6 +105,41 @@ type ForwardPayload = {
   headers?: Record<string, string>;
 };
 
+function parseCookieHeader(raw: string | null): Record<string, string> {
+  if (!raw) {
+    return {};
+  }
+
+  return raw.split(";").reduce<Record<string, string>>((acc, part) => {
+    const [key, ...rest] = part.trim().split("=");
+    if (!key) {
+      return acc;
+    }
+    acc[key] = decodeURIComponent(rest.join("=") || "");
+    return acc;
+  }, {});
+}
+
+function extractAuthHeader(request: Request): string | null {
+  const value = request.headers.get("authorization");
+  if (value && value.trim()) {
+    return value;
+  }
+
+  const cookies = parseCookieHeader(request.headers.get("cookie"));
+  const token =
+    cookies.adminAuthToken ||
+    cookies.userAuthToken ||
+    cookies.authToken ||
+    "";
+
+  if (!token) {
+    return null;
+  }
+
+  return `Bearer ${token}`;
+}
+
 async function parseUpstreamBody(response: Response): Promise<unknown> {
   const text = await response.text();
 
@@ -131,8 +166,10 @@ async function buildForwardPayload(
   request: Request,
   method: InternshipHttpMethod,
 ): Promise<ForwardPayload | null> {
+  const authHeader = extractAuthHeader(request);
+
   if (method === "GET" || method === "DELETE") {
-    return {};
+    return authHeader ? { headers: { Authorization: authHeader } } : {};
   }
 
   const contentType = request.headers.get("content-type")?.toLowerCase() ?? "";
@@ -148,25 +185,33 @@ async function buildForwardPayload(
       body: JSON.stringify(body),
       headers: {
         "Content-Type": "application/json",
+        ...(authHeader ? { Authorization: authHeader } : {}),
       },
     };
   }
 
   if (contentType.includes("multipart/form-data")) {
     const formData = await request.formData();
-    return { body: formData };
+    return {
+      body: formData,
+      headers: authHeader ? { Authorization: authHeader } : undefined,
+    };
   }
 
   const rawBody = await request.arrayBuffer();
 
+  const headers: Record<string, string> = {};
+  if (contentType) {
+    headers["Content-Type"] =
+      request.headers.get("content-type") || "application/octet-stream";
+  }
+  if (authHeader) {
+    headers.Authorization = authHeader;
+  }
+
   return {
     body: rawBody.byteLength > 0 ? rawBody : undefined,
-    headers: contentType
-      ? {
-          "Content-Type":
-            request.headers.get("content-type") || "application/octet-stream",
-        }
-      : undefined,
+    headers: Object.keys(headers).length > 0 ? headers : undefined,
   };
 }
 

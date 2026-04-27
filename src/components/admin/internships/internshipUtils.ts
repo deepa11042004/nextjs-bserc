@@ -69,6 +69,8 @@ function toInternshipApplication(value: unknown): InternshipApplication | null {
     is_lateral: toBoolean(record.is_lateral),
     declaration_accepted: toBoolean(record.declaration_accepted),
     has_passport_photo: toBoolean(record.has_passport_photo),
+    passport_photo_path: toNullableString(record.passport_photo_path),
+    passport_photo_url: toNullableString(record.passport_photo_url),
     passport_photo_mime_type: toNullableString(record.passport_photo_mime_type),
     passport_photo_file_name: toNullableString(record.passport_photo_file_name),
     payment_amount: toNullableNumber(record.payment_amount),

@@ -31,6 +31,7 @@ import {
   getApiMessage,
   getPaymentBadgeClasses,
 } from "@/components/admin/internships/internshipUtils";
+import { useAuth } from "@/hooks/useAuth";
 import {
   deleteInternshipApplication,
   getInternshipFeeSettings,
@@ -118,6 +119,7 @@ function presentText(value: string | null | undefined): string {
 }
 
 export default function InternshipApplications() {
+  const { token, isHydrated } = useAuth();
   const [applications, setApplications] = useState<InternshipApplication[]>([]);
   const [registrationTypeFilter, setRegistrationTypeFilter] =
     useState<RegistrationTypeFilter>("all");
@@ -168,6 +170,16 @@ export default function InternshipApplications() {
     let isMounted = true;
 
     const loadApplications = async () => {
+      if (!isHydrated) {
+        return;
+      }
+
+      if (!token) {
+        setApplications([]);
+        setError("Admin login required to view internship applications.");
+        return;
+      }
+
       setIsLoading(true);
       setError("");
 
@@ -175,6 +187,7 @@ export default function InternshipApplications() {
         const response = await fetch("/api/internship-registration/list", {
           method: "GET",
           cache: "no-store",
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         });
 
         const payload = (await response.json().catch(() => ({}))) as unknown;
@@ -245,7 +258,7 @@ export default function InternshipApplications() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [isHydrated, token]);
 
   useEffect(() => {
     if (!actionNotice) {
@@ -951,6 +964,30 @@ export default function InternshipApplications() {
                     <p className="mt-1 text-sm text-zinc-100">
                       {selectedApplication.has_passport_photo ? "Uploaded" : "Not uploaded"}
                     </p>
+                  </div>
+                  <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-3 sm:col-span-2">
+                    <p className="text-xs text-zinc-500">Passport Photo Preview</p>
+                    {selectedApplication.passport_photo_url ? (
+                      <div className="mt-2 flex flex-col gap-2">
+                        <div className="flex h-64 items-center justify-center rounded-md border border-zinc-800 bg-zinc-950/40 p-2">
+                          <img
+                            src={selectedApplication.passport_photo_url}
+                            alt="Passport photo"
+                            className="h-full w-full max-w-full object-contain"
+                          />
+                        </div>
+                        <a
+                          href={selectedApplication.passport_photo_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-xs text-sky-300 underline"
+                        >
+                          Open full image
+                        </a>
+                      </div>
+                    ) : (
+                      <p className="mt-1 text-sm text-zinc-400">No photo URL available.</p>
+                    )}
                   </div>
                   <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-3">
                     <p className="text-xs text-zinc-500">Photo MIME Type</p>
