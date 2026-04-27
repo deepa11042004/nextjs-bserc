@@ -18,6 +18,8 @@ export interface InternshipApplication {
   is_lateral: boolean;
   declaration_accepted: boolean;
   has_passport_photo: boolean;
+  passport_photo_path?: string | null;
+  passport_photo_url?: string | null;
   passport_photo_mime_type: string | null;
   passport_photo_file_name: string | null;
   payment_amount: number | null;
