@@ -101,6 +101,33 @@ export function extractInternshipApplications(
     .filter((application): application is InternshipApplication => application !== null);
 }
 
+export function extractInternshipPagination(payload: unknown): {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+} {
+  if (!payload || typeof payload !== "object") {
+    return { page: 1, pageSize: 50, total: 0, totalPages: 1 };
+  }
+
+  const record = payload as Record<string, unknown>;
+  const page = Number(record.page);
+  const pageSize = Number(record.pageSize);
+  const total = Number(record.total);
+  const totalPages = Number(record.totalPages);
+
+  return {
+    page: Number.isFinite(page) && page > 0 ? page : 1,
+    pageSize: Number.isFinite(pageSize) && pageSize > 0 ? pageSize : 50,
+    total: Number.isFinite(total) && total >= 0 ? total : 0,
+    totalPages:
+      Number.isFinite(totalPages) && totalPages > 0
+        ? totalPages
+        : 1,
+  };
+}
+
 export function getApiMessage(payload: unknown): string | null {
   if (!payload || typeof payload !== "object") {
     return null;

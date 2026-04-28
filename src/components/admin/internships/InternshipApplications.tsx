@@ -25,6 +25,7 @@ import {
 import type { InternshipApplication } from "@/types/internshipApplication";
 import {
   extractInternshipApplications,
+  extractInternshipPagination,
   formatDate,
   formatDateTime,
   formatMoney,
@@ -129,6 +130,11 @@ export default function InternshipApplications() {
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
+  const [jumpPageInput, setJumpPageInput] = useState("");
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [generalFeeInput, setGeneralFeeInput] = useState("100");
   const [lateralFeeInput, setLateralFeeInput] = useState("100");
   const [isFeeLoading, setIsFeeLoading] = useState(true);
@@ -137,34 +143,19 @@ export default function InternshipApplications() {
   const [activeModalType, setActiveModalType] = useState<ActiveModalType | null>(null);
   const [selectedApplication, setSelectedApplication] =
     useState<InternshipApplication | null>(null);
+  const [isPhotoLoading, setIsPhotoLoading] = useState(false);
   const [isDeletingApplication, setIsDeletingApplication] = useState(false);
   const [isTransferringPaymentStatus, setIsTransferringPaymentStatus] = useState(false);
   const [actionError, setActionError] = useState("");
   const [actionNotice, setActionNotice] = useState("");
 
-  const filteredApplications = useMemo(() => {
-    const normalizedEmailSearch = emailSearch.trim().toLowerCase();
+  const filteredApplications = applications;
 
-    return applications.filter((application) => {
-      const matchesRegistrationType =
-        registrationTypeFilter === "all"
-          ? true
-          : registrationTypeFilter === "lateral"
-          ? application.is_lateral
-          : !application.is_lateral;
-
-      const matchesPaymentStatus =
-        paymentStatusFilter === "all"
-          ? true
-          : (application.payment_status || "").toLowerCase() === paymentStatusFilter;
-
-      const matchesEmail =
-        !normalizedEmailSearch
-        || (application.email || "").toLowerCase().includes(normalizedEmailSearch);
-
-      return matchesRegistrationType && matchesPaymentStatus && matchesEmail;
-    });
-  }, [applications, emailSearch, paymentStatusFilter, registrationTypeFilter]);
+  useEffect(() => {
+    if (page !== 1) {
+      setPage(1);
+    }
+  }, [registrationTypeFilter, paymentStatusFilter, emailSearch]);
 
   useEffect(() => {
     let isMounted = true;
@@ -183,10 +174,19 @@ export default function InternshipApplications() {
       setIsLoading(true);
       setError("");
 
+      const query = new URLSearchParams({
+        page: String(page),
+        pageSize: String(pageSize),
+        registrationType: registrationTypeFilter,
+        paymentStatus: paymentStatusFilter,
+        emailSearch: emailSearch.trim(),
+      });
+
       try {
-        const response = await fetch("/api/internship-registration/list", {
+        const response = await fetch(`/api/internship-registration/list?${query.toString()}`, {
           method: "GET",
           cache: "no-store",
+          credentials: "include",
           headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         });
 
@@ -203,12 +203,20 @@ export default function InternshipApplications() {
         }
 
         setApplications(extractInternshipApplications(payload));
+        const pagination = extractInternshipPagination(payload);
+        setTotalCount(pagination.total);
+        setTotalPages(pagination.totalPages);
+        if (page > pagination.totalPages) {
+          setPage(pagination.totalPages);
+        }
       } catch (err) {
         if (!isMounted) {
           return;
         }
 
         setApplications([]);
+        setTotalCount(0);
+        setTotalPages(1);
         setError(
           err instanceof Error && err.message
             ? err.message
@@ -258,7 +266,15 @@ export default function InternshipApplications() {
     return () => {
       isMounted = false;
     };
-  }, [isHydrated, token]);
+  }, [
+    isHydrated,
+    token,
+    page,
+    pageSize,
+    registrationTypeFilter,
+    paymentStatusFilter,
+    emailSearch,
+  ]);
 
   useEffect(() => {
     if (!actionNotice) {
@@ -271,6 +287,10 @@ export default function InternshipApplications() {
 
     return () => window.clearTimeout(timeoutId);
   }, [actionNotice]);
+
+  useEffect(() => {
+    setJumpPageInput("");
+  }, [page, pageSize]);
 
   const handleSaveFeeSettings = async () => {
     const generalFee = Number(generalFeeInput);
@@ -379,8 +399,8 @@ export default function InternshipApplications() {
     }
   };
 
-  const totalApplications = useMemo(() => filteredApplications.length, [filteredApplications]);
-  const totalApplicationsAll = useMemo(() => applications.length, [applications]);
+  const totalApplications = useMemo(() => applications.length, [applications]);
+  const totalApplicationsAll = useMemo(() => totalCount, [totalCount]);
 
   const selectedPaymentStatus =
     (selectedApplication?.payment_status || "").trim().toLowerCase();
@@ -392,6 +412,65 @@ export default function InternshipApplications() {
     setActionError("");
     setSelectedApplication(application);
     setActiveModalType(modalType);
+
+    if (
+      modalType === "view"
+      && application.has_passport_photo
+      && !application.passport_photo_url
+      && !isPhotoLoading
+    ) {
+      void (async () => {
+        try {
+          setIsPhotoLoading(true);
+          const response = await fetch(
+            `/api/internship-registration/${application.id}/passport-photo-url`,
+            {
+              method: "GET",
+              cache: "no-store",
+              credentials: "include",
+              headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+            },
+          );
+
+          const payload = (await response.json().catch(() => ({}))) as unknown;
+
+          if (!response.ok) {
+            throw new Error(
+              getApiMessage(payload) || "Unable to load passport photo.",
+            );
+          }
+
+          const url =
+            payload && typeof payload === "object" && "url" in payload
+              ? String((payload as { url?: unknown }).url || "")
+              : "";
+
+          if (!url) {
+            throw new Error("Passport photo URL unavailable.");
+          }
+
+          setSelectedApplication((previous) =>
+            previous && previous.id === application.id
+              ? { ...previous, passport_photo_url: url }
+              : previous,
+          );
+
+          setApplications((previous) =>
+            previous.map((item) =>
+              item.id === application.id ? { ...item, passport_photo_url: url } : item,
+            ),
+          );
+        } catch (err) {
+          setActionError(
+            err instanceof Error && err.message
+              ? err.message
+              : "Unable to load passport photo.",
+          );
+        } finally {
+          setIsPhotoLoading(false);
+        }
+      })();
+    }
   };
 
   const closeApplicationModal = () => {
@@ -400,6 +479,7 @@ export default function InternshipApplications() {
     }
 
     setActionError("");
+    setIsPhotoLoading(false);
     setSelectedApplication(null);
     setActiveModalType(null);
   };
@@ -420,6 +500,7 @@ export default function InternshipApplications() {
       setApplications((previous) =>
         previous.filter((application) => application.id !== selectedApplication.id),
       );
+      setTotalCount((previous) => Math.max(0, previous - 1));
 
       setActionNotice(
         responseMessage
@@ -642,6 +723,33 @@ export default function InternshipApplications() {
                 />
               </div>
 
+              <div className="w-full sm:w-40">
+                <label
+                  htmlFor="internship-page-size"
+                  className="mb-1 block text-xs font-medium uppercase tracking-wide text-zinc-400"
+                >
+                  Page Size
+                </label>
+                <select
+                  id="internship-page-size"
+                  value={pageSize}
+                  onChange={(event) => {
+                    const nextSize = Number(event.target.value);
+                    if (Number.isFinite(nextSize) && nextSize > 0) {
+                      setPageSize(nextSize);
+                      setPage(1);
+                    }
+                  }}
+                  className="h-9 w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 text-sm text-zinc-100 outline-none focus:border-blue-500"
+                >
+                  {[25, 50, 100].map((size) => (
+                    <option key={`page-size-${size}`} value={size}>
+                      {size} / page
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <Button
                 variant="ghost"
                 size="sm"
@@ -649,6 +757,7 @@ export default function InternshipApplications() {
                   setRegistrationTypeFilter("all");
                   setPaymentStatusFilter("all");
                   setEmailSearch("");
+                  setJumpPageInput("");
                 }}
                 disabled={
                   registrationTypeFilter === "all"
@@ -680,9 +789,63 @@ export default function InternshipApplications() {
                   </>
                 )}
               </Button>
-              <span className="text-sm text-zinc-400">
-                Showing {totalApplications} of {totalApplicationsAll}
-              </span>
+              <div className="flex flex-wrap items-center gap-3 text-sm text-zinc-400">
+                <span>
+                  Showing {totalApplications} of {totalApplicationsAll}
+                </span>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setPage((previous) => Math.max(1, previous - 1))}
+                    disabled={isLoading || page <= 1}
+                    className="text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100"
+                  >
+                    Prev
+                  </Button>
+                  <span className="text-xs text-zinc-500">
+                    Page {page} of {totalPages}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setPage((previous) => Math.min(totalPages, previous + 1))}
+                    disabled={isLoading || page >= totalPages}
+                    className="text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100"
+                  >
+                    Next
+                  </Button>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={1}
+                    max={totalPages}
+                    value={jumpPageInput}
+                    onChange={(event) => setJumpPageInput(event.target.value)}
+                    placeholder="Page"
+                    className="h-8 w-20 rounded-md border border-zinc-700 bg-zinc-900 px-2 text-xs text-zinc-100 outline-none focus:border-blue-500"
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      const parsed = Number(jumpPageInput);
+                      if (Number.isFinite(parsed)) {
+                        const clamped = Math.min(
+                          Math.max(1, Math.floor(parsed)),
+                          totalPages,
+                        );
+                        setPage(clamped);
+                      }
+                    }}
+                    disabled={isLoading || !jumpPageInput.trim()}
+                    className="text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100"
+                  >
+                    Go
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         </CardHeader>
@@ -720,7 +883,7 @@ export default function InternshipApplications() {
                     <TableRow className="border-zinc-800">
                       <TableCell colSpan={5} className="py-8 text-center text-zinc-500">
                         {applications.length === 0
-                          ? "No internship applications found."
+                          ? "No internship applications found for the selected filters."
                           : "No applications found for the selected filters."}
                       </TableCell>
                     </TableRow>
@@ -986,7 +1149,11 @@ export default function InternshipApplications() {
                         </a>
                       </div>
                     ) : (
-                      <p className="mt-1 text-sm text-zinc-400">No photo URL available.</p>
+                      <p className="mt-1 text-sm text-zinc-400">
+                        {isPhotoLoading
+                          ? "Loading passport photo..."
+                          : "No photo URL available."}
+                      </p>
                     )}
                   </div>
                   <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-3">
