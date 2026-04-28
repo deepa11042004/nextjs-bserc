@@ -187,6 +187,7 @@ export default function InternshipApplications() {
         const response = await fetch("/api/internship-registration/list", {
           method: "GET",
           cache: "no-store",
+          credentials: "include",
           headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         });
 
