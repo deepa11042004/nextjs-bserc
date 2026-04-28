@@ -69,6 +69,8 @@ function toInternshipApplication(value: unknown): InternshipApplication | null {
     is_lateral: toBoolean(record.is_lateral),
     declaration_accepted: toBoolean(record.declaration_accepted),
     has_passport_photo: toBoolean(record.has_passport_photo),
+    passport_photo_path: toNullableString(record.passport_photo_path),
+    passport_photo_url: toNullableString(record.passport_photo_url),
     passport_photo_mime_type: toNullableString(record.passport_photo_mime_type),
     passport_photo_file_name: toNullableString(record.passport_photo_file_name),
     payment_amount: toNullableNumber(record.payment_amount),
@@ -97,6 +99,33 @@ export function extractInternshipApplications(
   return record.applications
     .map(toInternshipApplication)
     .filter((application): application is InternshipApplication => application !== null);
+}
+
+export function extractInternshipPagination(payload: unknown): {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+} {
+  if (!payload || typeof payload !== "object") {
+    return { page: 1, pageSize: 50, total: 0, totalPages: 1 };
+  }
+
+  const record = payload as Record<string, unknown>;
+  const page = Number(record.page);
+  const pageSize = Number(record.pageSize);
+  const total = Number(record.total);
+  const totalPages = Number(record.totalPages);
+
+  return {
+    page: Number.isFinite(page) && page > 0 ? page : 1,
+    pageSize: Number.isFinite(pageSize) && pageSize > 0 ? pageSize : 50,
+    total: Number.isFinite(total) && total >= 0 ? total : 0,
+    totalPages:
+      Number.isFinite(totalPages) && totalPages > 0
+        ? totalPages
+        : 1,
+  };
 }
 
 export function getApiMessage(payload: unknown): string | null {

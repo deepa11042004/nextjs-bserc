@@ -25,6 +25,7 @@
     ENV NODE_ENV=production
     
     # ✅ ADD THIS (runtime env)
+    ARG API_URL
     ENV API_URL=$API_URL
     
     # Create non-root user (security fix)
