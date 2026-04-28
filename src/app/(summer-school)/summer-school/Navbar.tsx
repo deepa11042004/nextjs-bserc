@@ -31,6 +31,9 @@ export default function Navbar() {
     <>
       {/* Header */}
       <header className="w-full bg-black border-b border-white/5 sticky top-0 z-[60] backdrop-blur-md">
+        <div className="w-full bg-red-600 text-white text-center px-4 py-2 text-sm sm:text-base font-semibold">
+          Last Date to Apply for Def-Space Summer School: May 7th 2026
+        </div>
         <nav className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 h-[70px]">
           {/* Logo */}
           <Link
@@ -96,7 +99,7 @@ export default function Navbar() {
           />
 
           {/* Drawer */}
-          <div className="fixed top-[70px] left-0 right-0 bottom-0 bg-[#0a0c16] z-[59] overflow-y-auto">
+          <div className="fixed top-[102px] left-0 right-0 bottom-0 bg-[#0a0c16] z-[59] overflow-y-auto">
             <ul className="flex flex-col text-sm font-medium text-gray-300">
               {NAV_ITEMS.map((item) => (
                 <li key={item.label} className="border-b border-white/5">
