@@ -1,6 +1,6 @@
 "use client"
 import { MapPin, Star, Map, ChevronLeft, ChevronRight } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type State = {
   name: string;
@@ -52,7 +52,7 @@ const states: State[] = [
 const StateCard = ({ state }: { state: State }) => {
   return (
     <div
-      className={`rounded-xl p-6 text-center transition-all cursor-pointer border flex-shrink-0 w-[280px] sm:w-auto
+      className={`rounded-xl p-6 text-center transition-all cursor-pointer border flex-shrink-0 w-[240px] sm:w-[260px] lg:w-[280px]
       ${
         state.isUT
           ? "bg-gradient-to-br from-[#1E90FF]/10 to-[#FF6B35]/10 border-2 border-white hover:shadow-blue-400/40 shadow-lg"
@@ -79,8 +79,53 @@ const StateCard = ({ state }: { state: State }) => {
 export default function StatePartnership() {
   const sliderRef = useRef<HTMLDivElement>(null);
   const [showArrows, setShowArrows] = useState(false);
+  const lastUserInteractionRef = useRef(0);
+
+  useEffect(() => {
+    const slider = sliderRef.current;
+
+    if (!slider) {
+      return;
+    }
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      return;
+    }
+
+    const speed = 0.1; // auto scroll speed controlling
+    const pauseAfterInteractionMs = 1200;
+    const intervalId = window.setInterval(() => {
+      const currentSlider = sliderRef.current;
+
+      if (!currentSlider) {
+        return;
+      }
+
+      if (Date.now() - lastUserInteractionRef.current < pauseAfterInteractionMs) {
+        return;
+      }
+
+      currentSlider.scrollBy({ left: speed, behavior: "auto" });
+
+      const maxScrollLeft = currentSlider.scrollWidth - currentSlider.clientWidth;
+      if (currentSlider.scrollLeft >= maxScrollLeft - 1) {
+        currentSlider.scrollLeft = 0;
+      }
+
+    }, 16);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, []);
+
+  const markManualInteraction = () => {
+    lastUserInteractionRef.current = Date.now();
+  };
 
   const scroll = (direction: "left" | "right") => {
+    markManualInteraction();
+
     if (sliderRef.current) {
       const { current } = sliderRef;
       const scrollAmount = direction === "left" ? -300 : 300;
@@ -109,51 +154,45 @@ export default function StatePartnership() {
           </p>
         </div>
 
-        {/* Slider for Mobile / Grid for Desktop */}
+        {/* Slider */}
         <div className="mb-12">
-          {/* Mobile Slider */}
-          <div 
-            className="sm:hidden relative"
+          <div
+            className="relative"
             onMouseEnter={() => setShowArrows(true)}
             onMouseLeave={() => setShowArrows(false)}
+            onPointerDown={markManualInteraction}
+            onTouchStart={markManualInteraction}
+            onWheel={markManualInteraction}
           >
-            {/* Navigation Arrows */}
             <button
               onClick={() => scroll("left")}
-              className={`absolute left-2 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-black/60 border border-white/20 text-white hover:bg-black/80 transition ${showArrows ? 'opacity-100' : 'opacity-0 sm:opacity-0'}`}
+              className={`absolute left-0 sm:left-2 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-black/60 border border-white/20 text-white hover:bg-black/80 transition ${showArrows ? "opacity-100" : "opacity-0"}`}
               aria-label="Scroll left"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
             <button
               onClick={() => scroll("right")}
-              className={`absolute right-2 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-black/60 border border-white/20 text-white hover:bg-black/80 transition ${showArrows ? 'opacity-100' : 'opacity-0 sm:opacity-0'}`}
+              className={`absolute right-0 sm:right-2 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-black/60 border border-white/20 text-white hover:bg-black/80 transition ${showArrows ? "opacity-100" : "opacity-0"}`}
               aria-label="Scroll right"
             >
               <ChevronRight className="w-5 h-5" />
             </button>
 
-            {/* Scrollable Container */}
             <div
               ref={sliderRef}
-              className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-4 px-2"
+              className="flex gap-4 overflow-x-auto snap-x snap-proximity scrollbar-hide pb-4 px-2 sm:px-10 touch-pan-x"
               style={{ scrollBehavior: "smooth" }}
+              onPointerDown={markManualInteraction}
+              onTouchStart={markManualInteraction}
+              onWheel={markManualInteraction}
             >
               {states.map((state) => (
-                <div key={state.name} className="snap-start">
+                <div key={state.name} className="snap-start shrink-0">
                   <StateCard state={state} />
                 </div>
               ))}
             </div>
-
-             
-          </div>
-
-          {/* Desktop Grid */}
-          <div className="hidden sm:grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 max-w-6xl mx-auto">
-            {states.map((state) => (
-              <StateCard key={state.name} state={state} />
-            ))}
           </div>
         </div>
 
