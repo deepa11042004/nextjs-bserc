@@ -286,14 +286,23 @@ export default function Navbar() {
   return (
     <>
       <header className="w-full bg-black border-b border-white/5 sticky top-0 z-[60] backdrop-blur-md">
-        <Link
-          href="/bsercinternship"
-          className="w-full block bg-orange-600 text-white text-center px-4 py-2 text-sm sm:text-base font-semibold cursor-pointer transition-colors"
-          style={{ textDecoration: 'none' }}
-        >
-          Apply for def-space summer internship{' '}
-          <span className="text-blue-700 underline font-bold">Click here</span>
-        </Link>
+        <div className="w-full block bg-orange-600 text-white text-center px-4 py-2 text-sm sm:text-base font-semibold transition-colors">
+          <span>Apply for def-space summer internship </span>
+          <Link
+            href="/bsercinternship"
+            className="text-blue-700 underline font-bold hover:text-blue-500"
+          >
+            Click here
+          </Link>
+          <span className="mx-2">|</span>
+          <span>Apply for def-space summer school </span>
+          <Link
+            href="/summer-school"
+            className="text-blue-700 underline font-bold hover:text-blue-500"
+          >
+            Click here
+          </Link>
+        </div>
         <nav className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 h-[70px]">
           {/* Logo Left */}
 
