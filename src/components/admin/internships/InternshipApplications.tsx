@@ -137,6 +137,7 @@ export default function InternshipApplications() {
   const [totalPages, setTotalPages] = useState(1);
   const [generalFeeInput, setGeneralFeeInput] = useState("100");
   const [lateralFeeInput, setLateralFeeInput] = useState("100");
+  const [ewsLateralFeeInput, setEwsLateralFeeInput] = useState("1350");
   const [isFeeLoading, setIsFeeLoading] = useState(true);
   const [isFeeSaving, setIsFeeSaving] = useState(false);
   const [feeStatus, setFeeStatus] = useState<FeeStatus | null>(null);
@@ -241,6 +242,7 @@ export default function InternshipApplications() {
 
         setGeneralFeeInput(String(payload.general_fee_rupees ?? 0));
         setLateralFeeInput(String(payload.lateral_fee_rupees ?? 0));
+        setEwsLateralFeeInput(String(payload.ews_lateral_fee_rupees ?? 1350));
       } catch (err) {
         if (!isMounted) {
           return;
@@ -295,16 +297,19 @@ export default function InternshipApplications() {
   const handleSaveFeeSettings = async () => {
     const generalFee = Number(generalFeeInput);
     const lateralFee = Number(lateralFeeInput);
+    const ewsLateralFee = Number(ewsLateralFeeInput);
 
     if (
       !Number.isFinite(generalFee) ||
       generalFee < 0 ||
       !Number.isFinite(lateralFee) ||
-      lateralFee < 0
+      lateralFee < 0 ||
+      !Number.isFinite(ewsLateralFee) ||
+      ewsLateralFee < 0
     ) {
       setFeeStatus({
         type: "error",
-        message: "Please enter valid non-negative fee values for both registration types.",
+        message: "Please enter valid non-negative fee values for all registration types.",
       });
       return;
     }
@@ -316,10 +321,12 @@ export default function InternshipApplications() {
       const payload = await updateInternshipFeeSettings({
         general_fee_rupees: generalFee,
         lateral_fee_rupees: lateralFee,
+        ews_lateral_fee_rupees: ewsLateralFee,
       });
 
       setGeneralFeeInput(String(payload.general_fee_rupees));
       setLateralFeeInput(String(payload.lateral_fee_rupees));
+      setEwsLateralFeeInput(String(payload.ews_lateral_fee_rupees ?? ewsLateralFee));
       setFeeStatus({
         type: "success",
         message: payload.message || "Internship fees updated successfully.",
@@ -603,7 +610,7 @@ export default function InternshipApplications() {
             </div>
           )}
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <div className="space-y-2">
               <label className="text-sm text-zinc-300 font-medium">General Registration Fee (INR)</label>
               <input
@@ -629,13 +636,26 @@ export default function InternshipApplications() {
                 className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100 outline-none focus:border-cyan-500"
               />
             </div>
+
+            <div className="space-y-2">
+              <label className="text-sm text-zinc-300 font-medium">Lateral EWS Fee (INR)</label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={ewsLateralFeeInput}
+                onChange={(event) => setEwsLateralFeeInput(event.target.value)}
+                disabled={isFeeLoading || isFeeSaving}
+                className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100 outline-none focus:border-cyan-500"
+              />
+            </div>
           </div>
 
           <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs text-zinc-400">
               {isFeeLoading
                 ? "Loading current fee settings..."
-                : "These fees are used during payment order creation for general and lateral registrations."}
+                : "These fees are used during payment order creation for general, lateral, and lateral EWS registrations."}
             </p>
             <button
               type="button"

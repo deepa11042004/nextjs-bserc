@@ -169,6 +169,7 @@ async function postFormData<T>(path: string, payload: FormData): Promise<T> {
 export interface CreateInternshipOrderPayload {
   email: string;
   is_lateral?: boolean;
+  category?: string;
 }
 
 export interface CreateInternshipOrderResponse {
@@ -185,6 +186,7 @@ export interface CreateInternshipOrderResponse {
 export interface InternshipFeeSettingsResponse {
   general_fee_rupees: number;
   lateral_fee_rupees: number;
+  ews_lateral_fee_rupees?: number;
   message?: string;
 }
 
@@ -234,6 +236,7 @@ export function getInternshipFeeSettings() {
 export function updateInternshipFeeSettings(payload: {
   general_fee_rupees: number;
   lateral_fee_rupees: number;
+  ews_lateral_fee_rupees?: number;
 }) {
   return putJson<InternshipFeeSettingsResponse>(
     "/api/internship-registration/fee",

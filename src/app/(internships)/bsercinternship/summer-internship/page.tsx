@@ -1,10 +1,11 @@
 "use client";
 
 import { Check, Search, ChevronDown, ArrowRight, Upload } from "lucide-react";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   createInternshipPaymentOrder,
+  getInternshipFeeSettings,
   recordInternshipPaymentAttempt,
   registerInternshipWithoutPayment,
   verifyInternshipPaymentAndRegister,
@@ -75,6 +76,26 @@ const ALLOWED_PASSPORT_PHOTO_TYPES = new Set([
   "image/heic",
   "image/heif",
 ]);
+const LATERAL_CATEGORY_OPTIONS = [
+  "General Category",
+  "EWS(Economically weaker section)",
+];
+const LATERAL_EWS_CATEGORY_VALUE = "EWS(Economically weaker section)";
+const DEFAULT_LATERAL_EWS_FEE_RUPEES = 1350;
+const RECOMMENDATION_LETTER_DOWNLOAD_PATH =
+  "/Recommendation%20Letter%20Def-Space%20Summer%20Internship%202026%20(2).pdf";
+
+function formatFeeValueRupees(value: number): string {
+  if (!Number.isFinite(value) || value < 0) {
+    return String(DEFAULT_LATERAL_EWS_FEE_RUPEES);
+  }
+
+  if (Number.isInteger(value)) {
+    return String(value);
+  }
+
+  return value.toFixed(2).replace(/\.0+$/, "").replace(/(\.\d*[1-9])0+$/, "$1");
+}
 
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error && error.message.trim()) {
@@ -211,6 +232,7 @@ function FormSelect({
   value,
   onChange,
   placeholder = "--Select--",
+  infoText,
 }: any) {
   return (
     <div className="mb-6 w-full">
@@ -218,7 +240,25 @@ function FormSelect({
         htmlFor={id}
         className="block text-zinc-100 text-[13px] font-semibold mb-2"
       >
-        {label} {required && <span className="text-red-500 ml-0.5">*</span>}
+        <span className="inline-flex items-center gap-2">
+          <span>
+            {label} {required && <span className="text-red-500 ml-0.5">*</span>}
+          </span>
+          {infoText && (
+            <span className="relative inline-flex items-center group">
+              <button
+                type="button"
+                aria-label={`${label} information`}
+                className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-zinc-500 text-[10px] leading-none text-zinc-200 transition-colors hover:border-orange-500 hover:text-orange-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/60"
+              >
+                i
+              </button>
+              <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 hidden w-72 -translate-x-1/2 rounded-md border border-zinc-700 bg-[#0f0f0f] px-3 py-2 text-xs font-normal leading-relaxed text-zinc-300 shadow-xl group-hover:block group-focus-within:block">
+                {infoText}
+              </span>
+            </span>
+          )}
+        </span>
       </label>
       <div className="relative">
         <select
@@ -293,6 +333,7 @@ export default function InternshipApplicationForm() {
   const emptyFormData = {
     fullName: "",
     guardianName: "",
+    category: "",
     gender: "",
     dob: "",
     mobile: "",
@@ -315,6 +356,15 @@ export default function InternshipApplicationForm() {
   const [submitStatus, setSubmitStatus] = useState<SubmitStatus | null>(null);
   const [paymentRetryPrompt, setPaymentRetryPrompt] =
     useState<PaymentRetryPrompt | null>(null);
+  const [showEwsRecommendationPrompt, setShowEwsRecommendationPrompt] =
+    useState<boolean>(false);
+  const [ewsLateralFeeRupees, setEwsLateralFeeRupees] = useState<number>(
+    DEFAULT_LATERAL_EWS_FEE_RUPEES,
+  );
+
+  const lateralCategoryInfoText =
+    "Economically Weaker Section candidates (whose family annual income is less than ₹7 lakh) can apply under the Weaker Section. "
+    + `The lateral registration fee for this category is ₹${formatFeeValueRupees(ewsLateralFeeRupees)}.`;
 
   const activeResponse = submitStatus
     ? {
@@ -322,6 +372,29 @@ export default function InternshipApplicationForm() {
         message: submitStatus.message,
       }
     : null;
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadFeeSettings = async () => {
+      try {
+        const settings = await getInternshipFeeSettings();
+        const nextEwsFee = Number(settings.ews_lateral_fee_rupees);
+
+        if (isMounted && Number.isFinite(nextEwsFee) && nextEwsFee >= 0) {
+          setEwsLateralFeeRupees(nextEwsFee);
+        }
+      } catch {
+        // Keep fallback fee text when settings request is unavailable.
+      }
+    };
+
+    void loadFeeSettings();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const clearForm = () => {
     setFormData(emptyFormData);
@@ -411,6 +484,10 @@ export default function InternshipApplicationForm() {
     payload.append("is_lateral", String(isLateralRegistration));
     payload.append("declaration_accepted", String(formData.declaration));
 
+    if (isLateralRegistration) {
+      payload.append("category", formData.category.trim());
+    }
+
     if (passportPhoto) {
       payload.append("passport_photo", passportPhoto);
     }
@@ -445,9 +522,39 @@ export default function InternshipApplicationForm() {
     setPaymentRetryPrompt({ message });
   };
 
+  const handleSuccessfulRegistration = (message: string) => {
+    const shouldShowRecommendationPrompt =
+      isLateralRegistration && formData.category === LATERAL_EWS_CATEGORY_VALUE;
+
+    clearForm();
+
+    if (shouldShowRecommendationPrompt) {
+      setSubmitStatus(null);
+      setShowEwsRecommendationPrompt(true);
+      return;
+    }
+
+    setSubmitStatus({
+      type: "success",
+      message,
+    });
+  };
+
   const startInternshipSubmission = async () => {
     setSubmitStatus(null);
     setPaymentRetryPrompt(null);
+    setShowEwsRecommendationPrompt(false);
+
+    if (
+      isLateralRegistration
+      && !LATERAL_CATEGORY_OPTIONS.includes(formData.category)
+    ) {
+      setSubmitStatus({
+        type: "error",
+        message: "Please select a valid category before proceeding.",
+      });
+      return;
+    }
 
     if (!formData.declaration) {
       setSubmitStatus({
@@ -471,6 +578,9 @@ export default function InternshipApplicationForm() {
       const order = await createInternshipPaymentOrder({
         email: formData.email.trim(),
         is_lateral: isLateralRegistration,
+        ...(isLateralRegistration
+          ? { category: formData.category.trim() }
+          : {}),
       });
 
       if (order.already_registered) {
@@ -485,11 +595,7 @@ export default function InternshipApplicationForm() {
 
       if (!order.requires_payment || order.amount <= 0) {
         await registerInternshipWithoutPayment(buildRegistrationFormData());
-        clearForm();
-        setSubmitStatus({
-          type: "success",
-          message: "Application submitted successfully.",
-        });
+        handleSuccessfulRegistration("Application submitted successfully.");
         setIsSubmitting(false);
         return;
       }
@@ -600,13 +706,9 @@ export default function InternshipApplicationForm() {
             }
 
             paymentAttemptState.completed = true;
-
-            clearForm();
-            setSubmitStatus({
-              type: "success",
-              message:
-                "Payment successful and internship application submitted!",
-            });
+            handleSuccessfulRegistration(
+              "Payment successful and internship application submitted!",
+            );
           } catch (error) {
             if (!paymentAttemptState.completed && !paymentAttemptState.failureRecorded) {
               paymentAttemptState.failureRecorded = true;
@@ -697,6 +799,7 @@ export default function InternshipApplicationForm() {
 
   const handlePaymentCancel = () => {
     setPaymentRetryPrompt(null);
+    setShowEwsRecommendationPrompt(false);
     clearForm();
     setSubmitStatus({
       type: "info",
@@ -713,6 +816,52 @@ export default function InternshipApplicationForm() {
         message={activeResponse?.message ?? ""}
         onClose={() => setSubmitStatus(null)}
       />
+
+      {showEwsRecommendationPrompt && (
+        <div className="fixed inset-0 z-[141] flex items-center justify-center px-4">
+          <button
+            type="button"
+            aria-label="Close recommendation letter popup backdrop"
+            className="absolute inset-0 bg-black/75 backdrop-blur-[2px]"
+            onClick={() => setShowEwsRecommendationPrompt(false)}
+          />
+
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="relative w-full max-w-lg rounded-xl border border-cyan-400/60 bg-cyan-500/10 px-5 py-4 shadow-2xl"
+          >
+            <div className="mb-4">
+              <p className="text-sm font-semibold uppercase tracking-wide text-white/90">
+                Registration Successful
+              </p>
+              <p className="mt-1 text-sm leading-relaxed text-zinc-100">
+                After successful registration, candidates must download the
+                Recommendation Letter, get it signed by the Principal or any
+                authorised school authority, and email the signed copy to
+                outreach@bserc.org.
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <a
+                href={RECOMMENDATION_LETTER_DOWNLOAD_PATH}
+                download
+                className="rounded-md border border-cyan-400/50 bg-cyan-500/20 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-cyan-100 transition hover:bg-cyan-500/30"
+              >
+                Download Letter
+              </a>
+              <button
+                type="button"
+                onClick={() => setShowEwsRecommendationPrompt(false)}
+                className="rounded-md border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-white transition hover:bg-white/20"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {paymentRetryPrompt && (
         <div className="fixed inset-0 z-[140] flex items-center justify-center px-4">
@@ -812,14 +961,38 @@ export default function InternshipApplicationForm() {
                 value={formData.fullName}
                 onChange={handleChange}
               />
-              <FormField
-                id="guardianName"
-                name="guardianName"
-                label="Guardian Name / अभिभावक का नाम"
-                required
-                value={formData.guardianName}
-                onChange={handleChange}
-              />
+              {isLateralRegistration ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
+                  <FormField
+                    id="guardianName"
+                    name="guardianName"
+                    label="Guardian Name / अभिभावक का नाम"
+                    required
+                    value={formData.guardianName}
+                    onChange={handleChange}
+                  />
+                  <FormSelect
+                    id="category"
+                    name="category"
+                    label="Category"
+                    placeholder="--Select Category--"
+                    options={LATERAL_CATEGORY_OPTIONS}
+                    required
+                    value={formData.category}
+                    onChange={handleChange}
+                    infoText={lateralCategoryInfoText}
+                  />
+                </div>
+              ) : (
+                <FormField
+                  id="guardianName"
+                  name="guardianName"
+                  label="Guardian Name / अभिभावक का नाम"
+                  required
+                  value={formData.guardianName}
+                  onChange={handleChange}
+                />
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
                 <FormSelect
