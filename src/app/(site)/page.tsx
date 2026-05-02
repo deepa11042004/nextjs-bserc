@@ -22,6 +22,15 @@ export default function HomePage() {
     <>
       <HomePageClientEffects />
       <HeroSlider />
+      <div className="flex justify-center my-6 bg-blue-700 py-4">
+        <a href="https://forms.gle/NNBBxDkwzb84efgD6" className="inline-block">
+          <button
+            className="px-6 py-3 bg-orange-500 text-white rounded-lg shadow-[0_0_12px_rgba(249,115,22,0.6)] hover:shadow-[0_0_22px_rgba(249,115,22,1)] hover:bg-orange-600 transition-colors font-semibold text-lg"
+          >
+            National Technology Day
+          </button>
+        </a>
+      </div>
       <Stats />
       <PMVision />
       <SpaceSectorIndia />
